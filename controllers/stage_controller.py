@@ -45,14 +45,12 @@ class stage_controller():
         if np.all(X == Xfrom):
             return
         #Get correct speed for each axis   
-        V=(X-Xfrom)
-        V=V/np.linalg.norm(V)*self.normV
-        
+        Xdist=(X-Xfrom)
+        Xtime=np.linalg.norm(Xdist)/self.normV
+        V=Xdist/Xtime
         self.MOVVEL(X,V)
-        
         if wait:
-            waittime=np.linalg.norm(X-Xfrom)/self.normV
-            time.sleep(waittime)
+            time.sleep(Xtime)
             while not self.is_onTarget():
                 time.sleep(.01)
     
@@ -76,7 +74,6 @@ class stage_controller():
     
     def MOVVEL(self,X,V):
         pass
-
 
 #==============================================================================
 # Linear stages controller
@@ -111,12 +108,14 @@ class linear_controller(stage_controller):
         self.lineX.FRF(1)
         self.lineY.SVO(1,True)
         self.lineY.FRF(1)
-        while self.isMoving():
+        while self.is_moving():
             time.sleep(.1)
                 
     def MOVVEL(self,X,V):
+        print('setvel',V)
         self.lineX.VEL(1,np.abs(V[0]))
         self.lineY.VEL(1,np.abs(V[1]))
+        print('Mov',X[0],X[1])
         self.lineX.MOV(1,X[0])
         self.lineY.MOV(1,X[1])
         
@@ -133,7 +132,13 @@ class linear_controller(stage_controller):
         return self.lineX.IsMoving()['1'] and self.lineY.IsMoving()['1']
     
     def is_onTarget(self):
-        return self.lineX.qONT()['1'] and self.lineY.qONT()['1']        
+        return self.lineX.qONT()['1'] and self.lineY.qONT()['1'] 
+
+    def get_pos_range(self, axis):
+        return np.array([0,50.])
+    
+    def get_vel_range(self, axis):
+        return np.array([0,1.5])       
         
 #==============================================================================
 # Cube Controller
@@ -153,7 +158,9 @@ class cube_controller(stage_controller):
         self.cube.CloseConnection()
                 
     def MOVVEL(self,X,V):
+        print('vel', list(np.abs(V)))
         self.cube.VEL([1,2,3],list(np.abs(V)))
+        print('mov', list(X))
         self.cube.MOV([1,2,3],list(X))
     
     def get_position(self):
@@ -168,6 +175,12 @@ class cube_controller(stage_controller):
     def is_onTarget(self):
         return np.all(self.cube.qONT([1,2,3]).values())
     
+    def get_pos_range(self, axis):
+        return np.array([0, 100])
+    
+    def get_vel_range(self, axis):
+        return np.array([0, 4000])
+    
     
 #==============================================================================
 # Helper functions
@@ -175,3 +188,6 @@ class cube_controller(stage_controller):
 def getListDevices():
     gcs= GCSDevice('C-863.11')
     return gcs.EnumerateUSB()
+
+if __name__ == "__main__":
+    print(getListDevices())

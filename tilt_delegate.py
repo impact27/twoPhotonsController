@@ -20,6 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import numpy as np
 from PyQt5 import QtCore
+from scipy.ndimage.morphology import binary_dilation as dilate
 
 class tilt_delegate(QtCore.QObject):
     
@@ -68,6 +69,7 @@ class tilt_delegate(QtCore.QObject):
         return np.squeeze(coeffs)
     
     def validate_positions(self):
+        print('Validating')
         self.thread.setArgs(self.todo_positions,self.parent)
         self.todo_positions=[]
         self.thread.start()
@@ -134,6 +136,7 @@ class positions_thread(QtCore.QThread):
         
         
     def goto_z(self,z):
+        print('Going to Z', z)
         self.md.goto_cube_position([0,0,z], XsFrom=[0,0,self.lastz],
                                    rawPos=True, wait=True, checkid=self.lockid)
         self.lastz=z
@@ -142,7 +145,7 @@ class positions_thread(QtCore.QThread):
         imrange=np.zeros((len(zPos),*self.imshape))
         for imr,z in zip(imrange,zPos):
             self.goto_z(z)
-            imr[:]=self.get_image(z)
+            imr[:]=self.get_image()
             if np.max(imr)<.9*np.max(imrange):
                 return imrange
         return imrange
@@ -151,47 +154,50 @@ class positions_thread(QtCore.QThread):
         #get 10 images
         zPos=np.linspace(*self.zrange,10)
         imrange=self.get_image_range(zPos)
-            
+        
         #Get best positions
         bests=np.max(imrange,(1,2))>.9*np.max(imrange)
+        bests=dilate(bests,[1,1,1])
         zPos=np.linspace(zPos[bests][0],zPos[bests][-1],10)
         imrange=self.get_image_range(zPos)
-            
+        
         #Get best position
         Y=np.sum(imrange>.9*np.max(imrange),(1,2))
         X=zPos
         coeff_parabola=np.polyfit(X,Y,2)
-        zMax=-coeff_parabola[1]/(coeff_parabola[0]*2)        
-        
+        zMax=-coeff_parabola[1]/(coeff_parabola[0]*2)
         #Go to this position and save
         self.goto_z(zMax)
         return zMax
         
     def run(self):
-        self.lockid=self.md.lock()
-        
-        if self.lockid is None:
-            self.error = "Unable to lock the mouvment"
-            return
-        
-        self.positions_done=[]
-        Xslast= self.md.get_XY_position(rawCoordinates=True)
-        for Xm in self.position_todo:
-            #Go to position
-            Xs=self.md.goto_XY_position(Xm, XsFrom=Xslast,
-                                   wait=True,checkid=self.lockid)
-            #Perform Z Scan
-            zMax=self.new_z()
+        try:
+            print('Running thread')
+            self.lockid=self.md.lock()
             
-            im=self.get_image(zMax)
+            if self.lockid is None:
+                self.error = "Unable to lock the mouvment"
+                return
             
-            self.positions_done.append({
-                    'X' : Xs,
-                    'Z' : zMax,
-                    'Image' : im})
-            
-            Xslast=Xs
-        self.md.unlock()
+            self.positions_done=[]
+            Xslast= self.md.get_XY_position(rawCoordinates=True)
+            for Xm in self.position_todo:
+                print('Going to position', Xm)
+                #Go to position
+                Xs=self.md.goto_XY_position(Xm, XsFrom=Xslast,
+                                       wait=True,checkid=self.lockid)
+                #Perform Z Scan
+                zMax=self.new_z()
+                im=self.get_image()
+                self.positions_done.append({
+                        'X' : Xs,
+                        'Z' : zMax,
+                        'Image' : im})
+                Xslast=Xs
+            self.md.unlock()
+        except:
+            import sys
+            print(sys.exc_info())
             
             
     

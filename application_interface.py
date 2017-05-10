@@ -581,8 +581,9 @@ class secondary_widget(QtWidgets.QWidget):
         
         Xlabel = QtWidgets.QLabel('X [μm]: ')
         Ylabel = QtWidgets.QLabel('Y [μm]: ')
-        Xselector = doubleSelector(XRange, 0)
-        Yselector = doubleSelector(YRange, 0)
+        x, y = md.get_XY_position()
+        Xselector = doubleSelector(XRange, x)
+        Yselector = doubleSelector(YRange, y)
         
         goto_button = QtWidgets.QPushButton("GO")
         

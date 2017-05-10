@@ -47,13 +47,15 @@ class stage_controller():
         Xdist=(X-Xfrom)
         Xtime=np.linalg.norm(Xdist)/self.normV
         V=Xdist/Xtime
-        
+        print('MOVVEL')
         self.MOVVEL(X,V)
-        
+        print('Wait')
         if wait:
             time.sleep(Xtime)
+            print('OnT?')
             while not self.is_onTarget():
                 time.sleep(.01)
+            print('Done')
     
     def get_position(self):
         pass
