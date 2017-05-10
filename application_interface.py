@@ -17,7 +17,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-import sys
 from PyQt5 import QtCore, QtWidgets, QtGui
 import numpy as np
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -750,9 +749,3 @@ class ApplicationWindow(QtWidgets.QMainWindow):
     def showError(self, msg):
         QtWidgets.QErrorMessage(self).showMessage(msg)
         
-qApp = QtWidgets.QApplication(sys.argv)
-progname='Two Photons Controller'
-aw = ApplicationWindow()
-aw.setWindowTitle("%s" % progname)
-aw.show()
-sys.exit(qApp.exec_())
