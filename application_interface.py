@@ -560,6 +560,27 @@ class write_tab(QtWidgets.QWidget):
                     'GCode File (*.gcode)')
         self.path_field.setText(fn[0])
     
+class control_tab(QtWidgets.QWidget):
+    def __init__(self, application_delegate, *args, **kwargs):
+        QtWidgets.QWidget.__init__(self, *args, **kwargs)
+        
+        md=application_delegate.mouvment_delegate
+        #======================================================================
+        #       Create Widgets
+        #======================================================================
+        #======================================================================
+        #     Layout    
+        #======================================================================
+        
+        self.setLayout(main_layout)
+        #======================================================================
+        #      Connections   
+        #======================================================================
+        #======================================================================
+        #         Save variables
+        #======================================================================
+        
+        
 class secondary_widget(QtWidgets.QWidget):
     
     def __init__(self, application_delegate, *args, **kwargs):
