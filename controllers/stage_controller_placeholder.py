@@ -47,15 +47,11 @@ class stage_controller():
         Xdist=(X-Xfrom)
         Xtime=np.linalg.norm(Xdist)/self.normV
         V=Xdist/Xtime
-        print('MOVVEL')
         self.MOVVEL(X,V)
-        print('Wait')
         if wait:
             time.sleep(Xtime)
-            print('OnT?')
             while not self.is_onTarget():
                 time.sleep(.01)
-            print('Done')
     
     def get_position(self):
         pass
@@ -103,6 +99,7 @@ class fake_controller(stage_controller):
                 < np.linalg.norm((self.target-self.position))/self.normV)
     
     def is_onTarget(self):
+        return True
         return not self.is_moving()   
     
     def set_normV(self, normV):
@@ -120,9 +117,9 @@ class fake_controller(stage_controller):
 class linear_controller(fake_controller):
     def __init__(self):
         super().__init__()
-        self.position=np.array([0,0])
+        self.position=np.array([25,25])
         self.V=np.array([0,0])
-        self.target=np.array([0,0])
+        self.target=np.array([25,25])
         self.startTime=0
         
     def get_pos_range(self, axis): 

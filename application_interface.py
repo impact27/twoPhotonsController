@@ -116,6 +116,7 @@ class imageCanvas(MyMplCanvas):
     def __init__(self, *args, **kwargs):
         MyMplCanvas.__init__(self, *args, **kwargs)
         self.positions=[]
+        self.imp=None
                 
     def setimage(self,im, animated = False):
         self.positions=[]
@@ -123,9 +124,11 @@ class imageCanvas(MyMplCanvas):
         self.update_figure(animated = animated)
         
     def update_frame(self, im):
-#        self.imp.set_array(im)
-        self.imp.set_data(im)
-        self.draw()
+        if self.imp is not None:
+            self.imp.set_data(im)
+            self.draw()
+        else:
+            self.setimage(im)
         
     
     def update_figure(self, animated = False):
@@ -144,6 +147,7 @@ class imageCanvas(MyMplCanvas):
             plt.show()
             
     def clear(self):
+        self.imp=None
         self.figure.clear()
         self.axes = self.figure.add_subplot(111)
         self.draw()

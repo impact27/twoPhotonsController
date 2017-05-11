@@ -28,7 +28,6 @@ from write_delegate import write_delegate
 import matplotlib
 cmap = matplotlib.cm.get_cmap('plasma')
 import sys
-import time
 if sys.platform == "darwin":
     from controllers.camera_controller_placeholder import camera_controller
     from controllers.laser_controller_placeholder import laser_controller
@@ -42,6 +41,7 @@ class application_delegate(QtCore.QObject):
     error = QtCore.pyqtSignal(str)
     liveSwitched = QtCore.pyqtSignal(bool)
     drawSwitched = QtCore.pyqtSignal(bool)
+    newFrame = QtCore.pyqtSignal(np.ndarray)
     def __init__(self,imageCanvas):
         super().__init__()
         self.mouvment_delegate = mouvment_delegate()
@@ -65,6 +65,7 @@ class application_delegate(QtCore.QObject):
             
         self.lastpos=[np.nan, np.nan]
         self.lastFracIntensity=np.nan
+        self.newFrame.connect(self.showCameraFrame)
     
     def switch_live(self, on):
         if on:
@@ -119,13 +120,11 @@ class application_delegate(QtCore.QObject):
         else:
             self.mouvment_delegate.set_Z_correction(zcoeffs)
         
-    def showCameraFrame(self):
-        t1=time.clock()
-        frame=self.camera_controller.get_image()
-        t2=time.clock()
+    def showCameraFrame(self, frame = None):
+        if frame is None:
+            frame=self.camera_controller.get_image()
+        
         self.imageCanvas.update_frame(frame)
-        t3=time.clock()
-        print("{:.3f} {:.3f}".format(t2-t1,t3-t2))
         
     def clearFig(self):
         self.imageCanvas.clear()
@@ -160,7 +159,7 @@ class application_delegate(QtCore.QObject):
         
     def get_image(self):
         im = self.camera_controller.get_image()
-        self.imageCanvas.setimage(im)
+        self.newFrame.emit(im)
         return im
     
     def manualFocus(self):

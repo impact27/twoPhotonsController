@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import numpy as np
 from PyQt5 import QtCore
-from scipy.ndimage.morphology import binary_dilation as dilate
+import time
 
 class tilt_delegate(QtCore.QObject):
     
@@ -69,7 +69,6 @@ class tilt_delegate(QtCore.QObject):
         return np.squeeze(coeffs)
     
     def validate_positions(self):
-        print('Validating')
         self.thread.setArgs(self.todo_positions,self.parent)
         self.todo_positions=[]
         self.thread.start()
@@ -131,39 +130,57 @@ class positions_thread(QtCore.QThread):
         self.parent = parent
         self.md=self.parent.mouvment_delegate
         self.get_image=self.parent.get_image
-        self.imshape=np.shape(self.get_image())
+        im=self.get_image()
+        self.imshape=np.shape(im)
+        self.imdtype=im.dtype
         self.zrange=self.md.get_cube_PosRange(2)
         
         
     def goto_z(self,z):
-        print('Going to Z', z)
         self.md.goto_cube_position([0,0,z], XsFrom=[0,0,self.lastz],
                                    rawPos=True, wait=True, checkid=self.lockid)
         self.lastz=z
     
     def get_image_range(self,zPos):
-        imrange=np.zeros((len(zPos),*self.imshape))
+        imrange=np.zeros((len(zPos),*self.imshape),
+                         dtype=self.imdtype)
         for imr,z in zip(imrange,zPos):
             self.goto_z(z)
-            imr[:]=self.get_image()
+            im=self.get_image()
+            imr[:]=im
             if np.max(imr)<.9*np.max(imrange):
                 return imrange
         return imrange
         
     def new_z(self):
+        def getmask(imrange):
+            return np.sum(imrange>(
+                                    (np.min(imrange,(1,2))
+                                    +np.max(imrange,(1,2)))/4
+                                    )[:,np.newaxis,np.newaxis]
+                          , (1,2))
         #get 10 images
-        zPos=np.linspace(*self.zrange,10)
+        zPos=np.linspace(*self.zrange,20)
         imrange=self.get_image_range(zPos)
         
         #Get best positions
-        size = np.sum(imrange>(np.min(imrange,(1,2))+np.max(imrange,(1,2)))/4)
+        size = getmask(imrange)
         argmin = np.argmin(size)
-        zPos=np.linspace(zPos[argmin-1],zPos[argmin+1],20)
+        if argmin == 0:
+            zmin=zPos[0]
+            zmax=zPos[1]
+        elif argmin == len(size)-1:
+            zmin=zPos[len(size)-2]
+            zmax=zPos[len(size)-1] 
+        else:
+            zmin=zPos[argmin-1]
+            zmax=zPos[argmin+1]
+        zPos=np.linspace(zmin,zmax,20)
         imrange=self.get_image_range(zPos)
         
         #Get best position
-        Y=np.sum(imrange>(np.min(imrange,(1,2))+np.max(imrange,(1,2)))/4)
-        X=zPos
+        Y = getmask(imrange)
+        X = zPos
         coeff_parabola=np.polyfit(X,Y,2)
         zMax=-coeff_parabola[1]/(coeff_parabola[0]*2)
         for im,z in zip(imrange, zPos):
@@ -174,8 +191,7 @@ class positions_thread(QtCore.QThread):
         return zMax
         
     def run(self):
-        try:
-            print('Running thread')
+#        try:
             self.lockid=self.md.lock()
             
             if self.lockid is None:
@@ -185,10 +201,10 @@ class positions_thread(QtCore.QThread):
             self.positions_done=[]
             Xslast= self.md.get_XY_position(rawCoordinates=True)
             for Xm in self.position_todo:
-                print('Going to position', Xm)
                 #Go to position
                 Xs=self.md.goto_XY_position(Xm, XsFrom=Xslast,
                                        wait=True,checkid=self.lockid)
+                
                 #Perform Z Scan
                 zMax=self.new_z()
                 im=self.get_image()
@@ -198,9 +214,9 @@ class positions_thread(QtCore.QThread):
                         'Image' : im})
                 Xslast=Xs
             self.md.unlock()
-        except:
-            import sys
-            print(sys.exc_info())
+#        except:
+#            import sys
+#            print(sys.exc_info())
             
             
     
