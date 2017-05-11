@@ -183,7 +183,7 @@ class positions_thread(QtCore.QThread):
         coeff_parabola=np.polyfit(X,Y,2)
         zMax=-coeff_parabola[1]/(coeff_parabola[0]*2)
         np.save('X{:.0f} Y{:.0f} Z{:.2f}'.format(
-                        *self.md.get_XY_position(rawCoordinates=True),zMax)[X,Y])
+                        *self.md.get_XY_position(rawCoordinates=True),zMax),[X,Y])
         for im,z in zip(imrange, zPos):
             if np.max(im)>0:
                 np.save('im X{:.0f} Y{:.0f} Z{:.2f}'.format(
