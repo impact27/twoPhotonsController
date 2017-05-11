@@ -163,6 +163,9 @@ class positions_thread(QtCore.QThread):
         zPos=np.linspace(*self.zrange,20)
         imrange=self.get_image_range(zPos)
         
+        for im,z in zip(imrange, zPos):
+            np.save('1X{:.2f} Y{:.2f} Z{:.2f}'.format(
+                    *self.md.get_XY_position(rawCoordinates=True),z),im)
         #Get best positions
         size = getmask(imrange)
         argmin = np.argmin(size)
@@ -177,21 +180,20 @@ class positions_thread(QtCore.QThread):
             zmax=zPos[argmin+1]
         zPos=np.linspace(zmin,zmax,20)
         imrange=self.get_image_range(zPos)
-        
         #Get best position
         Y = getmask(imrange)
         X = zPos
         coeff_parabola=np.polyfit(X,Y,2)
         zMax=-coeff_parabola[1]/(coeff_parabola[0]*2)
         for im,z in zip(imrange, zPos):
-            np.save('XY:{} Z:{}'.format(
-                    self.md.get_XY_position(rawCoordinates=True),z),im)
+            np.save('2X{:.2f} Y{:.2f} Z{:.2f}'.format(
+                    *self.md.get_XY_position(rawCoordinates=True),z),im)
         #Go to this position and save
         self.goto_z(zMax)
         return zMax
         
     def run(self):
-#        try:
+        try:
             self.lockid=self.md.lock()
             
             if self.lockid is None:
@@ -214,9 +216,9 @@ class positions_thread(QtCore.QThread):
                         'Image' : im})
                 Xslast=Xs
             self.md.unlock()
-#        except:
-#            import sys
-#            print(sys.exc_info())
+        except:
+            import sys
+            print(sys.exc_info())
             
             
     
