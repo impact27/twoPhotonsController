@@ -158,8 +158,8 @@ class application_delegate(QtCore.QObject):
         self.write_delegate.write( gpath, xori, yori, Nx, Ny, dx, dy)
         
         
-    def get_image(self,z=None):
-        im = self.camera_controller.get_image(z)
+    def get_image(self):
+        im = self.camera_controller.get_image()
         self.imageCanvas.setimage(im)
         return im
     

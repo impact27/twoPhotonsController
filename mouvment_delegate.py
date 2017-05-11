@@ -137,24 +137,18 @@ class mouvment_delegate(QtCore.QObject):
     
     def goto_XY_position(self, Xm, XsFrom=None, speed=None, wait=False,
                          checkid=None):
-        
         if not self.checklock(checkid):
             return
-        
         if speed is None:
             speed = self.XYSpeed
             
         speed = speed/1000
-        
         if XsFrom is not None:
             XsFrom=np.asarray(XsFrom)/1000
-        
         Xm=np.asarray(Xm)/1000
         Xs=self.getXYStage(Xm)
-
         self.cube_controller.set_normV(self.cubeSpeed)
         self.cube_controller.goto_position([0,0,0],wait=wait)
-        
         self.linear_controller.set_normV(speed)
         self.linear_controller.goto_position(Xs, Xfrom=XsFrom,wait=wait)
         return Xs*1000
