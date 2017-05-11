@@ -141,56 +141,61 @@ class positions_thread(QtCore.QThread):
                                    rawPos=True, wait=True, checkid=self.lockid)
         self.lastz=z
     
-    def get_image_range(self,zPos):
+    def get_image_range(self,zPos, condition):
         imrange=np.zeros((len(zPos),*self.imshape),
                          dtype=self.imdtype)
         for imr,z in zip(imrange,zPos):
             self.goto_z(z)
             im=self.get_image()
             imr[:]=im
-            if np.max(imr)<np.max(imrange)-20:
+            if condition(im,imrange):
                 return imrange
         return imrange
         
     def new_z(self):
-        def get_spot_size(imrange):
-            return np.sum(imrange>=(
-                                    (np.min(imrange,(1,2))
-                                    +np.max(imrange,(1,2)))/4
-                                    )[:,np.newaxis,np.newaxis]
-                          , (1,2))
-        #get 10 images
-        zPos=np.linspace(*self.zrange,20)
-        imrange=self.get_image_range(zPos)
+        def get_spot_sizes(imrange):
+            return np.sum(imrange >= 
+                          np.reshape(np.max(imrange,(1,2))/10,(-1,1,1)),
+                          (1,2))
+            
+        def get_spot_size(im):
+            return np.sum(im >= np.max(im)/10)
         
-        #Get best positions
-        size = get_spot_size(imrange)
+        def size_condition(im,ims):
+            return get_spot_size(im) > np.min(get_spot_sizes(ims))*1.1
+        
+        def max_condition(im,ims):
+            return np.max(im)<np.max(ims)-20
+        
+        #Coarse
+        zPos=np.linspace(*self.zrange,21)
+        imrange=self.get_image_range(zPos, max_condition)
+        
+        #Medium
+        size = get_spot_sizes(imrange)
         argmin = np.argmin(size)
         if argmin == 0:
-            zmin=zPos[0]
-            zmax=zPos[1]
+            argmin=1
         elif argmin == len(size)-1:
-            zmin=zPos[len(size)-2]
-            zmax=zPos[len(size)-1] 
-        else:
-            zmin=zPos[argmin-1]
-            zmax=zPos[argmin+1]
-        zPos=np.linspace(zmin,zmax,20)
-        imrange=self.get_image_range(zPos)
-        #Get best position
-        Y = get_spot_size(imrange)
-        X = zPos
-        coeff_parabola=np.polyfit(X,Y,2)
-        zMax=-coeff_parabola[1]/(coeff_parabola[0]*2)
-        np.save('X{:.0f} Y{:.0f} Z{:.2f}'.format(
-                        *self.md.get_XY_position(rawCoordinates=True),zMax),[X,Y])
-        for im,z in zip(imrange, zPos):
-            if np.max(im)>0:
-                np.save('im X{:.0f} Y{:.0f} Z{:.2f}'.format(
-                        *self.md.get_XY_position(rawCoordinates=True),z),im)
-        #Go to this position and save
-        self.goto_z(zMax)
-        return zMax
+            argmin = len(size)-2
+        zmin=zPos[argmin-1]
+        zmax=zPos[argmin+1]
+            
+        zPos=np.linspace(zmin,zmax,21)
+        imrange=self.get_image_range(zPos, max_condition)
+        
+        #Fine
+        size = get_spot_sizes(imrange)
+        zlim=zPos[np.argsort(size)[:2]]
+        zPos=np.linspace(*zlim,51)
+        imrange=self.get_image_range(zPos, size_condition)
+        
+        # Get best
+        size = get_spot_sizes(imrange)
+        argmin=np.argmin(size)
+
+        #save result and position
+        return zPos[argmin], imrange[argmin]
         
     def run(self):
         try:
@@ -208,8 +213,7 @@ class positions_thread(QtCore.QThread):
                                        wait=True,checkid=self.lockid)
                 
                 #Perform Z Scan
-                zMax=self.new_z()
-                im=self.get_image()
+                zMax, im = self.new_z()
                 self.positions_done.append({
                         'X' : Xs,
                         'Z' : zMax,
