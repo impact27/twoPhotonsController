@@ -150,25 +150,25 @@ class positions_thread(QtCore.QThread):
                 return imrange
         return imrange
         
-    size = np.sum(imrange>(np.min(imrange,(1,2))+np.max(imrange,(1,2)))/4)
-        argmin = np.argmin(size)
-        
     def new_z(self):
         #get 10 images
         zPos=np.linspace(*self.zrange,10)
         imrange=self.get_image_range(zPos)
         
         #Get best positions
-        bests=np.max(imrange,(1,2))>.9*np.max(imrange)
-        bests=dilate(bests,[1,1,1])
-        zPos=np.linspace(zPos[bests][0],zPos[bests][-1],10)
+        size = np.sum(imrange>(np.min(imrange,(1,2))+np.max(imrange,(1,2)))/4)
+        argmin = np.argmin(size)
+        zPos=np.linspace(zPos[argmin-1],zPos[argmin+1],20)
         imrange=self.get_image_range(zPos)
         
         #Get best position
-        Y=np.sum(imrange>.9*np.max(imrange),(1,2))
+        Y=np.sum(imrange>(np.min(imrange,(1,2))+np.max(imrange,(1,2)))/4)
         X=zPos
         coeff_parabola=np.polyfit(X,Y,2)
         zMax=-coeff_parabola[1]/(coeff_parabola[0]*2)
+        for im,z in zip(imrange, zPos):
+            np.save('XY:{} Z:{}'.format(
+                    self.md.get_XY_position(rawCoordinates=True),z),im)
         #Go to this position and save
         self.goto_z(zMax)
         return zMax
