@@ -153,7 +153,7 @@ class positions_thread(QtCore.QThread):
         return imrange
         
     def new_z(self):
-        def getmask(imrange):
+        def get_spot_size(imrange):
             return np.sum(imrange>(
                                     (np.min(imrange,(1,2))
                                     +np.max(imrange,(1,2)))/4
@@ -168,7 +168,7 @@ class positions_thread(QtCore.QThread):
                 np.save('1X{:.2f} Y{:.2f} Z{:.2f}'.format(
                         *self.md.get_XY_position(rawCoordinates=True),z),im)
         #Get best positions
-        size = getmask(imrange)
+        size = get_spot_size(imrange)
         argmin = np.argmin(size)
         if argmin == 0:
             zmin=zPos[0]
@@ -182,7 +182,7 @@ class positions_thread(QtCore.QThread):
         zPos=np.linspace(zmin,zmax,20)
         imrange=self.get_image_range(zPos)
         #Get best position
-        Y = getmask(imrange)
+        Y = get_spot_size(imrange)
         X = zPos
         coeff_parabola=np.polyfit(X,Y,2)
         zMax=-coeff_parabola[1]/(coeff_parabola[0]*2)

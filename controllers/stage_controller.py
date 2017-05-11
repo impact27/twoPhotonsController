@@ -112,10 +112,8 @@ class linear_controller(stage_controller):
             time.sleep(.1)
                 
     def MOVVEL(self,X,V):
-        print('setvel',V)
         self.lineX.VEL(1,np.abs(V[0]))
         self.lineY.VEL(1,np.abs(V[1]))
-        print('Mov',X[0],X[1])
         self.lineX.MOV(1,X[0])
         self.lineY.MOV(1,X[1])
         
@@ -158,9 +156,7 @@ class cube_controller(stage_controller):
         self.cube.CloseConnection()
                 
     def MOVVEL(self,X,V):
-        print('vel', list(np.abs(V)))
         self.cube.VEL([1,2,3],list(np.abs(V)))
-        print('mov', list(X))
         self.cube.MOV([1,2,3],list(X))
     
     def get_position(self):
