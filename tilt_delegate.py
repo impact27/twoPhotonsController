@@ -147,6 +147,9 @@ class positions_thread(QtCore.QThread):
                 return imrange
         return imrange
         
+    size = np.sum(imrange>(np.min(imrange,(1,2))+np.max(imrange,(1,2)))/4)
+        argmin = np.argmin(size)
+        
     def new_z(self):
         #get 10 images
         zPos=np.linspace(*self.zrange,10)

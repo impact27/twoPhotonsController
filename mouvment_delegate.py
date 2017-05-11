@@ -20,8 +20,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import random
 import numpy as np
 from PyQt5 import QtCore
+import sys
 
-from controllers.stage_controller import (linear_controller, cube_controller)
+if sys.platform == "darwin":
+    from controllers.stage_controller_placeholder import (linear_controller, 
+                                                          cube_controller)
+else:
+    from controllers.stage_controller import (linear_controller, 
+                                              cube_controller)
 
 
 

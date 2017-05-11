@@ -27,9 +27,14 @@ from gcode import gcode_draw
 from write_delegate import write_delegate
 import matplotlib
 cmap = matplotlib.cm.get_cmap('plasma')
-
-from controllers.camera_controller import camera_controller
-from controllers.laser_controller import laser_controller
+import sys
+import time
+if sys.platform == "darwin":
+    from controllers.camera_controller_placeholder import camera_controller
+    from controllers.laser_controller_placeholder import laser_controller
+else:   
+    from controllers.camera_controller import camera_controller
+    from controllers.laser_controller import laser_controller
 
 
 
@@ -64,7 +69,9 @@ class application_delegate(QtCore.QObject):
     def switch_live(self, on):
         if on:
             self.switch_draw(False)
-            self.live_timer.start(100)
+            frame=self.camera_controller.get_image()
+            self.imageCanvas.setimage(frame, animated = True)
+            self.live_timer.start(33)
         else:
             self.live_timer.stop()
             self.clearFig()
@@ -113,8 +120,12 @@ class application_delegate(QtCore.QObject):
             self.mouvment_delegate.set_Z_correction(zcoeffs)
         
     def showCameraFrame(self):
+        t1=time.clock()
         frame=self.camera_controller.get_image()
-        self.imageCanvas.setimage(frame)
+        t2=time.clock()
+        self.imageCanvas.update_frame(frame)
+        t3=time.clock()
+        print("{:.3f} {:.3f}".format(t2-t1,t3-t2))
         
     def clearFig(self):
         self.imageCanvas.clear()

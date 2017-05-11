@@ -28,6 +28,7 @@ class camera_controller():
         pass
         
     def get_image(self, z=None):
+        return np.random.rand(50,50)
         fns='Misc/Images/50_50/*.bmp'
         reg='Misc/Images\/50_50\/(\d+)\.bmp'
         fns=glob(fns)

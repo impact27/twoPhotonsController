@@ -117,18 +117,23 @@ class imageCanvas(MyMplCanvas):
         MyMplCanvas.__init__(self, *args, **kwargs)
         self.positions=[]
                 
-    def setimage(self,im):
+    def setimage(self,im, animated = False):
         self.positions=[]
         self.im=im
-        self.update_figure()
+        self.update_figure(animated = animated)
+        
+    def update_frame(self, im):
+#        self.imp.set_array(im)
+        self.imp.set_data(im)
+        self.draw()
         
     
-    def update_figure(self):
+    def update_figure(self, animated = False):
         self.figure.clear()
         self.axes = self.figure.add_subplot(111)
-        mp=self.axes.imshow(self.im)
+        self.imp=self.axes.imshow(self.im, animated = animated)
         self.axes.axis('image')
-        self.figure.colorbar(mp)
+        self.figure.colorbar(self.imp)
         self.draw()
         
     def standalone(self):
