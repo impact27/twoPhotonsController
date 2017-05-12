@@ -29,15 +29,29 @@ class doubleSelector(QtWidgets.QWidget):
     
     newValue = QtCore.pyqtSignal(float)
     
-    def __init__(self, valuesrange, initValue):
+    def __init__(self, valuesrange, initValue, isLog = False):
+        self.isLog = isLog
+        self.factor = 1
+        valuesrange = np.asarray(valuesrange)
+        amin, amax = valuesrange
+        
+        if self.isLog:
+            amin, amax = np.log((amin, amax))
+        if amax - amin < 100:
+            self.factor = 100/(amax - amin)
+        
         super().__init__()
         slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
-        slider.setRange(*valuesrange)
+        self.slider=slider
+        slider.setRange(*(self.factor*np.array((amin, amax))))
         slider.setSizePolicy(QtWidgets.QSizePolicy.Expanding,
                           QtWidgets.QSizePolicy.Preferred)
-        slider.setValue(initValue)
+            
+        self.setSliderValue(initValue)
+        
         
         lineInput = QtWidgets.QLineEdit()
+        self.lineInput=lineInput
         
         def getValue():
             return float(lineInput.text())
@@ -48,15 +62,15 @@ class doubleSelector(QtWidgets.QWidget):
                 val=valuesrange[0]   
             elif val>valuesrange[1]:
                 val=valuesrange[1]
-            lineInput.setText(str(val))
+            self.setInputValue(val)
             lineInput.editingFinished.emit()
         
         validator=QtGui.QDoubleValidator(*valuesrange,3)
         validator.setNotation(QtGui.QDoubleValidator.StandardNotation)
         validator.fixup=myfixup
         lineInput.setValidator(validator)
-        lineInput.setText(str(initValue))
-        lineInput.setMaximumWidth(60)
+        self.setInputValue(initValue)
+        lineInput.setMaximumWidth(80)
         
         layout = QtWidgets.QHBoxLayout()
         layout.addWidget(slider)
@@ -65,26 +79,41 @@ class doubleSelector(QtWidgets.QWidget):
         self.setLayout(layout)
     
         def updateLineInput(value):
-            if value != int(getValue()):
-                lineInput.setText(str(value))
+            value = value/self.factor
+            if self.isLog:
+                value = np.exp(value)
+            if value != getValue():
+                self.setInputValue(value)
                 
         slider.valueChanged.connect(updateLineInput)            
-        lineInput.editingFinished.connect(lambda: slider.setValue(getValue()))
+        lineInput.editingFinished.connect(lambda: 
+                                    self.setSliderValue(getValue()))
         
         sendNewValue =lambda: self.newValue.emit(getValue())
         
         slider.sliderReleased.connect(sendNewValue)
         lineInput.editingFinished.connect(sendNewValue)
 
-        self.slider=slider
-        self.lineInput=lineInput
+        
+        
     
     def getValue(self):
         return float(self.lineInput.text())
     
     def setValue(self, value):
-        self.lineInput.setText(str(value))
-        self.slider.setValue(value)
+        self.setInputValue(value)
+        self.setSliderValue(value)
+        
+    def setSliderValue(self, val):
+        if self.isLog:
+            val=np.log(val)
+        self.slider.setValue(self.factor*val)
+        
+    def setInputValue(self, val):
+        if val<.1 and val != 0:
+            self.lineInput.setText('{:.3e}'.format(val))
+        else:
+            self.lineInput.setText('{:g}'.format(val))
         
         
 
@@ -615,6 +644,7 @@ class control_tab(QtWidgets.QWidget):
         
         md = application_delegate.mouvment_delegate
         lc = application_delegate.laser_controller
+        cc =  application_delegate.camera_controller
         #======================================================================
         #       Create Widgets
         #======================================================================
@@ -628,48 +658,105 @@ class control_tab(QtWidgets.QWidget):
         laser_switch.setCheckable(True)
         laser_setV = doubleSelector(lc.get_range(),lc.get_intensity())
         
-        stage_label = QtWidgets.QLabel('Stages')
+        XY_label = QtWidgets.QLabel('Linear Stage')
         stage_XY_reconnect = QtWidgets.QPushButton('Reconnect linear stage')
-        stage_cub_reconnect = QtWidgets.QPushButton('Reconnect piezzo stage')
+        stage_cube_reconnect = QtWidgets.QPushButton('Reconnect piezzo stage')
         
         
         vel_XY_range = md.get_XY_VelRange(0)
-        vel_cub_range = md.get_cube_VelRange(0)
+        vel_cube_range = md.get_cube_VelRange(0)
         
         vel_XY_label = QtWidgets.QLabel('Linear Stage Velocity [μm/s]:')
-        vel_cub_label = QtWidgets.QLabel('Piezzo Stage Velocity [μm/s]:')
+        vel_cube_label = QtWidgets.QLabel('Piezzo Stage Velocity [μm/s]:')
         vel_XY_selector = doubleSelector(vel_XY_range, md.get_XY_velocity())
-        vel_cub_selector =doubleSelector(vel_cub_range, md.get_cube_velocity())
+        vel_cube_selector =doubleSelector(vel_cube_range, md.get_cube_velocity())
         
-        XRange =md.get_XY_PosRange(0)
-        YRange =md.get_XY_PosRange(1)
+        X_XY_Range =md.get_XY_PosRange(0)
+        Y_XY_Range =md.get_XY_PosRange(1)
         
-        Xlabel = QtWidgets.QLabel('X [μm]: ')
-        Ylabel = QtWidgets.QLabel('Y [μm]: ')
-        x, y = md.get_XY_position(linOnly=True)
-        Xselector = doubleSelector(XRange, x)
-        Yselector = doubleSelector(YRange, y)
-        
-        goto_XY_button = QtWidgets.QPushButton("GO")
-        
-        XRange =md.get_XY_PosRange(0)
-        YRange =md.get_XY_PosRange(1)
-        
-        Xlabel = QtWidgets.QLabel('X [μm]: ')
-        Ylabel = QtWidgets.QLabel('Y [μm]: ')
-        x, y = md.get_cub_position(linOnly=True)
-        Xselector = doubleSelector(XRange, x)
-        Yselector = doubleSelector(YRange, y)
+        X_XY_label = QtWidgets.QLabel('X [μm]: ')
+        Y_XY_label = QtWidgets.QLabel('Y [μm]: ')
+        x, y = md.get_XY_position()
+        X_XY_selector = doubleSelector(X_XY_Range, x)
+        Y_XY_selector = doubleSelector(Y_XY_Range, y)
         
         goto_XY_button = QtWidgets.QPushButton("GO")
+        goto_XY_button.setSizePolicy(QtWidgets.QSizePolicy.Preferred,
+                                       QtWidgets.QSizePolicy.Preferred)
+        
+        cube_label = QtWidgets.QLabel('Piezzo Stage')
+        X_cube_Range =md.get_cube_PosRange(0)
+        Y_cube_Range =md.get_cube_PosRange(1)
+        Z_cube_Range =md.get_cube_PosRange(3)
+        
+        X_cube_label = QtWidgets.QLabel('X [μm]: ')
+        Y_cube_label = QtWidgets.QLabel('Y [μm]: ')
+        Z_cube_label = QtWidgets.QLabel('Z [μm]: ')
+        x, y, z = md.get_cube_position()
+        X_cube_selector = doubleSelector(X_cube_Range, x)
+        Y_cube_selector = doubleSelector(Y_cube_Range, y)
+        Z_cube_selector = doubleSelector(Z_cube_Range, y)
+        
+        goto_cube_button = QtWidgets.QPushButton("GO")
+        goto_cube_button.setSizePolicy(QtWidgets.QSizePolicy.Preferred,
+                                       QtWidgets.QSizePolicy.Preferred)
+        
+        cam_label = QtWidgets.QLabel('Camera')
+        cam_range = cc.shutter_range()
+        cam_init = cc.get_shutter()
+        cam_exposure_label = QtWidgets.QLabel('Exposure time')
+        cam_exposure_selector = doubleSelector(cam_range, cam_init, isLog=True)
         #======================================================================
         #     Layout    
         #======================================================================
+        
+        vel_XY_layout = QtWidgets.QHBoxLayout()
+        vel_XY_layout.addWidget(vel_XY_label)
+        vel_XY_layout.addWidget(vel_XY_selector)
+        
+        vel_cube_layout = QtWidgets.QHBoxLayout()
+        vel_cube_layout.addWidget(vel_cube_label)
+        vel_cube_layout.addWidget(vel_cube_selector)
+        
+        XY_layout = QtWidgets.QGridLayout()
+        XY_layout.addWidget(X_XY_label, 0, 0)
+        XY_layout.addWidget(Y_XY_label, 1, 0)
+        XY_layout.addWidget(X_XY_selector, 0, 1)
+        XY_layout.addWidget(Y_XY_selector, 1, 1)
+        XY_layout.addWidget(goto_XY_button, 0, 2, 2, 1)
+        
+        cube_layout = QtWidgets.QGridLayout()
+        cube_layout.addWidget(X_cube_label, 0, 0)
+        cube_layout.addWidget(Y_cube_label, 1, 0)
+        cube_layout.addWidget(Z_cube_label, 2, 0)
+        cube_layout.addWidget(X_cube_selector, 0, 1)
+        cube_layout.addWidget(Y_cube_selector, 1, 1)
+        cube_layout.addWidget(Z_cube_selector, 2, 1)
+        cube_layout.addWidget(goto_cube_button, 0, 2, 3, 1)
+        
+        cam_layout = QtWidgets.QHBoxLayout()
+        cam_layout.addWidget(cam_exposure_label)
+        cam_layout.addWidget(cam_exposure_selector)
+        
+        
+        
         main_layout = QtWidgets.QVBoxLayout()
         main_layout.addWidget(laser_label)
         main_layout.addWidget(laser_reconnect)
         main_layout.addWidget(laser_switch)
         main_layout.addWidget(laser_setV)
+        main_layout.addWidget(XY_label)
+        main_layout.addWidget(stage_XY_reconnect)
+        main_layout.addLayout(vel_XY_layout)
+        main_layout.addLayout(XY_layout)
+        main_layout.addWidget(cube_label)
+        main_layout.addWidget(stage_cube_reconnect)
+        main_layout.addLayout(vel_cube_layout)
+        main_layout.addLayout(cube_layout)
+        main_layout.addWidget(cam_label)
+        main_layout.addLayout(cam_layout)
+        main_layout.addStretch()
+        
         
         self.setLayout(main_layout)
         #======================================================================
@@ -678,13 +765,19 @@ class control_tab(QtWidgets.QWidget):
         
         goto_XY_button.clicked.connect(lambda:
             application_delegate.goto_XY_position(
-                    Xselector.getValue(),
-                    Yselector.getValue()))
+                    X_XY_selector.getValue(),
+                    Y_XY_selector.getValue()))
+            
+        goto_cube_button.clicked.connect(lambda:
+            application_delegate.goto_cube_position(
+                    X_cube_selector.getValue(),
+                    Y_cube_selector.getValue(),
+                    Z_cube_selector.getValue()))
         
         vel_XY_selector.newValue.connect( 
             application_delegate.mouvment_delegate.set_XY_velocity)
         
-        vel_cub_selector.newValue.connect(
+        vel_cube_selector.newValue.connect(
             application_delegate.mouvment_delegate.set_cube_velocity)
         
         laser_setV.newValue.connect(lc.set_intensity)
@@ -720,19 +813,10 @@ class secondary_widget(QtWidgets.QWidget):
         
         
         main_layout = QtWidgets.QGridLayout(self)
-#        main_layout.addWidget(vel_XY_label,0,0)
-#        main_layout.addWidget(vel_cub_label,1,0)
-#        main_layout.addWidget(vel_XY_selector,0,1)
-#        main_layout.addWidget(vel_cub_selector,1,1)
-        main_layout.addWidget(live_button,2,0)
-        main_layout.addWidget(draw_button,2,1)
-        main_layout.addWidget(clear_button,3,0,1,2)
-#        main_layout.addWidget(Xlabel,0,2)
-#        main_layout.addWidget(Ylabel,1,2)
-#        main_layout.addWidget(Xselector,0,3)
-#        main_layout.addWidget(Yselector,1,3)
-#        main_layout.addWidget(goto_button,0,4,2,1)
-        main_layout.addWidget(ESTOP_button,2,2,2,3)
+        main_layout.addWidget(live_button,0,0)
+        main_layout.addWidget(draw_button,0,1)
+        main_layout.addWidget(clear_button,1,0,1,2)
+        main_layout.addWidget(ESTOP_button,0,2,2,3)
         
         self.setLayout(main_layout)
         #======================================================================
@@ -827,6 +911,7 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         
         tabs_widget.setMaximumWidth(300)
         
+        control_widget = control_tab(self.application_delegate)
         #======================================================================
         #     Layout    
         #======================================================================
@@ -836,7 +921,8 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         
         horizontal = QtWidgets.QHBoxLayout(self.main_widget)
         horizontal.addWidget(tabs_widget)
-        horizontal.addLayout(vertical)
+        horizontal.addLayout(vertical, 1)
+        horizontal.addWidget(control_widget)
         
         
         self.application_delegate.error.connect(self.showError)

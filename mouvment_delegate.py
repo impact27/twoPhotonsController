@@ -173,9 +173,13 @@ class mouvment_delegate(QtCore.QObject):
         
     def get_Z_correction(self):
         return self.zcoeff
-        
-    def get_raw_cube_position(self):
-        return self.cube_controller.get_position()
+    
+    def get_cube_position(self, raw = False):
+        X = self.cube_controller.get_position()
+        if raw:
+            return X
+        X = self.get_cube_Xm(X)
+        return X
       
     def get_cube_PosRange(self, axis):
         return self.cube_controller.get_pos_range(axis)
@@ -191,10 +195,10 @@ class mouvment_delegate(QtCore.QObject):
             return
         self.cubeSpeed = vel
       
-    def get_cube_Xs(self,XmCube, XsOrigin=None):
+    def get_cube_Xs(self, XmCube, XsOrigin=None):
         
         if XsOrigin is None:
-            XsOrigin = self.get_XY_position()
+            XsOrigin = self.get_XY_position(rawCoordinates=True)
             
         XStageLocal = self.R@XmCube[:2]
         
@@ -202,6 +206,18 @@ class mouvment_delegate(QtCore.QObject):
         Xs[:2] = XStageLocal
         Xs[2] = XmCube[2] + self.getZOrigin(XsOrigin+XStageLocal)
         return Xs
+    
+    def get_cube_Xm(self, XsCube, XsOrigin=None):
+        
+        if XsOrigin is None:
+            XsOrigin = self.get_XY_position(rawCoordinates=True)
+            
+        XStageLocal = XsCube[:2]
+        
+        Xm = np.zeros_like(XsCube)
+        Xm[:2] = np.linalg.inv(self.R)@XStageLocal
+        Xm[2] = XsCube[2] - self.getZOrigin(XsOrigin+XStageLocal)
+        return Xm
         
     def goto_cube_position(self, XMasterCube, XsFrom=None, speed=None,
                  rawPos=False, XStageOrigin=None, wait=False, checkid=None):

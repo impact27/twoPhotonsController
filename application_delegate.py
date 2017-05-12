@@ -150,6 +150,9 @@ class application_delegate(QtCore.QObject):
     
     def goto_XY_position(self, xpos, ypos):
         self.mouvment_delegate.goto_XY_position(np.array([xpos,ypos]))
+    
+    def goto_cube_position(self, x, y, z):
+        self.mouvment_delegate.goto_cube_position(np.array([x,y,z]))
         
     def draw_device(self, xori, yori, gpath, Nx, Ny, dx, dy):
         

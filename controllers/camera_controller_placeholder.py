@@ -25,7 +25,7 @@ import re
 
 class camera_controller():
     def __init__(self):
-        pass
+        self.shutter = .01
         
     def get_image(self, z=None):
         return np.random.rand(50,50)
@@ -48,3 +48,12 @@ class camera_controller():
         else:
             print(fns)
             return np.random.rand(50,50)
+    
+    def shutter_range(self):
+        return [1.9e-5,.1]
+        
+    def set_shutter(self,time):
+        self.shutter = time
+        
+    def get_shutter(self):
+        return self.shutter
