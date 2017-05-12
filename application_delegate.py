@@ -68,6 +68,8 @@ class application_delegate(QtCore.QObject):
         self.lastpos=[np.nan, np.nan]
         self.lastFracIntensity=np.nan
         self.newFrame.connect(self.showCameraFrame)
+        
+        self.imwait=False
     
     def switch_live(self, on):
         if on:
@@ -135,6 +137,7 @@ class application_delegate(QtCore.QObject):
         self.tiltCorrected.emit(zcoeffs)
         
     def showCameraFrame(self, frame = None):
+        self.imwait = False
         if frame is None:
             frame=self.camera_controller.get_image()
         
@@ -176,7 +179,9 @@ class application_delegate(QtCore.QObject):
         
     def get_image(self):
         im = self.camera_controller.get_image()
-        self.newFrame.emit(im)
+        if not self.imwait:
+            self.imwait = True
+            self.newFrame.emit(im)
         return im
     
     def manualFocus(self):

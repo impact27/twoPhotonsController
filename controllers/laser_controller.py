@@ -44,6 +44,8 @@ class laser_controller():
         self.sendCommand('V {:.2f}'.format(V))
         
     def get_intensity(self):
+        return 0
+        #TODO: read better and rteurn value
         self.sendCommand('V?')
         res=self.ser.read(100)
         return res

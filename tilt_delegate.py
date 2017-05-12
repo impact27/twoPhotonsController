@@ -141,9 +141,11 @@ class positions_thread(QtCore.QThread):
                                    rawPos=True, wait=True, checkid=self.lockid)
         self.lastz=z
     
-    def get_image_range(self,zPos, condition):
+    def get_image_range(self,zPos, condition=None):
         imrange=np.zeros((len(zPos),*self.imshape),
                          dtype=self.imdtype)
+        if condition is None:
+            def condition(a,b): return False
         for imr,z in zip(imrange,zPos):
             self.goto_z(z)
             im=self.get_image()
@@ -160,9 +162,6 @@ class positions_thread(QtCore.QThread):
             
         def get_spot_size(im):
             return np.sum(im >= np.max(im)/10)
-        
-        def size_condition(im,ims):
-            return get_spot_size(im) > np.min(get_spot_sizes(ims))*1.1
         
         def max_condition(im,ims):
             return np.max(im)<np.max(ims)-20
@@ -188,11 +187,13 @@ class positions_thread(QtCore.QThread):
         size = get_spot_sizes(imrange)
         zlim=zPos[np.argsort(size)[:2]]
         zPos=np.linspace(*zlim,51)
-        imrange=self.get_image_range(zPos, size_condition)
-        
+        imrange=self.get_image_range(zPos)
         # Get best
         size = get_spot_sizes(imrange)
         argmin=np.argmin(size)
+        
+        X, Y = self.parent.mouvment_delegate.get_XY_position()
+        np.save('X{:.0f} Y{:.0f}'.format(X,Y),[zPos, size])
 
         #save result and position
         return zPos[argmin], imrange[argmin]

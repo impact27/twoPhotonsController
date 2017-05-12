@@ -528,7 +528,7 @@ class tilt_tab(QtWidgets.QWidget):
         
     def updateCorrection(self, coeff):
         self.correction_label.setText(
-                '{:.3f}X + {:.3f}Y + {:.3f}μm'.format(*coeff))
+                '{:.3e}X + {:.3e}Y + {:.3f}μm'.format(*coeff))
         
     
 class write_tab(QtWidgets.QWidget):

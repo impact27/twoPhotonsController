@@ -108,6 +108,9 @@ class linear_controller(stage_controller):
         self.lineX.FRF(1)
         self.lineY.SVO(1,True)
         self.lineY.FRF(1)
+        time.sleep(.1)
+        self.lineY.FRF(1)
+        self.lineX.FRF(1)
         while self.is_moving():
             time.sleep(.1)
                 
