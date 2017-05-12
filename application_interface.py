@@ -199,6 +199,14 @@ class orientation_tab(QtWidgets.QWidget):
         clear_list_button=QtWidgets.QPushButton("Clear List")
         validate_button=QtWidgets.QPushButton("Validate")
         
+        
+        correction_label = QtWidgets.QLabel('')
+        self.correction_label = correction_label
+        self.updateCorrection(
+                application_delegate.mouvment_delegate.get_XY_correction())
+        
+        correction_reset = QtWidgets.QPushButton('Reset')
+        
         #======================================================================
         #     Layout    
         #======================================================================
@@ -213,12 +221,17 @@ class orientation_tab(QtWidgets.QWidget):
         hbuttons.addWidget(validate_button)
         hbuttons.addWidget(clear_list_button)
         
+        correction_layout = QtWidgets.QVBoxLayout()
+        correction_layout.addWidget(correction_label)
+        correction_layout.addWidget(correction_reset)
+        
         main_layout=QtWidgets.QVBoxLayout(self)
         main_layout.addWidget(coord_label)
         main_layout.addLayout(coord)
         main_layout.addWidget(newpos_button)
         main_layout.addWidget(pos_list)
         main_layout.addLayout(hbuttons)
+        main_layout.addLayout(correction_layout)
         self.setLayout(main_layout)
         
         #======================================================================
@@ -244,14 +257,20 @@ class orientation_tab(QtWidgets.QWidget):
         
         application_delegate.orientation_delegate.updatelist.connect(
                 self.updateList)
+        
+        application_delegate.orientationCorrected.connect(
+                self.updateCorrection)
+        
+        correction_reset.clicked.connect(
+                application_delegate.reset_orientation)
 
         #======================================================================
         #         Save variables
         #======================================================================
         
-        self.xpos=Xinput
-        self.ypos=Yinput
-        self.pos_list=pos_list
+        self.xpos = Xinput
+        self.ypos = Yinput
+        self.pos_list = pos_list
         
     def newPosClicked(self,checked):
         self.newposition.emit(float(self.xpos.text()),float(self.ypos.text()))
@@ -291,6 +310,11 @@ class orientation_tab(QtWidgets.QWidget):
         self.pos_list.setCellWidget(row,0,Xm_label)
         self.pos_list.setCellWidget(row,1,Xs_label)
         self.pos_list.setCellWidget(row,2,Delete)
+        
+    def updateCorrection(self, coeff):
+        self.correction_label.setText(
+                'θ:\t{:.3f}π\nXo:\t[{:.3f}, {:.3f}]μm'.format(*coeff))
+        
     
 class layout_wrapper(QtWidgets.QWidget):
     def __init__(self, layout, *args, **kwargs):       
@@ -333,6 +357,12 @@ class tilt_tab(QtWidgets.QWidget):
         validate_button = QtWidgets.QPushButton("Validate") 
         raise_button = QtWidgets.QPushButton("Raise cube for manual focusing")
         
+        correction_label = QtWidgets.QLabel('')
+        self.correction_label = correction_label
+        self.updateCorrection(
+                application_delegate.mouvment_delegate.get_Z_correction())
+        
+        correction_reset = QtWidgets.QPushButton('Reset')
         #======================================================================
         #     Layout    
         #======================================================================
@@ -366,11 +396,16 @@ class tilt_tab(QtWidgets.QWidget):
         valLayout.addWidget(validate_button)
         valLayout.addWidget(clear_list_button)
         
+        correction_layout = QtWidgets.QVBoxLayout()
+        correction_layout.addWidget(correction_label)
+        correction_layout.addWidget(correction_reset)
+        
         main_layout=QtWidgets.QVBoxLayout(self)
         main_layout.addWidget(tabs_widget)
         main_layout.addWidget(raise_button)
         main_layout.addWidget(pos_list)
         main_layout.addLayout(valLayout)
+        main_layout.addLayout(correction_layout)
         self.setLayout(main_layout)
         
         #======================================================================
@@ -400,6 +435,12 @@ class tilt_tab(QtWidgets.QWidget):
         self.displayrow.connect(application_delegate.tilt_delegate.display_row)
         application_delegate.tilt_delegate.updatelist.connect(self.updateList)
         raise_button.clicked.connect(application_delegate.manualFocus)
+        
+        application_delegate.tiltCorrected.connect(
+                self.updateCorrection)
+        
+        correction_reset.clicked.connect(
+                application_delegate.reset_tilt)
         
         #======================================================================
         #         Save variables
@@ -454,6 +495,10 @@ class tilt_tab(QtWidgets.QWidget):
         self.pos_list.setCellWidget(row,0,pos_label)
         self.pos_list.setCellWidget(row,1,z_label)
         self.pos_list.setCellWidget(row,2,Delete)
+        
+    def updateCorrection(self, coeff):
+        self.correction_label.setText(
+                '{:.3f}X + {:.3f}Y + {:.3f}μm'.format(*coeff))
         
     
 class write_tab(QtWidgets.QWidget):
@@ -568,18 +613,81 @@ class control_tab(QtWidgets.QWidget):
     def __init__(self, application_delegate, *args, **kwargs):
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
         
-        md=application_delegate.mouvment_delegate
+        md = application_delegate.mouvment_delegate
+        lc = application_delegate.laser_controller
         #======================================================================
         #       Create Widgets
         #======================================================================
+        
+        monitor_switch = QtWidgets.QPushButton('Set')
+        monitor_switch.setCheckable(True)
+        
+        laser_label = QtWidgets.QLabel("Laser")
+        laser_reconnect = QtWidgets.QPushButton('Reconnect')
+        laser_switch = QtWidgets.QPushButton('Off')
+        laser_switch.setCheckable(True)
+        laser_setV = doubleSelector(lc.get_range(),lc.get_intensity())
+        
+        stage_label = QtWidgets.QLabel('Stages')
+        stage_XY_reconnect = QtWidgets.QPushButton('Reconnect linear stage')
+        stage_cub_reconnect = QtWidgets.QPushButton('Reconnect piezzo stage')
+        
+        
+        vel_XY_range = md.get_XY_VelRange(0)
+        vel_cub_range = md.get_cube_VelRange(0)
+        
+        vel_XY_label = QtWidgets.QLabel('Linear Stage Velocity [μm/s]:')
+        vel_cub_label = QtWidgets.QLabel('Piezzo Stage Velocity [μm/s]:')
+        vel_XY_selector = doubleSelector(vel_XY_range, md.get_XY_velocity())
+        vel_cub_selector =doubleSelector(vel_cub_range, md.get_cube_velocity())
+        
+        XRange =md.get_XY_PosRange(0)
+        YRange =md.get_XY_PosRange(1)
+        
+        Xlabel = QtWidgets.QLabel('X [μm]: ')
+        Ylabel = QtWidgets.QLabel('Y [μm]: ')
+        x, y = md.get_XY_position(linOnly=True)
+        Xselector = doubleSelector(XRange, x)
+        Yselector = doubleSelector(YRange, y)
+        
+        goto_XY_button = QtWidgets.QPushButton("GO")
+        
+        XRange =md.get_XY_PosRange(0)
+        YRange =md.get_XY_PosRange(1)
+        
+        Xlabel = QtWidgets.QLabel('X [μm]: ')
+        Ylabel = QtWidgets.QLabel('Y [μm]: ')
+        x, y = md.get_cub_position(linOnly=True)
+        Xselector = doubleSelector(XRange, x)
+        Yselector = doubleSelector(YRange, y)
+        
+        goto_XY_button = QtWidgets.QPushButton("GO")
         #======================================================================
         #     Layout    
         #======================================================================
+        main_layout = QtWidgets.QVBoxLayout()
+        main_layout.addWidget(laser_label)
+        main_layout.addWidget(laser_reconnect)
+        main_layout.addWidget(laser_switch)
+        main_layout.addWidget(laser_setV)
         
         self.setLayout(main_layout)
         #======================================================================
         #      Connections   
         #======================================================================
+        
+        goto_XY_button.clicked.connect(lambda:
+            application_delegate.goto_XY_position(
+                    Xselector.getValue(),
+                    Yselector.getValue()))
+        
+        vel_XY_selector.newValue.connect( 
+            application_delegate.mouvment_delegate.set_XY_velocity)
+        
+        vel_cub_selector.newValue.connect(
+            application_delegate.mouvment_delegate.set_cube_velocity)
+        
+        laser_setV.newValue.connect(lc.set_intensity)
         #======================================================================
         #         Save variables
         #======================================================================
@@ -589,8 +697,6 @@ class secondary_widget(QtWidgets.QWidget):
     
     def __init__(self, application_delegate, *args, **kwargs):
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
-        
-        md=application_delegate.mouvment_delegate
         #======================================================================
         #       Create Widgets
         #======================================================================
@@ -606,25 +712,6 @@ class secondary_widget(QtWidgets.QWidget):
         draw_button = QtWidgets.QPushButton("Start Draw")
         draw_button.setCheckable(True)
         
-        XRange =md.get_XY_PosRange(0)
-        YRange =md.get_XY_PosRange(1)
-        
-        Xlabel = QtWidgets.QLabel('X [μm]: ')
-        Ylabel = QtWidgets.QLabel('Y [μm]: ')
-        x, y = md.get_XY_position()
-        Xselector = doubleSelector(XRange, x)
-        Yselector = doubleSelector(YRange, y)
-        
-        goto_button = QtWidgets.QPushButton("GO")
-        
-        vel_XY_range = md.get_XY_VelRange(0)
-        vel_cub_range = md.get_cube_VelRange(0)
-        
-        vel_XY_label = QtWidgets.QLabel('Linear Stage Velocity [μm/s]:')
-        vel_cub_label = QtWidgets.QLabel('Piezzo Stage Velocity [μm/s]:')
-        vel_XY_selector = doubleSelector(vel_XY_range, md.get_XY_velocity())
-        
-        vel_cub_selector =doubleSelector(vel_cub_range, md.get_cube_velocity())
         clear_button = QtWidgets.QPushButton('Clear Graph')
         
         #======================================================================
@@ -633,18 +720,18 @@ class secondary_widget(QtWidgets.QWidget):
         
         
         main_layout = QtWidgets.QGridLayout(self)
-        main_layout.addWidget(vel_XY_label,0,0)
-        main_layout.addWidget(vel_cub_label,1,0)
-        main_layout.addWidget(vel_XY_selector,0,1)
-        main_layout.addWidget(vel_cub_selector,1,1)
+#        main_layout.addWidget(vel_XY_label,0,0)
+#        main_layout.addWidget(vel_cub_label,1,0)
+#        main_layout.addWidget(vel_XY_selector,0,1)
+#        main_layout.addWidget(vel_cub_selector,1,1)
         main_layout.addWidget(live_button,2,0)
         main_layout.addWidget(draw_button,2,1)
         main_layout.addWidget(clear_button,3,0,1,2)
-        main_layout.addWidget(Xlabel,0,2)
-        main_layout.addWidget(Ylabel,1,2)
-        main_layout.addWidget(Xselector,0,3)
-        main_layout.addWidget(Yselector,1,3)
-        main_layout.addWidget(goto_button,0,4,2,1)
+#        main_layout.addWidget(Xlabel,0,2)
+#        main_layout.addWidget(Ylabel,1,2)
+#        main_layout.addWidget(Xselector,0,3)
+#        main_layout.addWidget(Yselector,1,3)
+#        main_layout.addWidget(goto_button,0,4,2,1)
         main_layout.addWidget(ESTOP_button,2,2,2,3)
         
         self.setLayout(main_layout)
@@ -652,17 +739,9 @@ class secondary_widget(QtWidgets.QWidget):
         #      Connections   
         #======================================================================
         
-        goto_button.clicked.connect(lambda:
-            application_delegate.goto_XY_position(
-                    Xselector.getValue(),
-                    Yselector.getValue()))
+        
         
         ESTOP_button.clicked.connect(application_delegate.ESTOP)
-        
-        vel_XY_selector.newValue.connect( 
-            application_delegate.mouvment_delegate.set_XY_velocity)
-        vel_cub_selector.newValue.connect(
-            application_delegate.mouvment_delegate.set_cube_velocity)
 
         clear_button.clicked.connect(application_delegate.clearFig)
         

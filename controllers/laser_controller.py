@@ -46,7 +46,6 @@ class laser_controller():
     def get_intensity(self):
         self.sendCommand('V?')
         res=self.ser.read(100)
-        print(res)
         return res
     
     def switch(self, on):

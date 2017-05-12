@@ -42,6 +42,8 @@ class application_delegate(QtCore.QObject):
     liveSwitched = QtCore.pyqtSignal(bool)
     drawSwitched = QtCore.pyqtSignal(bool)
     newFrame = QtCore.pyqtSignal(np.ndarray)
+    orientationCorrected = QtCore.pyqtSignal(np.ndarray)
+    tiltCorrected = QtCore.pyqtSignal(np.ndarray)
     def __init__(self,imageCanvas):
         super().__init__()
         self.mouvment_delegate = mouvment_delegate()
@@ -110,6 +112,12 @@ class application_delegate(QtCore.QObject):
             self.error.emit('Not enough data points!')
         else:
             self.mouvment_delegate.set_XY_correction(theta, origin)
+            self.orientationCorrected.emit(np.asarray([theta, *origin]))
+    
+    def reset_orientation(self):
+        zcoeffs = np.zeros(3)
+        self.mouvment_delegate.set_XY_correction(zcoeffs[0],zcoeffs[1:])
+        self.orientationCorrected.emit(zcoeffs)
     
     def correct_tilt(self):
         
@@ -119,6 +127,12 @@ class application_delegate(QtCore.QObject):
             self.error.emit("Can't correct tilt")
         else:
             self.mouvment_delegate.set_Z_correction(zcoeffs)
+            self.tiltCorrected.emit(zcoeffs)
+            
+    def reset_tilt(self):
+        zcoeffs = np.zeros(3)
+        self.mouvment_delegate.set_Z_correction(zcoeffs)
+        self.tiltCorrected.emit(zcoeffs)
         
     def showCameraFrame(self, frame = None):
         if frame is None:

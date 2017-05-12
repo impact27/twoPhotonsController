@@ -86,8 +86,10 @@ class mouvment_delegate(QtCore.QObject):
             self.error.emit('Mouvment is locked!')
             return False
     
-    def get_laser_XY_position(self, rawCoordinates = False):
-        X=self.get_XY_position(True) + self.get_raw_cube_position()[:2]
+    def get_laser_XY_position(self, rawCoordinates = False, linOnly = False):
+        X=self.get_XY_position(True)
+        if not linOnly:
+            X = X + self.get_raw_cube_position()[:2]
         if rawCoordinates:
             return X
         X = self.getXYMaster(X)
@@ -105,6 +107,11 @@ class mouvment_delegate(QtCore.QObject):
         R=np.array([[c,-s],[s,c]])
         self.R=R
         self.offset=offset/1000
+        
+    def get_XY_correction(self):
+        theta = np.arccos(self.R[0,0])
+        offset = self.offset*1000
+        return np.array([theta, *offset])
         
     def getXYStage(self, XYmaster):
         return self.R@XYmaster+self.offset
@@ -163,6 +170,9 @@ class mouvment_delegate(QtCore.QObject):
             self.error.emit('Mouvment is locked!')
             return
         self.zcoeff=coeffs
+        
+    def get_Z_correction(self):
+        return self.zcoeff
         
     def get_raw_cube_position(self):
         return self.cube_controller.get_position()
