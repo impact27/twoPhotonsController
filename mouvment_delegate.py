@@ -89,7 +89,7 @@ class mouvment_delegate(QtCore.QObject):
     def get_laser_XY_position(self, rawCoordinates = False, linOnly = False):
         X=self.get_XY_position(True)
         if not linOnly:
-            X = X + self.get_raw_cube_position()[:2]
+            X = X + self.get_cube_position(raw = True)[:2]
         if rawCoordinates:
             return X
         X = self.getXYMaster(X)
