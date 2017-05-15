@@ -48,6 +48,64 @@ class mouvment_delegate(QtCore.QObject):
         
         self.cubeSpeed=1000
         self.XYSpeed=1000
+     
+    def XsToXm(self, Xs):
+        Xs = np.asarray(Xs)
+        return 1000*self._getXYMaster(Xs/1000)
+    
+    def _getXYStage(self, XYmaster):
+        return self.R@XYmaster+self.offset
+    
+    def _getXYMaster(self, XYstage):
+        return np.linalg.inv(self.R)@(XYstage-self.offset)
+    
+    def _get_cube_Xs(self, XmCube, XsOrigin=None):
+        
+        if XsOrigin is None:
+            XsOrigin = self.get_XY_position(rawCoordinates=True)
+            
+        XStageLocal = self.R@XmCube[:2]
+        
+        Xs = np.zeros_like(XmCube)
+        Xs[:2] = XStageLocal
+        Xs[2] = XmCube[2] + self._getZOrigin(XsOrigin+XStageLocal)
+        return Xs
+    
+    def _get_cube_Xm(self, XsCube, XsOrigin=None):
+        
+        if XsOrigin is None:
+            XsOrigin = self.get_XY_position(rawCoordinates=True)
+            
+        XStageLocal = XsCube[:2]
+        
+        Xm = np.zeros_like(XsCube)
+        Xm[:2] = np.linalg.inv(self.R)@XStageLocal
+        Xm[2] = XsCube[2] - self._getZOrigin(XsOrigin+XStageLocal)
+        return Xm
+    
+    def _getZOrigin(self, XYstage):
+        return np.dot(self.zcoeff[:2],XYstage) + self.zcoeff[2]
+    
+    def _checklock(self,lockid):
+        if not self.locked:
+            return True
+        elif self.lockid==lockid:
+            return True
+        else:
+            self.error.emit('Mouvment is locked!')
+            return False
+        
+    def lock(self):
+        if not self._checklock(None):
+            return None
+        
+        self.locked=True
+        self.lockid=random.randint(0,100)
+        return self.lockid
+        
+    def unlock(self):
+        self.locked=False
+        self.lockid=None
         
     def ESTOP(self):
         self.linear_controller.ESTOP()
@@ -61,30 +119,6 @@ class mouvment_delegate(QtCore.QObject):
     def is_onTarget(self):
         return (self.linear_controller.is_onTarget()
                 and self.cube_controller.is_onTarget())
-        
-    def getZOrigin(self, XYstage):
-        return np.dot(self.zcoeff[:2],XYstage) + self.zcoeff[2]
-    
-    def lock(self):
-        if not self.checklock(None):
-            return None
-        
-        self.locked=True
-        self.lockid=random.randint(0,100)
-        return self.lockid
-        
-    def unlock(self):
-        self.locked=False
-        self.lockid=None
-        
-    def checklock(self,lockid):
-        if not self.locked:
-            return True
-        elif self.lockid==lockid:
-            return True
-        else:
-            self.error.emit('Mouvment is locked!')
-            return False
     
     def get_laser_XY_position(self, rawCoordinates = False, linOnly = False):
         X=self.get_XY_position(True)
@@ -92,13 +126,16 @@ class mouvment_delegate(QtCore.QObject):
             X = X + self.get_cube_position(raw = True)[:2]
         if rawCoordinates:
             return X
-        X = self.getXYMaster(X)
+        X = self.XsToXm(X)
         return X
         
         
     #==========================================================================
     #     Linear Stage
     #==========================================================================
+    def XY_reconnect(self):
+        self.linear_controller.reconnect()
+
     def set_XY_correction(self, theta, offset):
         if self.locked:
             self.error.emit('Mouvment is locked!')
@@ -112,19 +149,13 @@ class mouvment_delegate(QtCore.QObject):
         theta = np.arccos(self.R[0,0])
         offset = self.offset*1000
         return np.array([theta, *offset])
-        
-    def getXYStage(self, XYmaster):
-        return self.R@XYmaster+self.offset
-    
-    def getXYMaster(self, XYstage):
-        return np.linalg.inv(self.R)@(XYstage-self.offset)
     
     def get_XY_position(self, rawCoordinates = False):
         X = self.linear_controller.get_position()
         X *= 1000 # units
         if rawCoordinates:
             return X
-        X = self.getXYMaster(X)
+        X = self.XsToXm(X)
         return X
     
     def get_XY_PosRange(self, axis):
@@ -137,14 +168,14 @@ class mouvment_delegate(QtCore.QObject):
         return self.XYSpeed
     
     def set_XY_velocity(self, vel, checkid=None):
-        if not self.checklock(checkid):
+        if not self._checklock(checkid):
             return
         
         self.XYSpeed=vel
     
     def goto_XY_position(self, Xm, XsFrom=None, speed=None, wait=False,
                          checkid=None):
-        if not self.checklock(checkid):
+        if not self._checklock(checkid):
             return
         if speed is None:
             speed = self.XYSpeed
@@ -153,7 +184,7 @@ class mouvment_delegate(QtCore.QObject):
         if XsFrom is not None:
             XsFrom=np.asarray(XsFrom)/1000
         Xm=np.asarray(Xm)/1000
-        Xs=self.getXYStage(Xm)
+        Xs=self._getXYStage(Xm)
         self.cube_controller.set_normV(self.cubeSpeed)
         self.cube_controller.goto_position([0,0,0],wait=wait)
         self.linear_controller.set_normV(speed)
@@ -164,6 +195,9 @@ class mouvment_delegate(QtCore.QObject):
     #==========================================================================
     #     Cube Stage
     #==========================================================================    
+    
+    def cube_reconnect(self):
+        self.cube_controller.reconnect()
     
     def set_Z_correction(self, coeffs):
         if self.locked:
@@ -178,7 +212,7 @@ class mouvment_delegate(QtCore.QObject):
         X = self.cube_controller.get_position()
         if raw:
             return X
-        X = self.get_cube_Xm(X)
+        X = self._get_cube_Xm(X)
         return X
       
     def get_cube_PosRange(self, axis):
@@ -191,38 +225,14 @@ class mouvment_delegate(QtCore.QObject):
         return self.cubeSpeed
     
     def set_cube_velocity(self, vel, checkid=None):
-        if not self.checklock(checkid):
+        if not self._checklock(checkid):
             return
         self.cubeSpeed = vel
-      
-    def get_cube_Xs(self, XmCube, XsOrigin=None):
-        
-        if XsOrigin is None:
-            XsOrigin = self.get_XY_position(rawCoordinates=True)
-            
-        XStageLocal = self.R@XmCube[:2]
-        
-        Xs = np.zeros_like(XmCube)
-        Xs[:2] = XStageLocal
-        Xs[2] = XmCube[2] + self.getZOrigin(XsOrigin+XStageLocal)
-        return Xs
-    
-    def get_cube_Xm(self, XsCube, XsOrigin=None):
-        
-        if XsOrigin is None:
-            XsOrigin = self.get_XY_position(rawCoordinates=True)
-            
-        XStageLocal = XsCube[:2]
-        
-        Xm = np.zeros_like(XsCube)
-        Xm[:2] = np.linalg.inv(self.R)@XStageLocal
-        Xm[2] = XsCube[2] - self.getZOrigin(XsOrigin+XStageLocal)
-        return Xm
         
     def goto_cube_position(self, XMasterCube, XsFrom=None, speed=None,
                  rawPos=False, XStageOrigin=None, wait=False, checkid=None):
         
-        if not self.checklock(checkid):
+        if not self._checklock(checkid):
             return
 
         if speed is None:
@@ -231,7 +241,7 @@ class mouvment_delegate(QtCore.QObject):
         if rawPos:
             Xs=XMasterCube
         else:
-            Xs = self.get_cube_Xs(XMasterCube, XStageOrigin)
+            Xs = self._get_cube_Xs(XMasterCube, XStageOrigin)
         
         self.cube_controller.set_normV(speed)
         self.cube_controller.goto_position(Xs, Xfrom=XsFrom, wait=wait)

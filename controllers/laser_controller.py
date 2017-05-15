@@ -23,10 +23,14 @@ import serial
 class laser_controller():
     
     def __init__(self):
+        self.ser = None
+        self.reconnect()
+        
+    def reconnect(self):
+        del self.ser
         self.ser = serial.Serial('COM8', timeout=1)
         self.sendCommand('*IDN?')
-        
-        res=self.ser.read(100)
+        res=self.ser.readline().decode()
         print(res)
         
     def sendCommand(self, cmd):
@@ -44,17 +48,23 @@ class laser_controller():
         self.sendCommand('V {:.2f}'.format(V))
         
     def get_intensity(self):
-        return 0
-        #TODO: read better and rteurn value
+        #TODO: read better and return value
         self.sendCommand('V?')
-        res=self.ser.read(100)
-        return res
+        res=self.ser.readline().decode()
+        return float(res[2:])
     
     def switch(self, on):
         if on:
             self.sendCommand('ON')
         else:
             self.sendCommand('OFF')
+            
+    def get_state(self):
+        assert False, "Not Done"
+        self.sendCommand('V?')
+        res=self.ser.readline().decode()
+        return float(res[2:])
+        
     
     
 #%%

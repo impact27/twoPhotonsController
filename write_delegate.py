@@ -30,7 +30,7 @@ class write_delegate(QtCore.QObject):
     def write(self, gfilename, xori, yori, Nx, Ny, dx, dy):
         with open(gfilename,'r') as f:
             gcommands = f.read()
-        intensityRange = self.parent.laser_controller.get_range()
+        intensityRange = self.parent.laser_delegate.get_range()
         posRange=np.asarray([
                 self.parent.mouvment_delegate.get_cube_PosRange(0),
                 self.parent.mouvment_delegate.get_cube_PosRange(1),
@@ -52,7 +52,7 @@ class write_thread(QtCore.QThread):
     def __init__(self, parent):
         super().__init__()
         self.md = parent.mouvment_delegate
-        self.lc = parent.laser_controller
+        self.ld = parent.laser_delegate
         self.error = None
         self.args = None
         self.lockid = None
@@ -87,36 +87,34 @@ class write_thread(QtCore.QThread):
                 XYStageLast=self.md.goto_XY_position(
                      Xorigin, XsFrom=XYStageLast, 
                      wait=True, checkid=self.lockid)
-                
                 self.writeGCode(XYStageLast)
                 
         self.md.unlock()
                 
     def writeGCode(self, XYStageLast):
         defaultCubeSpeed=self.md.get_cube_velocity()
-        writer = gwriter(self.md,self.lc,self.lockid, XYStageLast)
+        writer = gwriter(self.md,self.ld,self.lockid, XYStageLast)
         writer.readGcommands(self.gcommands)
         self.md.set_cube_velocity(defaultCubeSpeed, checkid = self.lockid)
         
 class gwriter(gcode_reader):
     
-    def __init__(self, md, lc, lockid, XYStageLast):
+    def __init__(self, md, ld, lockid, XYStageLast):
         super().__init__()
         self.md = md
-        self.lc = lc
-        self.lc.set_intensity(0)
-        self.lc.switch(True)
+        self.ld = ld
+        self.ld.set_intensity(0)
         self.lockid = lockid
         self.Xmlast = np.zeros(3)
         self.Xslast = None
         self.XYStageLast = XYStageLast
         
     def __del__(self):
-        self.lc.set_intensity(0)
-        self.lc.switch(False)
+        self.ld.set_intensity(0)
+        self.ld.switch(False)
         
     def setIntensity(self,E):
-        self.lc.set_intensity(E)
+        self.ld.set_intensity(E)
     
     def moveTo(self,X,Y,Z):
         Xmto = np.asarray([X, Y, Z])

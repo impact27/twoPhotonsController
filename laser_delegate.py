@@ -3,21 +3,68 @@
 Created on Sun May  7 17:14:59 2017
 
 @author: quentinpeter
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-import numpy as np
+import sys
+from PyQt5 import QtCore
 
-class laser_delegate():
+if sys.platform == "darwin":
+    from controllers.laser_controller_placeholder import laser_controller
+else:
+    from controllers.laser_controller import laser_controller
+    
+
+
+class laser_delegate(QtCore.QObject):
+    
+    switched = QtCore.pyqtSignal(bool)
+    newIntensity = QtCore.pyqtSignal(float)
+    
     def __init__(self):
-        self.range = np.array([0, 10])
-        self.intensity = 0
-    
-    def get_range(self):
-        return self.range
-    
-    def set_intensity(self, I):
-        self.intensity = I
+        super().__init__()
+        self.controller = laser_controller()
+        self.I = self.controller.get_intensity()
+        self.state = self.controller.get_state()
         
+    def reconnect(self):
+        self.controller.reconnect()
+
+    def get_range(self):
+        return self.controller.get_range()
+    
+    def set_intensity(self, V):
+        if V == 0.:
+            self.switch(False)
+        elif V == self.I:
+            self.switch(True)
+        else:
+            self.newIntensity.emit(V)
+            self.controller.set_intensity(V)
+            self.I = self.controller.get_intensity()
+            self.switch(True)
         
     def get_intensity(self):
-        return self.intensity
+        if not self.state:
+            return 0
+        return self.controller.get_intensity()
+    
+    def switch(self, state):
+        if state != self.state:
+            self.state = state
+            self.controller.switch(state)
+            self.switched.emit(state)
+            
+        

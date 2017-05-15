@@ -21,6 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import numpy as np
 from PyQt5 import QtCore
 import time
+import copy
 
 class tilt_delegate(QtCore.QObject):
     
@@ -92,7 +93,11 @@ class tilt_delegate(QtCore.QObject):
         self.update()
             
     def update(self):
-        total_list =  self.validated_positions.copy()
+        total_list =  copy.deepcopy(self.validated_positions)
+        #Display results as master coordinates
+        for d in total_list:
+            d['X']=self.parent.mouvment_delegate.XsToXm(d['X'])
+        #Add todo
         for pos in self.todo_positions:
             total_list.append({
                     'X' : np.asarray(pos),
@@ -192,8 +197,8 @@ class positions_thread(QtCore.QThread):
         size = get_spot_sizes(imrange)
         argmin=np.argmin(size)
         
-        X, Y = self.parent.mouvment_delegate.get_XY_position()
-        np.save('X{:.0f} Y{:.0f}'.format(X,Y),[zPos, size])
+#        X, Y = self.parent.mouvment_delegate.get_XY_position()
+#        np.save('X{:.0f} Y{:.0f}'.format(X,Y),[zPos, size])
 
         #save result and position
         return zPos[argmin], imrange[argmin]

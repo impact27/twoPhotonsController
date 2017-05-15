@@ -36,7 +36,7 @@ class orientation_delegate(QtCore.QObject):
             return
         Xstage=self.md.get_XY_position(rawCoordinates=True)
         Xmaster=[x,y]
-        image=self.parent.camera_controller.get_image()
+        image=self.parent.camera_delegate.get_image()
         self.new_position(Xstage,Xmaster, image)
         
     def displayrow(self,row):

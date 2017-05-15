@@ -27,13 +27,9 @@ from gcode import gcode_draw
 from write_delegate import write_delegate
 import matplotlib
 cmap = matplotlib.cm.get_cmap('plasma')
-import sys
-if sys.platform == "darwin":
-    from controllers.camera_controller_placeholder import camera_controller
-    from controllers.laser_controller_placeholder import laser_controller
-else:   
-    from controllers.camera_controller import camera_controller
-    from controllers.laser_controller import laser_controller
+
+from laser_delegate import laser_delegate
+from camera_delegate import camera_delegate
 
 
 
@@ -47,8 +43,8 @@ class application_delegate(QtCore.QObject):
     def __init__(self,imageCanvas):
         super().__init__()
         self.mouvment_delegate = mouvment_delegate()
-        self.camera_controller = camera_controller()
-        self.laser_controller = laser_controller()
+        self.camera_delegate = camera_delegate()
+        self.laser_delegate = laser_delegate()
         
         self.orientation_delegate = orientation_delegate(self)
         self.tilt_delegate = tilt_delegate(self)
@@ -74,12 +70,12 @@ class application_delegate(QtCore.QObject):
     def switch_live(self, on):
         if on:
             self.switch_draw(False)
-            frame=self.camera_controller.get_image()
+            self.clearFig()
+            frame=self.camera_delegate.get_image()
             self.imageCanvas.setimage(frame, animated = True)
             self.live_timer.start(33)
         else:
             self.live_timer.stop()
-            self.clearFig()
         self.liveSwitched.emit(on)
             
         
@@ -96,8 +92,8 @@ class application_delegate(QtCore.QObject):
         
     def drawPos(self):
         newpos=self.mouvment_delegate.get_laser_XY_position()
-        laserI=self.laser_controller.get_intensity()
-        lRange=self.laser_controller.get_range()
+        laserI=self.laser_delegate.get_intensity()
+        lRange=self.laser_delegate.get_range()
         f=(laserI-lRange[0])/(lRange[1]-lRange[0])
         color=cmap(np.min((f,self.lastFracIntensity)))
         
@@ -139,7 +135,7 @@ class application_delegate(QtCore.QObject):
     def showCameraFrame(self, frame = None):
         self.imwait = False
         if frame is None:
-            frame=self.camera_controller.get_image()
+            frame=self.camera_delegate.get_image()
         
         self.imageCanvas.update_frame(frame)
         
@@ -178,7 +174,7 @@ class application_delegate(QtCore.QObject):
         
         
     def get_image(self):
-        im = self.camera_controller.get_image()
+        im = self.camera_delegate.get_image()
         if not self.imwait:
             self.imwait = True
             self.newFrame.emit(im)

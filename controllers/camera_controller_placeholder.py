@@ -26,6 +26,9 @@ import re
 class camera_controller():
     def __init__(self):
         self.shutter = .01
+    
+    def reconnect(self):
+        print('Connected Camera')
         
     def get_image(self, z=None):
         return np.random.rand(50,50)

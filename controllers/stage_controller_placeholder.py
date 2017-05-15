@@ -28,6 +28,9 @@ class stage_controller():
     def __init__(self, normV=1):
         self.normV=normV
         
+    def reconnect(self):
+        print("Connected stage")
+        
     def set_normV(self, normV):
         self.normV=normV
         
@@ -99,7 +102,6 @@ class fake_controller(stage_controller):
                 < np.linalg.norm((self.target-self.position))/self.normV)
     
     def is_onTarget(self):
-        return True
         return not self.is_moving()   
     
     def set_normV(self, normV):

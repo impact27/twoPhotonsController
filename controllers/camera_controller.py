@@ -22,7 +22,13 @@ from .pixelink import PixeLINK
 
 class camera_controller():
     def __init__(self):
+        self.cam = None
+        self.reconnect()
+        
+    def reconnect(self):
+        del self.cam
         self.cam = PixeLINK()
+        
     
     def shutter_range(self):
         return [1.9e-5,.1]

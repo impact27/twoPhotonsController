@@ -23,6 +23,10 @@ class laser_controller():
     def __init__(self):
         self.range = np.array([0, 10])
         self.intensity = 0
+        self.state = False
+        
+    def reconnect(self):
+        print("Connected Laser")
     
     def get_range(self):
         return self.range
@@ -34,5 +38,8 @@ class laser_controller():
         return self.intensity
     
     def switch(self, on):
-        pass
+        self.state = on
+    
+    def get_state(self):
+        return self.state
     

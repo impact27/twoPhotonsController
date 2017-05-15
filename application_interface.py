@@ -644,8 +644,8 @@ class control_tab(QtWidgets.QWidget):
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
         
         md = application_delegate.mouvment_delegate
-        lc = application_delegate.laser_controller
-        cc =  application_delegate.camera_controller
+        ld = application_delegate.laser_delegate
+        cd =  application_delegate.camera_delegate
         #======================================================================
         #       Create Widgets
         #======================================================================
@@ -654,21 +654,24 @@ class control_tab(QtWidgets.QWidget):
         monitor_switch.setCheckable(True)
         
         laser_label = QtWidgets.QLabel("Laser")
+        laser_label.setStyleSheet("font: bold large")
         laser_reconnect = QtWidgets.QPushButton('Reconnect')
         laser_switch = QtWidgets.QPushButton('Off')
         laser_switch.setCheckable(True)
-        laser_setV = doubleSelector(lc.get_range(),lc.get_intensity())
+        laser_V_label = QtWidgets.QLabel("I [V]:")
+        laser_setV = doubleSelector(ld.get_range(),ld.get_intensity())
         
         XY_label = QtWidgets.QLabel('Linear Stage')
-        stage_XY_reconnect = QtWidgets.QPushButton('Reconnect linear stage')
-        stage_cube_reconnect = QtWidgets.QPushButton('Reconnect piezzo stage')
+        XY_label.setStyleSheet("font: bold large")
+        stage_XY_reconnect = QtWidgets.QPushButton('Reconnect')
+        stage_cube_reconnect = QtWidgets.QPushButton('Reconnect')
         
         
         vel_XY_range = md.get_XY_VelRange(0)
         vel_cube_range = md.get_cube_VelRange(0)
         
-        vel_XY_label = QtWidgets.QLabel('Linear Stage Velocity [μm/s]:')
-        vel_cube_label = QtWidgets.QLabel('Piezzo Stage Velocity [μm/s]:')
+        vel_XY_label = QtWidgets.QLabel('V [μm/s]:')
+        vel_cube_label = QtWidgets.QLabel('V [μm/s]:')
         vel_XY_selector = doubleSelector(vel_XY_range, md.get_XY_velocity())
         vel_cube_selector =doubleSelector(vel_cube_range, md.get_cube_velocity())
         
@@ -682,10 +685,9 @@ class control_tab(QtWidgets.QWidget):
         Y_XY_selector = doubleSelector(Y_XY_Range, y)
         
         goto_XY_button = QtWidgets.QPushButton("GO")
-        goto_XY_button.setSizePolicy(QtWidgets.QSizePolicy.Preferred,
-                                       QtWidgets.QSizePolicy.Preferred)
         
         cube_label = QtWidgets.QLabel('Piezzo Stage')
+        cube_label.setStyleSheet("font: bold large")
         X_cube_Range =md.get_cube_PosRange(0)
         Y_cube_Range =md.get_cube_PosRange(1)
         Z_cube_Range =md.get_cube_PosRange(3)
@@ -699,41 +701,55 @@ class control_tab(QtWidgets.QWidget):
         Z_cube_selector = doubleSelector(Z_cube_Range, y)
         
         goto_cube_button = QtWidgets.QPushButton("GO")
-        goto_cube_button.setSizePolicy(QtWidgets.QSizePolicy.Preferred,
-                                       QtWidgets.QSizePolicy.Preferred)
         
         cam_label = QtWidgets.QLabel('Camera')
-        cam_range = cc.shutter_range()
-        cam_init = cc.get_shutter()
-        cam_exposure_label = QtWidgets.QLabel('Exposure time')
+        cam_label.setStyleSheet("font: bold large")
+        cam_reconnect = QtWidgets.QPushButton('Reconnect')
+        cam_range = cd.shutter_range()
+        cam_init = cd.get_shutter()
+        cam_exposure_label = QtWidgets.QLabel('Exp. [s]:')
         cam_exposure_selector = doubleSelector(cam_range, cam_init, isLog=True)
         #======================================================================
         #     Layout    
         #======================================================================
         
-        vel_XY_layout = QtWidgets.QHBoxLayout()
-        vel_XY_layout.addWidget(vel_XY_label)
-        vel_XY_layout.addWidget(vel_XY_selector)
+        laser_H_layout = QtWidgets.QHBoxLayout()
+        laser_H_layout.addWidget(laser_label)
+        laser_H_layout.addWidget(laser_reconnect)
         
-        vel_cube_layout = QtWidgets.QHBoxLayout()
-        vel_cube_layout.addWidget(vel_cube_label)
-        vel_cube_layout.addWidget(vel_cube_selector)
+        laser_layout = QtWidgets.QHBoxLayout()
+        laser_layout.addWidget(laser_V_label)
+        laser_layout.addWidget(laser_setV)
+        
+        XY_H_layout = QtWidgets.QHBoxLayout()
+        XY_H_layout.addWidget(XY_label)
+        XY_H_layout.addWidget(stage_XY_reconnect)
         
         XY_layout = QtWidgets.QGridLayout()
-        XY_layout.addWidget(X_XY_label, 0, 0)
-        XY_layout.addWidget(Y_XY_label, 1, 0)
-        XY_layout.addWidget(X_XY_selector, 0, 1)
-        XY_layout.addWidget(Y_XY_selector, 1, 1)
-        XY_layout.addWidget(goto_XY_button, 0, 2, 2, 1)
+        XY_layout.addWidget(vel_XY_label, 0, 0)
+        XY_layout.addWidget(vel_XY_selector, 0, 1)
+        XY_layout.addWidget(X_XY_label, 1, 0)
+        XY_layout.addWidget(Y_XY_label, 2, 0)
+        XY_layout.addWidget(X_XY_selector, 1, 1)
+        XY_layout.addWidget(Y_XY_selector, 2, 1)
+        
+        cube_H_layout = QtWidgets.QHBoxLayout()
+        cube_H_layout.addWidget(cube_label)
+        cube_H_layout.addWidget(stage_cube_reconnect)
         
         cube_layout = QtWidgets.QGridLayout()
-        cube_layout.addWidget(X_cube_label, 0, 0)
-        cube_layout.addWidget(Y_cube_label, 1, 0)
-        cube_layout.addWidget(Z_cube_label, 2, 0)
-        cube_layout.addWidget(X_cube_selector, 0, 1)
-        cube_layout.addWidget(Y_cube_selector, 1, 1)
-        cube_layout.addWidget(Z_cube_selector, 2, 1)
-        cube_layout.addWidget(goto_cube_button, 0, 2, 3, 1)
+        cube_layout.addWidget(vel_cube_label, 0, 0)
+        cube_layout.addWidget(vel_cube_selector, 0, 1)
+        cube_layout.addWidget(X_cube_label, 1, 0)
+        cube_layout.addWidget(Y_cube_label, 2, 0)
+        cube_layout.addWidget(Z_cube_label, 3, 0)
+        cube_layout.addWidget(X_cube_selector, 1, 1)
+        cube_layout.addWidget(Y_cube_selector, 2, 1)
+        cube_layout.addWidget(Z_cube_selector, 3, 1)
+        
+        cam_H_layout = QtWidgets.QHBoxLayout()
+        cam_H_layout.addWidget(cam_label)
+        cam_H_layout.addWidget(cam_reconnect)
         
         cam_layout = QtWidgets.QHBoxLayout()
         cam_layout.addWidget(cam_exposure_label)
@@ -742,20 +758,36 @@ class control_tab(QtWidgets.QWidget):
         
         
         main_layout = QtWidgets.QVBoxLayout()
-        main_layout.addWidget(laser_label)
-        main_layout.addWidget(laser_reconnect)
-        main_layout.addWidget(laser_switch)
-        main_layout.addWidget(laser_setV)
-        main_layout.addWidget(XY_label)
-        main_layout.addWidget(stage_XY_reconnect)
-        main_layout.addLayout(vel_XY_layout)
+        main_layout.addLayout(XY_H_layout)
         main_layout.addLayout(XY_layout)
-        main_layout.addWidget(cube_label)
-        main_layout.addWidget(stage_cube_reconnect)
-        main_layout.addLayout(vel_cube_layout)
+        main_layout.addWidget(goto_XY_button)
+        
+        line = QtWidgets.QFrame()
+        line.setFrameShape(QtWidgets.QFrame.HLine);
+        line.setFrameShadow(QtWidgets.QFrame.Sunken);
+        main_layout.addWidget(line)
+
+        main_layout.addLayout(cube_H_layout)
         main_layout.addLayout(cube_layout)
-        main_layout.addWidget(cam_label)
+        main_layout.addWidget(goto_cube_button)
+        
+        line = QtWidgets.QFrame()
+        line.setFrameShape(QtWidgets.QFrame.HLine);
+        line.setFrameShadow(QtWidgets.QFrame.Sunken);
+        main_layout.addWidget(line)
+        
+        main_layout.addLayout(laser_H_layout)
+        main_layout.addLayout(laser_layout)
+        main_layout.addWidget(laser_switch)
+                
+        line = QtWidgets.QFrame()
+        line.setFrameShape(QtWidgets.QFrame.HLine);
+        line.setFrameShadow(QtWidgets.QFrame.Sunken);
+        main_layout.addWidget(line)
+        
+        main_layout.addLayout(cam_H_layout)
         main_layout.addLayout(cam_layout)
+        
         main_layout.addStretch()
         
         
@@ -763,6 +795,12 @@ class control_tab(QtWidgets.QWidget):
         #======================================================================
         #      Connections   
         #======================================================================
+        laser_reconnect.clicked.connect(ld.reconnect)
+        laser_switch.toggled.connect(ld.switch)
+        laser_setV.newValue.connect(ld.set_intensity)
+        
+        stage_XY_reconnect.clicked.connect(md.XY_reconnect)
+        stage_cube_reconnect.clicked.connect(md.cube_reconnect)
         
         goto_XY_button.clicked.connect(lambda:
             application_delegate.goto_XY_position(
@@ -781,7 +819,22 @@ class control_tab(QtWidgets.QWidget):
         vel_cube_selector.newValue.connect(
             application_delegate.mouvment_delegate.set_cube_velocity)
         
-        laser_setV.newValue.connect(lc.set_intensity)
+        cam_reconnect.clicked.connect(cd.reconnect)
+        
+        cam_exposure_selector.newValue.connect(cd.set_shutter)
+        
+        def switchLaserText(on):
+            if on:
+                laser_switch.setText("On")
+            else:
+                laser_switch.setText("Off")
+        
+        laser_switch.toggled.connect(switchLaserText)
+        
+        ld.newIntensity.connect(laser_setV.setValue)
+        ld.switched.connect(laser_switch.setChecked)
+        
+        cd.newShutter.connect(cam_exposure_selector.setValue)
         #======================================================================
         #         Save variables
         #======================================================================

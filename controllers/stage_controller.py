@@ -29,6 +29,9 @@ class stage_controller():
     def __init__(self, normV=1):
         self.normV=normV
         
+    def reconnect(self):
+        pass
+        
     def set_normV(self, normV):
         self.normV=normV
         
@@ -85,34 +88,40 @@ YStageName='PI C-863 Mercury SN 0165500227'
 class linear_controller(stage_controller):
     def __init__(self):
         super().__init__()
-        #devices = gcs.EnumerateUSB()
+        self.lineX = None
+        self.lineY = None
+        self.reconnect()
+        self.Ref()
+        
+    def reconnect(self):
+        if self.lineX is not None:
+            self.lineX.CloseConnection()
+            del self.lineX
+            
+        if self.lineY is not None:
+            self.lineY.CloseConnection()
+            del self.lineY
+            
         self.lineX = GCSDevice('C-863.11')
         self.lineY = GCSDevice('C-863.11')
         
         self.lineX.ConnectUSB(XStageName)
         assert(self.lineX.qCST()['1']=='M-404.2DG')
         print('Connected',self.lineX.qIDN())
+        self.lineX.SVO(1,True)
         
         self.lineY.ConnectUSB(YStageName)
         assert(self.lineY.qCST()['1']=='M-404.2DG')
         print('Connected',self.lineY.qIDN())
-        
-        self.Ref()
+        self.lineY.SVO(1,True)        
 
     def __del__(self):
         self.lineX.CloseConnection()
         self.lineY.CloseConnection()
     
     def Ref(self):
-        self.lineX.SVO(1,True)
         self.lineX.FRF(1)
-        self.lineY.SVO(1,True)
         self.lineY.FRF(1)
-        time.sleep(.1)
-        self.lineY.FRF(1)
-        self.lineX.FRF(1)
-        while self.is_moving():
-            time.sleep(.1)
                 
     def MOVVEL(self,X,V):
         self.lineX.VEL(1,np.abs(V[0]))
@@ -149,6 +158,14 @@ cubeName='PI E-727 Controller SN 0116021530'
 class cube_controller(stage_controller):
     def __init__(self):
         super().__init__()
+        self.cube = None
+        self.reconnect()
+     
+    def reconnect(self):
+        if self.cube is not None:
+            self.cube.CloseConnection()
+            del self.cube
+            
         self.cube = GCSDevice('E-727')
         self.cube.ConnectUSB(cubeName)
         assert(self.cube.qCST()['1']=='P-611.3S')
