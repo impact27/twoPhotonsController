@@ -37,8 +37,10 @@ class camera_controller():
         return self.cam.grab()
         
     def set_shutter(self,time):
-        amin, amax = self.exp_range()
-        assert (time > amin and time < amax)
+        amin, amax = self.shutter_range()
+        if time < amin: time = amin
+        elif time > amax: time = amax
+        print(time)
         self.cam.shutter = time
         
     def get_shutter(self):

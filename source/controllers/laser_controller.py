@@ -44,13 +44,13 @@ class laser_controller():
     
     def set_intensity(self, V):
         amin, amax = self.get_range()
-        assert (V > amin and V < amax)
+        if V<amin: V=amin
+        if V>amax: V=amax
         self.sendCommand('V {:.2f}'.format(V))
         
     def get_intensity(self):
-        #TODO: read better and return value
         self.sendCommand('V?')
-        res=self.ser.readline().decode()
+        res=self.ser.readline().decode()[:-2]
         return float(res[2:])
     
     def switch(self, on):
@@ -60,10 +60,15 @@ class laser_controller():
             self.sendCommand('OFF')
             
     def get_state(self):
-        assert False, "Not Done"
-        self.sendCommand('V?')
-        res=self.ser.readline().decode()
-        return float(res[2:])
+        self.sendCommand('OUT?')
+        res=self.ser.readline().decode()[:-2]
+        if res == 'OUT ON':
+            return True
+        elif res == 'OUT OFF':
+            return False
+        else:
+            print(res)
+            return None
         
     
     

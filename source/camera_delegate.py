@@ -29,8 +29,11 @@ class camera_delegate(QtCore.QObject):
         return self.controller.shutter_range()
         
     def set_shutter(self,time):
-        self.newShutter.emit(time)
-        self.controller.set_shutter(time)
-        
+        try:
+            self.newShutter.emit(time)
+            self.controller.set_shutter(time)
+        except:
+            import sys
+            print(sys.exc_info())
     def get_shutter(self):
         return self.controller.get_shutter()
