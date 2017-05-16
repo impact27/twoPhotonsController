@@ -126,7 +126,7 @@ class MyMplCanvas(FigureCanvas):
 
     def __init__(self, parent=None, width=5, height=4, dpi=100):
         fig = Figure(figsize=(width, height), dpi=dpi)
-        self.axes = fig.add_subplot(111)
+        self._axes = fig.add_subplot(111)
         
         self.compute_initial_figure()
 
@@ -144,46 +144,34 @@ class MyMplCanvas(FigureCanvas):
 class imageCanvas(MyMplCanvas):
     def __init__(self, *args, **kwargs):
         MyMplCanvas.__init__(self, *args, **kwargs)
-        self.positions=[]
-        self.imp=None
-                
-    def setimage(self,im, animated = False):
-        self.positions=[]
-        self.im=im
-        self.update_figure(animated = animated)
+        self.clear()
         
-    def update_frame(self, im):
-        if self.imp is not None:
-            self.imp.set_data(im)
+    def imshow(self, im):
+        self.figure.clear()
+        self._axes = self.figure.add_subplot(111)
+        self._imhandle=self._axes.imshow(im)
+        self._axes.axis('image')
+        self.figure.colorbar(self._imhandle)
+        self.draw()
+        
+    def frameshow(self, im):
+        if self._imhandle is not None:
+            self._imhandle.set_data(im)
             self.draw()
         else:
-            self.setimage(im)
-        
-    
-    def update_figure(self, animated = False):
-        self.figure.clear()
-        self.axes = self.figure.add_subplot(111)
-        self.imp=self.axes.imshow(self.im, animated = animated)
-        self.axes.axis('image')
-        self.figure.colorbar(self.imp)
-        self.draw()
-        
-    def standalone(self):
-        if hasattr(self, 'im'):
-            plt.figure()
-            plt.imshow(self.im)
-            plt.colorbar()
-            plt.show()
+            self.imshow(im)
             
     def clear(self):
-        self.imp=None
+        self._imhandle=None
         self.figure.clear()
-        self.axes = self.figure.add_subplot(111)
+        self._axes = self.figure.add_subplot(111)
         self.draw()
         
-    def plot(self,*args, **kwargs):
-        self.axes.plot(*args, **kwargs)
-        self.axes.axis('equal')
+    def plot(self, X, Y, fmt='-', axis='normal', **kwargs):
+        if self._imhandle is not None:
+            self.clear()
+        self._axes.plot(X, Y, fmt, **kwargs)
+        self._axes.axis(axis)
         self.draw()
         
         
@@ -355,6 +343,7 @@ class tilt_tab(QtWidgets.QWidget):
     
     deleterow = QtCore.pyqtSignal(int)
     displayrow = QtCore.pyqtSignal(int)
+    plotCurveRow = QtCore.pyqtSignal(int)
     
     def __init__(self, application_delegate, *args, **kwargs):
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
@@ -441,29 +430,27 @@ class tilt_tab(QtWidgets.QWidget):
         #======================================================================
         #      Connections   
         #======================================================================
+        td = application_delegate.tilt_delegate
         
         pos_list.cellClicked.connect(self.cellClicked)
         pos_list.verticalHeader().sectionClicked.connect(self.rowClicked)
         
-        newpos_button.clicked.connect( lambda:
-                application_delegate.tilt_delegate.add_position(
-                        float(Xinput.text()),
-                        float(Yinput.text())))
+        newpos_button.clicked.connect( lambda: td.add_position(
+                                                    float(Xinput.text()),
+                                                    float(Yinput.text())))
         
         browse_button.clicked.connect(self.openfile)
             
-        pos_file_button.clicked.connect( lambda:
-                application_delegate.tilt_delegate.load_file(
-                        path_field.text()))
+        pos_file_button.clicked.connect( lambda: 
+                                            td.load_file(path_field.text()))
             
-        clear_list_button.clicked.connect(
-                application_delegate.tilt_delegate.clear_positions)
-        validate_button.clicked.connect(
-                application_delegate.tilt_delegate.validate_positions)
+        clear_list_button.clicked.connect(td.clear_positions)
+        validate_button.clicked.connect(td.validate_positions)
         
-        self.deleterow.connect(application_delegate.tilt_delegate.deleteIdx)
-        self.displayrow.connect(application_delegate.tilt_delegate.display_row)
-        application_delegate.tilt_delegate.updatelist.connect(self.updateList)
+        self.deleterow.connect(td.deleteIdx)
+        self.displayrow.connect(td.display_row)
+        self.plotCurveRow.connect(td.plotCurveRow)
+        td.updatelist.connect(self.updateList)
         raise_button.clicked.connect(application_delegate.manualFocus)
         
         application_delegate.tiltCorrected.connect(
@@ -490,6 +477,8 @@ class tilt_tab(QtWidgets.QWidget):
     def cellClicked(self, row,column):
         if column==2:
             self.deleterow.emit(row)
+        elif column==1:
+            self.plotCurveRow.emit(row)
         else:
             self.displayrow.emit(row)
             
@@ -528,7 +517,7 @@ class tilt_tab(QtWidgets.QWidget):
         
     def updateCorrection(self, coeff):
         self.correction_label.setText(
-                '{:.3e}X + {:.3e}Y + {:.3f}μm'.format(*coeff))
+                '{:.3e}X + {:.3e}Y\n+ {:.3f}μm'.format(*coeff))
         
     
 class write_tab(QtWidgets.QWidget):

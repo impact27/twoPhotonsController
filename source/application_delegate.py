@@ -70,9 +70,6 @@ class application_delegate(QtCore.QObject):
     def switch_live(self, on):
         if on:
             self.switch_draw(False)
-            self.clearFig()
-            frame=self.camera_delegate.get_image()
-            self.imageCanvas.setimage(frame, animated = True)
             self.live_timer.start(33)
         else:
             self.live_timer.stop()
@@ -98,7 +95,8 @@ class application_delegate(QtCore.QObject):
         color=cmap(np.min((f,self.lastFracIntensity)))
         
         self.imageCanvas.plot([self.lastpos[0], newpos[0]],
-                              [self.lastpos[1], newpos[1]], c=color)
+                              [self.lastpos[1], newpos[1]], 
+                              axis='equal',c=color)
         self.lastpos=newpos
         self.lastFracIntensity=f
     
@@ -137,7 +135,7 @@ class application_delegate(QtCore.QObject):
         if frame is None:
             frame=self.camera_delegate.get_image()
         
-        self.imageCanvas.update_frame(frame)
+        self.imageCanvas.frameshow(frame)
         
     def clearFig(self):
         self.imageCanvas.clear()
@@ -166,7 +164,8 @@ class application_delegate(QtCore.QObject):
             dy=1
         for x in np.arange(xori, xori+Nx*dx, dx):
             for y in np.arange(yori, yori+Ny*dy, dy):
-                self.imageCanvas.plot(gwritten[:,0]+x,gwritten[:,1]+y)
+                self.imageCanvas.plot(gwritten[:,0]+x,gwritten[:,1]+y,
+                                      axis='equal')
         
         
     def write_device(self, xori, yori, gpath, Nx, Ny, dx, dy):

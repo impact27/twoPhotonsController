@@ -41,7 +41,7 @@ class orientation_delegate(QtCore.QObject):
         
     def displayrow(self,row):
         im=self.get_positions()[row]['Image']
-        self.parent.imageCanevas.setimage(im)
+        self.parent.imageCanvas.imshow(im)
         
     def new_position(self,Xstage, Xmaster, image):
         Xstage=np.asarray(Xstage)

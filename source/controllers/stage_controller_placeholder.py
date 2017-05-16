@@ -85,20 +85,20 @@ class fake_controller(stage_controller):
     def MOVVEL(self,X,V):
         self.position=self.get_position()
         self.V=V
-        self.startTime=time.clock()
+        self.startTime=time.time()
         self.target=X
     
     def get_position(self):
         if self.is_onTarget():
             return self.target.copy()
-        return self.position+self.V*(time.clock()-self.startTime)
+        return self.position+self.V*(time.time()-self.startTime)
     
     def ESTOP(self):
         self.target=self.get_position()
         self.position=self.target
         
     def is_moving(self):
-        return (time.clock()-self.startTime
+        return (time.time()-self.startTime
                 < np.linalg.norm((self.target-self.position))/self.normV)
     
     def is_onTarget(self):
@@ -106,7 +106,7 @@ class fake_controller(stage_controller):
     
     def set_normV(self, normV):
         self.position=self.get_position()
-        self.startTime=time.clock()
+        self.startTime=time.time()
         if np.linalg.norm(self.V)>0:
             self.V=self.V/np.linalg.norm(self.V)*self.normV
         self.normV=normV

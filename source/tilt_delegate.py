@@ -20,7 +20,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import numpy as np
 from PyQt5 import QtCore
-import time
 import copy
 
 class tilt_delegate(QtCore.QObject):
@@ -120,7 +119,15 @@ class tilt_delegate(QtCore.QObject):
         if idx<lenvp:
             posdir = self.validated_positions[idx]
             im=posdir['Image']
-            self.parent.imageCanvas.setimage(im)
+            self.parent.imageCanvas.imshow(im)
+            
+    def plotCurveRow(self, idx):
+        lenvp=len(self.validated_positions)
+        if idx<lenvp:
+            posdir = self.validated_positions[idx]
+            X,Y=posdir['sizeCurve']
+            self.parent.clearFig()
+            self.parent.imageCanvas.plot(X,Y,'.')
             
     
     
@@ -196,12 +203,9 @@ class positions_thread(QtCore.QThread):
         # Get best
         size = get_spot_sizes(imrange)
         argmin=np.argmin(size)
-        
-#        X, Y = self.parent.mouvment_delegate.get_XY_position()
-#        np.save('X{:.0f} Y{:.0f}'.format(X,Y),[zPos, size])
 
         #save result and position
-        return zPos[argmin], imrange[argmin]
+        return zPos[argmin], imrange[argmin], [zPos, size]
         
     def run(self):
         try:
@@ -219,11 +223,12 @@ class positions_thread(QtCore.QThread):
                                        wait=True,checkid=self.lockid)
                 
                 #Perform Z Scan
-                zMax, im = self.new_z()
+                zMax, im, sizeCurve = self.new_z()
                 self.positions_done.append({
                         'X' : Xs,
                         'Z' : zMax,
-                        'Image' : im})
+                        'Image' : im,
+                        'sizeCurve' : sizeCurve})
                 Xslast=Xs
             self.md.unlock()
         except:
