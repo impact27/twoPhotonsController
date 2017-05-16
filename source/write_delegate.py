@@ -63,33 +63,37 @@ class write_thread(QtCore.QThread):
         self.gcommands = gcommands
         
     def run(self):
-        self.lockid = self.md.lock()
-        
-        if self.lockid is None:
-            self.error = "Unable to lock the mouvment"
-            return
-        
-        XYStageLast= self.md.get_XY_position(rawCoordinates=True)
-        
-        xori, yori, Nx, Ny, dx, dy = self.args
-        
-        if Nx==1:
-            dx=1
-        if Ny==1:
-            dy=1
+        try:
+            self.lockid = self.md.lock()
             
-        for par,y in enumerate(np.arange(yori, yori+Ny*dy, dy)):
-            #Want to draw s
-            parity=2*((par+1)%2)-1
-            for x in np.arange(xori, xori+Nx*dx, dx)[::parity]:
+            if self.lockid is None:
+                self.error = "Unable to lock the mouvment"
+                return
+            
+            XYStageLast= self.md.get_XY_position(rawCoordinates=True)
+            
+            xori, yori, Nx, Ny, dx, dy = self.args
+            
+            if Nx==1:
+                dx=1
+            if Ny==1:
+                dy=1
                 
-                Xorigin=np.asarray([x, y])
-                XYStageLast=self.md.goto_XY_position(
-                     Xorigin, XsFrom=XYStageLast, 
-                     wait=True, checkid=self.lockid)
-                self.writeGCode(XYStageLast)
-                
-        self.md.unlock()
+            for par,y in enumerate(np.arange(yori, yori+Ny*dy, dy)):
+                #Want to draw s
+                parity=2*((par+1)%2)-1
+                for x in np.arange(xori, xori+Nx*dx, dx)[::parity]:
+                    
+                    Xorigin=np.asarray([x, y])
+                    XYStageLast=self.md.goto_XY_position(
+                         Xorigin, XsFrom=XYStageLast, 
+                         wait=True, checkid=self.lockid)
+                    self.writeGCode(XYStageLast)
+                    
+            self.md.unlock()
+        except:
+            import sys
+            print(sys.exc_info())
                 
     def writeGCode(self, XYStageLast):
         defaultCubeSpeed=self.md.get_cube_velocity()
