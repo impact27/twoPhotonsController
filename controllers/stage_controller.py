@@ -91,6 +91,7 @@ class linear_controller(stage_controller):
         self.lineX = None
         self.lineY = None
         self.reconnect()
+        time.sleep(1)
         self.Ref()
         
     def reconnect(self):
@@ -122,6 +123,8 @@ class linear_controller(stage_controller):
     def Ref(self):
         self.lineX.FRF(1)
         self.lineY.FRF(1)
+        while self.is_moving():
+            time.sleep(.1)
                 
     def MOVVEL(self,X,V):
         self.lineX.VEL(1,np.abs(V[0]))
