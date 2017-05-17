@@ -72,7 +72,8 @@ class tilt_delegate(QtCore.QObject):
         ld=self.parent.laser_delegate
         ld.set_intensity(ld.get_range()[-1])
         #Decrease cam exposure
-        self.parent.camera_delegate.set_shutter(0)
+        cd = self.parent.camera_delegate
+        cd.set_shutter(cd.shutter_range()[0])
         #Start thread
         self.thread.setArgs(self.todo_positions,self.parent)
         self.todo_positions=[]

@@ -123,7 +123,7 @@ class linear_controller(stage_controller):
     def Ref(self):
         self.lineX.FRF(1)
         self.lineY.FRF(1)
-        while not self.cube.IsControllerReady():
+        while not self.get_state():
             time.sleep(.1)
                 
     def MOVVEL(self,X,V):
@@ -165,7 +165,7 @@ class cube_controller(stage_controller):
         self.reconnect()
         
     def autoZero(self):
-        self.cube.ATZ([1,2,3])
+        self.cube.ATZ([1,2,3], [0,0,0])
      
     def reconnect(self):
         if self.cube is not None:
