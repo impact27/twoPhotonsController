@@ -128,6 +128,9 @@ class mouvment_delegate(QtCore.QObject):
     #==========================================================================
     #     Linear Stage
     #==========================================================================
+    def get_XY_state(self):
+        return self.linear_controller.get_state()
+    
     def XY_reconnect(self):
         self.linear_controller.reconnect()
 
@@ -190,6 +193,8 @@ class mouvment_delegate(QtCore.QObject):
     #==========================================================================
     #     Cube Stage
     #==========================================================================    
+    def get_cube_state(self):
+        return self.cube_controller.get_state()
     
     def cube_reconnect(self):
         self.cube_controller.reconnect()

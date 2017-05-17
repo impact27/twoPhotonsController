@@ -32,7 +32,6 @@ class tilt_delegate(QtCore.QObject):
         self.validated_positions=[]
         self.parent=parent
         
-        self.zrange=[0,100]        
         self.thread=positions_thread()
         self.thread.finished.connect(self.threadFinished)
         
@@ -69,6 +68,12 @@ class tilt_delegate(QtCore.QObject):
         return np.squeeze(coeffs)
     
     def validate_positions(self):
+        #turn on laser
+        ld=self.parent.laser_delegate
+        ld.set_intensity(ld.get_range()[-1])
+        #Decrease cam exposure
+        self.parent.camera_delegate.set_shutter(0)
+        #Start thread
         self.thread.setArgs(self.todo_positions,self.parent)
         self.todo_positions=[]
         self.thread.start()

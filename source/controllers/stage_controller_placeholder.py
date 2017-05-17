@@ -73,6 +73,9 @@ class stage_controller():
     
     def MOVVEL(self,X,V):
         pass
+    
+    def get_state(self):
+        pass
 
 
 class fake_controller(stage_controller):
@@ -104,6 +107,9 @@ class fake_controller(stage_controller):
         if np.linalg.norm(self.V)>0:
             self.V=self.V/np.linalg.norm(self.V)*self.normV
         self.normV=normV
+        
+    def get_state(self):
+        return self.is_onTarget()
         
 #==============================================================================
 # Linear stages controller

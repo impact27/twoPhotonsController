@@ -74,6 +74,9 @@ class stage_controller():
     
     def MOVVEL(self,X,V):
         pass
+    
+    def get_state(self):
+        pass
 
 #==============================================================================
 # Linear stages controller
@@ -120,7 +123,7 @@ class linear_controller(stage_controller):
     def Ref(self):
         self.lineX.FRF(1)
         self.lineY.FRF(1)
-        while not self.is_onTarget():
+        while not self.cube.IsControllerReady():
             time.sleep(.1)
                 
     def MOVVEL(self,X,V):
@@ -145,7 +148,10 @@ class linear_controller(stage_controller):
         return np.array([0,50.])
     
     def get_vel_range(self, axis):
-        return np.array([0,1.5])       
+        return np.array([0,1.5])      
+    
+    def get_state(self):
+        return self.lineX.IsControllerReady() and self.lineY.IsControllerReady()
         
 #==============================================================================
 # Cube Controller
@@ -196,6 +202,8 @@ class cube_controller(stage_controller):
     def get_vel_range(self, axis):
         return np.array([0, 4000])
     
+    def get_state(self):
+        return self.cube.IsControllerReady()
     
 #==============================================================================
 # Helper functions

@@ -40,6 +40,10 @@ class application_delegate(QtCore.QObject):
     newFrame = QtCore.pyqtSignal(np.ndarray)
     orientationCorrected = QtCore.pyqtSignal(np.ndarray)
     tiltCorrected = QtCore.pyqtSignal(np.ndarray)
+    newXYState = QtCore.pyqtSignal(bool)
+    newCubeState = QtCore.pyqtSignal(bool)
+    
+    
     def __init__(self,imageCanvas):
         super().__init__()
         self.mouvment_delegate = mouvment_delegate()
@@ -56,6 +60,9 @@ class application_delegate(QtCore.QObject):
         self.draw_timer = QtCore.QTimer()
         self.draw_timer.timeout.connect(self.drawPos)
         
+        self.status_timer = QtCore.QTimer()
+        self.status_timer.timeout.connect(self.updateStatus)
+        
         self.imageCanvas=imageCanvas
         
         self.mouvment_delegate.error.connect(lambda astr: 
@@ -66,7 +73,14 @@ class application_delegate(QtCore.QObject):
         self.newFrame.connect(self.showCameraFrame)
         
         self.imwait=False
+        
+        self.status_timer.start(1000)
     
+    def updateStatus(self):
+        self.newXYState.emit(self.mouvment_delegate.get_XY_state())
+        self.newCubeState.emit(self.mouvment_delegate.get_cube_state())
+        
+        
     def switch_live(self, on):
         if on:
             self.switch_draw(False)

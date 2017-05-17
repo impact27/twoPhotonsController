@@ -21,10 +21,38 @@ from PyQt5 import QtCore, QtWidgets, QtGui
 import numpy as np
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
-import matplotlib.pyplot as plt
 from application_delegate import application_delegate
 #%%
+class LightWidget(QtWidgets.QWidget):
+    def __init__(self):
+        super().__init__()
+        self.on = False
+
+    def isOn(self):
+        return self.on
     
+    def setOn(self, on):
+        self.on = on
+        self.update()
+
+    def paintEvent(self, paintEvent):
+        if self.on:
+            color = QtCore.Qt.green
+        else:
+            color = QtCore.Qt.yellow
+            
+        size = self.height()
+            
+        painter = QtGui.QPainter(self)
+        painter.setRenderHint(QtGui.QPainter.Antialiasing)
+        painter.setBrush(color)
+        painter.drawEllipse(size/4, size/4, size/2, size/2)
+        
+    def resizeEvent(self, event):
+        size = np.min((self.width(), self.height()))
+        self.resize(size, size)
+
+        
 class doubleSelector(QtWidgets.QWidget):
     
     newValue = QtCore.pyqtSignal(float)
@@ -652,6 +680,7 @@ class control_tab(QtWidgets.QWidget):
         
         XY_label = QtWidgets.QLabel('Linear Stage')
         XY_label.setStyleSheet("font: bold large")
+        XY_status = LightWidget()
         stage_XY_reconnect = QtWidgets.QPushButton('Reconnect')
         stage_cube_reconnect = QtWidgets.QPushButton('Reconnect')
         
@@ -677,6 +706,7 @@ class control_tab(QtWidgets.QWidget):
         
         cube_label = QtWidgets.QLabel('Piezzo Stage')
         cube_label.setStyleSheet("font: bold large")
+        cube_status = LightWidget()
         X_cube_Range =md.get_cube_PosRange(0)
         Y_cube_Range =md.get_cube_PosRange(1)
         Z_cube_Range =md.get_cube_PosRange(3)
@@ -712,6 +742,7 @@ class control_tab(QtWidgets.QWidget):
         
         XY_H_layout = QtWidgets.QHBoxLayout()
         XY_H_layout.addWidget(XY_label)
+        XY_H_layout.addWidget(XY_status)
         XY_H_layout.addWidget(stage_XY_reconnect)
         
         XY_layout = QtWidgets.QGridLayout()
@@ -724,6 +755,7 @@ class control_tab(QtWidgets.QWidget):
         
         cube_H_layout = QtWidgets.QHBoxLayout()
         cube_H_layout.addWidget(cube_label)
+        cube_H_layout.addWidget(cube_status)
         cube_H_layout.addWidget(stage_cube_reconnect)
         
         cube_layout = QtWidgets.QGridLayout()
@@ -743,8 +775,6 @@ class control_tab(QtWidgets.QWidget):
         cam_layout = QtWidgets.QHBoxLayout()
         cam_layout.addWidget(cam_exposure_label)
         cam_layout.addWidget(cam_exposure_selector)
-        
-        
         
         main_layout = QtWidgets.QVBoxLayout()
         main_layout.addLayout(XY_H_layout)
@@ -824,6 +854,9 @@ class control_tab(QtWidgets.QWidget):
         ld.switched.connect(laser_switch.setChecked)
         
         cd.newShutter.connect(cam_exposure_selector.setValue)
+        
+        application_delegate.newXYState.connect(XY_status.setOn)
+        application_delegate.newCubeState.connect(cube_status.setOn)
         #======================================================================
         #         Save variables
         #======================================================================
