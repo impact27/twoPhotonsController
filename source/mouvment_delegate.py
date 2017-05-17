@@ -110,11 +110,6 @@ class mouvment_delegate(QtCore.QObject):
     def ESTOP(self):
         self.linear_controller.ESTOP()
         self.cube_controller.ESTOP()
-
-    
-    def is_moving(self):
-        return (self.linear_controller.is_moving() 
-                or self.cube_controller.is_moving())
         
     def is_onTarget(self):
         return (self.linear_controller.is_onTarget()

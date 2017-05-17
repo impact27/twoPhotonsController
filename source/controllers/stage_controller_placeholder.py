@@ -62,9 +62,6 @@ class stage_controller():
     def ESTOP(self):
         pass
     
-    def is_moving(self):
-        pass
-    
     def is_onTarget(self):
         pass
     
@@ -96,13 +93,10 @@ class fake_controller(stage_controller):
     def ESTOP(self):
         self.target=self.get_position()
         self.position=self.target
-        
-    def is_moving(self):
-        return (time.time()-self.startTime
-                < np.linalg.norm((self.target-self.position))/self.normV)
     
     def is_onTarget(self):
-        return not self.is_moving()   
+        return not (time.time()-self.startTime
+                < np.linalg.norm((self.target-self.position))/self.normV)  
     
     def set_normV(self, normV):
         self.position=self.get_position()

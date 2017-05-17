@@ -31,9 +31,9 @@ class orientation_delegate(QtCore.QObject):
         self.md=application_delegate.mouvment_delegate
     
     def newXYpos(self,x,y):
-#        if self.md.is_moving():
-#            self.parent.error.emit('Stage is Moving!')
-#            return
+        if not self.md.is_onTarget():
+            self.parent.error.emit('Stage is Moving!')
+            return
         Xstage=self.md.get_XY_position(rawCoordinates=True)
         Xmaster=[x,y]
         image=self.parent.camera_delegate.get_image()

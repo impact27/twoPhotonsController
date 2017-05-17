@@ -63,9 +63,6 @@ class stage_controller():
     def ESTOP(self):
         pass
     
-    def is_moving(self):
-        pass
-    
     def is_onTarget(self):
         pass
     
@@ -123,7 +120,7 @@ class linear_controller(stage_controller):
     def Ref(self):
         self.lineX.FRF(1)
         self.lineY.FRF(1)
-        while self.is_moving():
+        while not self.is_onTarget():
             time.sleep(.1)
                 
     def MOVVEL(self,X,V):
@@ -140,9 +137,6 @@ class linear_controller(stage_controller):
     def ESTOP(self):
         self.lineX.StopAll()
         self.lineY.StopAll()
-        
-    def is_moving(self):
-        return self.lineX.IsMoving()['1'] and self.lineY.IsMoving()['1']
     
     def is_onTarget(self):
         return self.lineX.qONT()['1'] and self.lineY.qONT()['1'] 
@@ -163,6 +157,9 @@ class cube_controller(stage_controller):
         super().__init__()
         self.cube = None
         self.reconnect()
+        
+    def autoZero(self):
+        self.cube.ATZ([1,2,3])
      
     def reconnect(self):
         if self.cube is not None:
@@ -174,6 +171,8 @@ class cube_controller(stage_controller):
         assert(self.cube.qCST()['1']=='P-611.3S')
         print('Connected',self.cube.qIDN())
         self.cube.SVO([1,2,3],[True,True,True])
+        
+        self.autoZero()
         
     def __del__(self):
         self.cube.CloseConnection()
@@ -187,9 +186,6 @@ class cube_controller(stage_controller):
     
     def ESTOP(self):
         self.cube.StopAll()
-        
-    def is_moving(self):
-        return np.any(self.cube.IsMoving([1,2,3]).values())
     
     def is_onTarget(self):
         return np.all(self.cube.qONT([1,2,3]).values())
