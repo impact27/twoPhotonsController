@@ -583,7 +583,22 @@ class control_tab(QtWidgets.QWidget):
         X_XY_selector = doubleSelector(X_XY_Range, x)
         Y_XY_selector = doubleSelector(Y_XY_Range, y)
         
+        X_plus = QtWidgets.QPushButton(' + ')
+        X_step = QtWidgets.QLineEdit('1')
+        validator=QtGui.QDoubleValidator(0,X_XY_Range[-1]-X_XY_Range[0],3)
+        validator.setNotation(QtGui.QDoubleValidator.StandardNotation)
+        X_step.setValidator(validator)
+        X_minus = QtWidgets.QPushButton(' - ')
+        
+        Y_plus = QtWidgets.QPushButton(' + ')
+        Y_step = QtWidgets.QLineEdit('1')
+        validator=QtGui.QDoubleValidator(0,Y_XY_Range[-1]-Y_XY_Range[0],3)
+        validator.setNotation(QtGui.QDoubleValidator.StandardNotation)
+        Y_step.setValidator(validator)
+        Y_minus = QtWidgets.QPushButton(' - ')
+        
         goto_XY_button = QtWidgets.QPushButton("GO")
+        getcurr_XY_button = QtWidgets.QPushButton("Get Current")
         
         cube_label = QtWidgets.QLabel('Piezzo Stage')
         cube_label.setStyleSheet("font: bold large")
@@ -601,6 +616,7 @@ class control_tab(QtWidgets.QWidget):
         Z_cube_selector = doubleSelector(Z_cube_Range, y)
         
         goto_cube_button = QtWidgets.QPushButton("GO")
+        getcurr_cube_button = QtWidgets.QPushButton("Get Current")
         
         cam_label = QtWidgets.QLabel('Camera')
         cam_label.setStyleSheet("font: bold large")
@@ -626,13 +642,34 @@ class control_tab(QtWidgets.QWidget):
         XY_H_layout.addWidget(XY_status)
         XY_H_layout.addWidget(stage_XY_reconnect)
         
+        X_layout = QtWidgets.QHBoxLayout()
+        X_layout.addStretch()
+        X_layout.addWidget(X_minus)
+        X_layout.addWidget(X_step)
+        X_layout.addWidget(X_plus)
+        X_layout.addStretch()
+        
+        Y_layout = QtWidgets.QHBoxLayout()
+        Y_layout.addStretch()
+        Y_layout.addWidget(Y_minus)
+        Y_layout.addWidget(Y_step)
+        Y_layout.addWidget(Y_plus)
+        Y_layout.addStretch()
+        
         XY_layout = QtWidgets.QGridLayout()
         XY_layout.addWidget(vel_XY_label, 0, 0)
         XY_layout.addWidget(vel_XY_selector, 0, 1)
         XY_layout.addWidget(X_XY_label, 1, 0)
-        XY_layout.addWidget(Y_XY_label, 2, 0)
+        XY_layout.addWidget(Y_XY_label, 3, 0)
         XY_layout.addWidget(X_XY_selector, 1, 1)
-        XY_layout.addWidget(Y_XY_selector, 2, 1)
+        XY_layout.addWidget(Y_XY_selector, 3, 1)
+        XY_layout.addLayout(X_layout, 2, 0, 1, 2)
+        XY_layout.addLayout(Y_layout, 4, 0, 1, 2)
+        
+        XY_GO_layout = QtWidgets.QHBoxLayout()
+        XY_GO_layout.addWidget(getcurr_XY_button)
+        XY_GO_layout.addWidget(goto_XY_button)
+        
         
         cube_H_layout = QtWidgets.QHBoxLayout()
         cube_H_layout.addWidget(cube_label)
@@ -649,6 +686,10 @@ class control_tab(QtWidgets.QWidget):
         cube_layout.addWidget(Y_cube_selector, 2, 1)
         cube_layout.addWidget(Z_cube_selector, 3, 1)
         
+        cube_GO_layout = QtWidgets.QHBoxLayout()
+        cube_GO_layout.addWidget(getcurr_cube_button)
+        cube_GO_layout.addWidget(goto_cube_button)
+        
         cam_H_layout = QtWidgets.QHBoxLayout()
         cam_H_layout.addWidget(cam_label)
         cam_H_layout.addWidget(cam_reconnect)
@@ -660,7 +701,7 @@ class control_tab(QtWidgets.QWidget):
         main_layout = QtWidgets.QVBoxLayout()
         main_layout.addLayout(XY_H_layout)
         main_layout.addLayout(XY_layout)
-        main_layout.addWidget(goto_XY_button)
+        main_layout.addLayout(XY_GO_layout)
         
         line = QtWidgets.QFrame()
         line.setFrameShape(QtWidgets.QFrame.HLine);
@@ -669,7 +710,7 @@ class control_tab(QtWidgets.QWidget):
 
         main_layout.addLayout(cube_H_layout)
         main_layout.addLayout(cube_layout)
-        main_layout.addWidget(goto_cube_button)
+        main_layout.addLayout(cube_GO_layout)
         
         line = QtWidgets.QFrame()
         line.setFrameShape(QtWidgets.QFrame.HLine);
@@ -690,7 +731,6 @@ class control_tab(QtWidgets.QWidget):
         
         main_layout.addStretch()
         
-        
         self.setLayout(main_layout)
         #======================================================================
         #      Connections   
@@ -702,10 +742,7 @@ class control_tab(QtWidgets.QWidget):
         stage_XY_reconnect.clicked.connect(md.XY_reconnect)
         stage_cube_reconnect.clicked.connect(md.cube_reconnect)
         
-        goto_XY_button.clicked.connect(lambda:
-            application_delegate.goto_XY_position(
-                    X_XY_selector.getValue(),
-                    Y_XY_selector.getValue()))
+        goto_XY_button.clicked.connect(self.goto_XY)
             
         goto_cube_button.clicked.connect(lambda:
             application_delegate.goto_cube_position(
@@ -738,9 +775,67 @@ class control_tab(QtWidgets.QWidget):
         
         application_delegate.newXYState.connect(XY_status.setOn)
         application_delegate.newCubeState.connect(cube_status.setOn)
+        
+        X_plus.clicked.connect(lambda: self.step('X',float(X_step.text())))
+        X_minus.clicked.connect(lambda: self.step('X',-float(X_step.text())))
+        Y_plus.clicked.connect(lambda: self.step('Y',float(Y_step.text())))
+        Y_minus.clicked.connect(lambda: self.step('Y',-float(Y_step.text())))
+        
+        getcurr_cube_button.clicked.connect(self.updateCube)
+        getcurr_XY_button.clicked.connect(self.updateXY)
+        
+        application_delegate.newPosition.connect(self.updatePos)
         #======================================================================
         #         Save variables
         #======================================================================
+        self.application_delegate = application_delegate
+        self.vel_XY_selector = vel_XY_selector
+        self.X_XY_selector = X_XY_selector
+        self.Y_XY_selector = Y_XY_selector
+        self.vel_cube_selector = vel_cube_selector
+        self.X_cube_selector = X_cube_selector
+        self.Y_cube_selector = Y_cube_selector
+        self.Z_cube_selector = Z_cube_selector
+        
+    def goto_XY(self):
+            self.application_delegate.goto_XY_position(
+                    self.X_XY_selector.getValue(),
+                    self.Y_XY_selector.getValue())
+            
+    def step(self, axis, step):
+        if axis == 'X':
+            selector = self.X_XY_selector
+        elif axis == 'Y':
+            selector = self.Y_XY_selector
+        else:
+            return
+        
+        val = selector.getValue()
+        selector.setValue(val+step)
+        self.goto_XY()
+        
+    def updateXY(self):
+        V = self.application_delegate.mouvment_delegate.get_XY_velocity()
+        X, Y = self.application_delegate.mouvment_delegate.get_XY_position()
+        self.vel_XY_selector.setValue(V)
+        self.X_XY_selector.setValue(X)
+        self.Y_XY_selector.setValue(Y)
+        
+        
+    def updateCube(self):
+        md = self.application_delegate.mouvment_delegate
+        V = md.get_cube_velocity()
+        X, Y, Z = md.get_cube_position()
+        self.vel_cube_selector.setValue(V)
+        self.X_cube_selector.setValue(X)
+        self.Y_cube_selector.setValue(Y)
+        self.Z_cube_selector.setValue(Z)
+        
+    def updatePos(self):
+        self.updateXY()
+        self.updateCube()
+        
+        
         
         
 class secondary_widget(QtWidgets.QWidget):

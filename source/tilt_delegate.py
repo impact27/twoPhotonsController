@@ -85,6 +85,8 @@ class tilt_delegate(QtCore.QObject):
         self.validated_positions.extend(self.thread.positions_done)
         self.update()
         self.parent.correct_tilt()
+        self.parent.newPosition.emit()
+        
         
     def add_position(self, x,y):
         self.todo_positions.append([x, y])

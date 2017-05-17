@@ -26,6 +26,7 @@ class write_delegate(QtCore.QObject):
     def __init__(self, parent):
         self.parent=parent
         self.thread = write_thread(self.parent)
+        self.thread.finished.connect(self.endwrite)
         
     def write(self, gfilename, xori, yori, Nx, Ny, dx, dy):
         with open(gfilename,'r') as f:
@@ -46,6 +47,9 @@ class write_delegate(QtCore.QObject):
         
         self.thread.set_args(gcommands, xori, yori, Nx, Ny, dx, dy)
         self.thread.start()
+        
+    def endwrite(self):
+        self.parent.newPosition.emit()
 
 
 class write_thread(QtCore.QThread):

@@ -42,6 +42,7 @@ class application_delegate(QtCore.QObject):
     tiltCorrected = QtCore.pyqtSignal(np.ndarray)
     newXYState = QtCore.pyqtSignal(bool)
     newCubeState = QtCore.pyqtSignal(bool)
+    newPosition = QtCore.pyqtSignal()
     
     
     def __init__(self,imageCanvas):
@@ -123,6 +124,7 @@ class application_delegate(QtCore.QObject):
         else:
             self.mouvment_delegate.set_XY_correction(theta, origin)
             self.orientationCorrected.emit(np.asarray([theta, *origin]))
+            self.newPosition.emit()
     
     def reset_orientation(self):
         zcoeffs = np.zeros(3)
