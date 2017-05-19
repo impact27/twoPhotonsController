@@ -51,9 +51,9 @@ class camera_delegate(QtCore.QObject):
         time = self.controller.get_shutter()
         if amax < 200: # 4/5 of the intensity
             time = time*256/amax
-            self.controller.set_shutter(time)
+            self.set_shutter(time)
         elif amax>254:
             overprct = np.sum(im>254)/np.prod(np.shape(im))
             if overprct > .1: # 10% image overexposed
-                self.controller.set_shutter(time/2)
+                self.set_shutter(time/2)
             
