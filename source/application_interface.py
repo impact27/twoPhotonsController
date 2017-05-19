@@ -55,10 +55,10 @@ class imageCanvas(MyMplCanvas):
         MyMplCanvas.__init__(self, *args, **kwargs)
         self.clear()
         
-    def imshow(self, im):
+    def imshow(self, im , vmax = None):
         self.figure.clear()
         self._axes = self.figure.add_subplot(111)
-        self._imhandle=self._axes.imshow(im)
+        self._imhandle=self._axes.imshow(im, vmax = vmax)
         self._axes.axis('image')
         self.figure.colorbar(self._imhandle)
         self.draw()
@@ -68,7 +68,7 @@ class imageCanvas(MyMplCanvas):
             self._imhandle.set_data(im)
             self.draw()
         else:
-            self.imshow(im)
+            self.imshow(im, vmax = 255)
             
     def clear(self):
         self._imhandle=None
@@ -105,11 +105,11 @@ class orientation_tab(QtWidgets.QWidget):
         coord_label=QtWidgets.QLabel("Position in master coordinates [μm]")
         
         Xinput=QtWidgets.QLineEdit()
-        Xinput.setValidator(QtGui.QDoubleValidator(0,100,3))
+        Xinput.setValidator(QtGui.QDoubleValidator(-1e6,1e6,3))
         Xinput.setText('0')
         
         Yinput=QtWidgets.QLineEdit()
-        Yinput.setValidator(QtGui.QDoubleValidator(0,100,3))
+        Yinput.setValidator(QtGui.QDoubleValidator(-1e6,1e6,3))
         Yinput.setText('0')
         
         newpos_button=QtWidgets.QPushButton("New Reference Position")
@@ -132,6 +132,8 @@ class orientation_tab(QtWidgets.QWidget):
                 application_delegate.mouvment_delegate.get_XY_correction())
         
         correction_reset = QtWidgets.QPushButton('Reset')
+        correction_save = QtWidgets.QPushButton('Save')
+        correction_load = QtWidgets.QPushButton('Load')
         
         #======================================================================
         #     Layout    
@@ -147,9 +149,14 @@ class orientation_tab(QtWidgets.QWidget):
         hbuttons.addWidget(validate_button)
         hbuttons.addWidget(clear_list_button)
         
+        load_layout = QtWidgets.QHBoxLayout()
+        load_layout.addWidget(correction_save)
+        load_layout.addWidget(correction_load)
+        
         correction_layout = QtWidgets.QVBoxLayout()
         correction_layout.addWidget(correction_label)
         correction_layout.addWidget(correction_reset)
+        correction_layout.addLayout(load_layout)
         
         main_layout=QtWidgets.QVBoxLayout(self)
         main_layout.addWidget(coord_label)
@@ -189,7 +196,11 @@ class orientation_tab(QtWidgets.QWidget):
         
         correction_reset.clicked.connect(
                 application_delegate.reset_orientation)
+        
+        md=application_delegate.mouvment_delegate
 
+        correction_save.clicked.connect(lambda: md.save_Z_correction())
+        correction_load.clicked.connect(lambda: md.load_Z_correction())
         #======================================================================
         #         Save variables
         #======================================================================
@@ -262,10 +273,12 @@ class tilt_tab(QtWidgets.QWidget):
         #======================================================================
         
         Xinput = QtWidgets.QLineEdit('0')
-        Xinput.setValidator(QtGui.QDoubleValidator(0,100,3))
+        X_validator = QtGui.QDoubleValidator(0,100,3)
+        Xinput.setValidator(X_validator)
         
         Yinput = QtWidgets.QLineEdit('0')
-        Yinput.setValidator(QtGui.QDoubleValidator(0,100,3))
+        Y_validator = QtGui.QDoubleValidator(0,100,3)
+        Yinput.setValidator(Y_validator)
         
         newpos_button = QtWidgets.QPushButton("New Reference Position")
         
@@ -291,6 +304,8 @@ class tilt_tab(QtWidgets.QWidget):
                 application_delegate.mouvment_delegate.get_Z_correction())
         
         correction_reset = QtWidgets.QPushButton('Reset')
+        correction_save = QtWidgets.QPushButton('Save')
+        correction_load = QtWidgets.QPushButton('Load')
         #======================================================================
         #     Layout    
         #======================================================================
@@ -324,9 +339,14 @@ class tilt_tab(QtWidgets.QWidget):
         valLayout.addWidget(validate_button)
         valLayout.addWidget(clear_list_button)
         
+        load_layout = QtWidgets.QHBoxLayout()
+        load_layout.addWidget(correction_save)
+        load_layout.addWidget(correction_load)
+        
         correction_layout = QtWidgets.QVBoxLayout()
         correction_layout.addWidget(correction_label)
         correction_layout.addWidget(correction_reset)
+        correction_layout.addLayout(load_layout)
         
         main_layout=QtWidgets.QVBoxLayout(self)
         main_layout.addWidget(tabs_widget)
@@ -367,6 +387,13 @@ class tilt_tab(QtWidgets.QWidget):
         
         correction_reset.clicked.connect(
                 application_delegate.reset_tilt)
+        
+        application_delegate.newXRange.connect(X_validator.setRange)
+        application_delegate.newYRange.connect(Y_validator.setRange)
+        
+        md = application_delegate.mouvment_delegate
+        correction_save.clicked.connect(lambda: md.save_Z_correction())
+        correction_load.clicked.connect(lambda: md.load_Z_correction())
         
         #======================================================================
         #         Save variables
@@ -439,10 +466,12 @@ class write_tab(QtWidgets.QWidget):
         Origin_label = QtWidgets.QLabel('Origin:')
         
         Xinput=QtWidgets.QLineEdit('0')
-        Xinput.setValidator(QtGui.QDoubleValidator(0,100,3))
+        X_validator = QtGui.QDoubleValidator(0,100,3)
+        Xinput.setValidator(X_validator)
         
         Yinput=QtWidgets.QLineEdit('0')
-        Yinput.setValidator(QtGui.QDoubleValidator(0,100,3))
+        Y_validator = QtGui.QDoubleValidator(0,100,3)
+        Yinput.setValidator(Y_validator)
         
         gcode_label = QtWidgets.QLabel("GCode Path:")
         
@@ -460,9 +489,9 @@ class write_tab(QtWidgets.QWidget):
         Ny_input = QtWidgets.QLineEdit("1")
         Ny_input.setValidator(QtGui.QIntValidator(0,100))
         dx_input = QtWidgets.QLineEdit("0")
-        dx_input.setValidator(QtGui.QDoubleValidator(0,100,3))
+        dx_input.setValidator(QtGui.QDoubleValidator(-1e6,1e6,3))
         dy_input = QtWidgets.QLineEdit("0")
-        dy_input.setValidator(QtGui.QDoubleValidator(0,100,3))
+        dy_input.setValidator(QtGui.QDoubleValidator(-1e6,1e6,3))
         
         draw_button = QtWidgets.QPushButton('Draw')
         write_button = QtWidgets.QPushButton('Write')
@@ -525,6 +554,9 @@ class write_tab(QtWidgets.QWidget):
         
         browse_button.clicked.connect(self.browse_gfile)
         
+        application_delegate.newXRange.connect(X_validator.setRange)
+        application_delegate.newYRange.connect(Y_validator.setRange)
+        
         #======================================================================
         #         Save variables
         #======================================================================
@@ -583,6 +615,7 @@ class control_tab(QtWidgets.QWidget):
         X_XY_selector = doubleSelector(X_XY_Range, x)
         Y_XY_selector = doubleSelector(Y_XY_Range, y)
         
+        X_step_label = QtWidgets.QLabel('X Step [μm]: ')
         X_plus = QtWidgets.QPushButton(' + ')
         X_step = QtWidgets.QLineEdit('1')
         validator=QtGui.QDoubleValidator(0,X_XY_Range[-1]-X_XY_Range[0],3)
@@ -590,6 +623,7 @@ class control_tab(QtWidgets.QWidget):
         X_step.setValidator(validator)
         X_minus = QtWidgets.QPushButton(' - ')
         
+        Y_step_label = QtWidgets.QLabel('Y Step [μm]: ')
         Y_plus = QtWidgets.QPushButton(' + ')
         Y_step = QtWidgets.QLineEdit('1')
         validator=QtGui.QDoubleValidator(0,Y_XY_Range[-1]-Y_XY_Range[0],3)
@@ -625,6 +659,8 @@ class control_tab(QtWidgets.QWidget):
         cam_init = cd.get_shutter()
         cam_exposure_label = QtWidgets.QLabel('Exp. [s]:')
         cam_exposure_selector = doubleSelector(cam_range, cam_init, isLog=True)
+        cam_autoshutter = QtWidgets.QPushButton('Auto')
+        cam_autoshutter.setCheckable(True)
         #======================================================================
         #     Layout    
         #======================================================================
@@ -644,15 +680,17 @@ class control_tab(QtWidgets.QWidget):
         
         X_layout = QtWidgets.QHBoxLayout()
         X_layout.addStretch()
-        X_layout.addWidget(X_minus)
+        X_layout.addWidget(X_step_label)
         X_layout.addWidget(X_step)
+        X_layout.addWidget(X_minus)
         X_layout.addWidget(X_plus)
         X_layout.addStretch()
         
         Y_layout = QtWidgets.QHBoxLayout()
         Y_layout.addStretch()
-        Y_layout.addWidget(Y_minus)
+        Y_layout.addWidget(Y_step_label)
         Y_layout.addWidget(Y_step)
+        Y_layout.addWidget(Y_minus)
         Y_layout.addWidget(Y_plus)
         Y_layout.addStretch()
         
@@ -728,6 +766,7 @@ class control_tab(QtWidgets.QWidget):
         
         main_layout.addLayout(cam_H_layout)
         main_layout.addLayout(cam_layout)
+        main_layout.addWidget(cam_autoshutter)
         
         main_layout.addStretch()
         
@@ -784,7 +823,15 @@ class control_tab(QtWidgets.QWidget):
         getcurr_cube_button.clicked.connect(self.updateCube)
         getcurr_XY_button.clicked.connect(self.updateXY)
         
+        application_delegate.updateXY.connect(self.updateXY)
+        
         application_delegate.newPosition.connect(self.updatePos)
+        
+        cam_autoshutter.toggled.connect(cd.autoShutter)
+        
+        application_delegate.newXRange.connect(X_XY_selector.setRange)
+        application_delegate.newYRange.connect(Y_XY_selector.setRange)
+        
         #======================================================================
         #         Save variables
         #======================================================================

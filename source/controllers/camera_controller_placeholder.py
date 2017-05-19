@@ -30,8 +30,8 @@ class camera_controller():
     def reconnect(self):
         print('Connected Camera')
         
-    def get_image(self, z=None):
-        return np.random.rand(50,50)
+    def get_image(self):
+        return np.random.rand(50,50)*256
         fns='Misc/Images/50_50/*.bmp'
         reg='Misc/Images\/50_50\/(\d+)\.bmp'
         fns=glob(fns)
@@ -50,7 +50,7 @@ class camera_controller():
             return im
         else:
             print(fns)
-            return np.random.rand(50,50)
+            return np.random.rand(50,50)*256
     
     def shutter_range(self):
         return [1.9e-5,.1]

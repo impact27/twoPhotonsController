@@ -76,11 +76,14 @@ class orientation_delegate(QtCore.QObject):
         with the least square method
         returns the best guess for theta, origin
         """
-        if len(self.positions)<2:
+        if len(self.positions)==0:
             return np.nan, [np.nan, np.nan]
         
         Xstage=np.array([pos['Xstage'] for pos in self.positions])
         Xmaster=np.array([pos['Xmaster'] for pos in self.positions])
+        
+        if len(self.positions)==1:
+            return 0, np.squeeze(Xstage-Xmaster)
         
         def getResidus(theta):
             R=self.get_rotation_matrix(theta)

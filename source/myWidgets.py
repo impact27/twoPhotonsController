@@ -102,6 +102,7 @@ class doubleSelector(QtWidgets.QWidget):
         slider.sliderReleased.connect(sendNewValue)
         lineInput.editingFinished.connect(sendNewValue)
 
+        self.validator = validator
         
         
     
@@ -118,8 +119,12 @@ class doubleSelector(QtWidgets.QWidget):
         self.slider.setValue(self.factor*val)
         
     def setInputValue(self, val):
-        if val<.1 and val != 0:
+        if np.abs(val)<.1 and val != 0:
             self.lineInput.setText('{:.3e}'.format(val))
         else:
             self.lineInput.setText('{:g}'.format(val))
         
+    def setRange(self, minimum, maximum, decimals):
+        self.validator.setRange(minimum, maximum, decimals)
+        self.lineInput.setValidator(self.validator)
+        self.slider.setRange(*(self.factor*np.array((minimum, maximum))))

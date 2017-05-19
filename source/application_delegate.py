@@ -43,11 +43,14 @@ class application_delegate(QtCore.QObject):
     newXYState = QtCore.pyqtSignal(bool)
     newCubeState = QtCore.pyqtSignal(bool)
     newPosition = QtCore.pyqtSignal()
+    newXRange = QtCore.pyqtSignal(float, float, int)
+    newYRange = QtCore.pyqtSignal(float, float, int)
+    updateXY = QtCore.pyqtSignal()
     
     
     def __init__(self,imageCanvas):
         super().__init__()
-        self.mouvment_delegate = mouvment_delegate()
+        self.mouvment_delegate = mouvment_delegate(self)
         self.camera_delegate = camera_delegate()
         self.laser_delegate = laser_delegate()
         
@@ -76,6 +79,8 @@ class application_delegate(QtCore.QObject):
         self.imwait=False
         
         self.status_timer.start(1000)
+        
+        self.orientationCorrected.connect(self.setRanges)
     
     def updateStatus(self):
         self.newXYState.emit(self.mouvment_delegate.get_XY_state())
@@ -122,29 +127,32 @@ class application_delegate(QtCore.QObject):
         if np.isnan(theta):
             self.error.emit('Not enough data points!')
         else:
-            self.mouvment_delegate.set_XY_correction(theta, origin)
-            self.orientationCorrected.emit(np.asarray([theta, *origin]))
+            self.mouvment_delegate.set_XY_correction([theta, *origin])
             self.newPosition.emit()
     
     def reset_orientation(self):
-        zcoeffs = np.zeros(3)
-        self.mouvment_delegate.set_XY_correction(zcoeffs[0],zcoeffs[1:])
-        self.orientationCorrected.emit(zcoeffs)
+        coeffs = np.zeros(3)
+        self.mouvment_delegate.set_XY_correction(coeffs)
+        
+    def setRanges(self, zcoeffs):
+        O=zcoeffs[1:]
+        Xrange = self.mouvment_delegate.get_XY_PosRange(0)-O[0]
+        Yrange = self.mouvment_delegate.get_XY_PosRange(1)-O[1]
+        self.newXRange.emit(*Xrange,3)
+        self.newYRange.emit(*Yrange,3)
+        self.updateXY.emit()
     
     def correct_tilt(self):
-        
         zcoeffs = self.tilt_delegate.solve()
         
         if np.any(np.isnan(zcoeffs)):
             self.error.emit("Can't correct tilt")
         else:
             self.mouvment_delegate.set_Z_correction(zcoeffs)
-            self.tiltCorrected.emit(zcoeffs)
             
     def reset_tilt(self):
         zcoeffs = np.zeros(3)
         self.mouvment_delegate.set_Z_correction(zcoeffs)
-        self.tiltCorrected.emit(zcoeffs)
         
     def showCameraFrame(self, frame = None):
         self.imwait = False
