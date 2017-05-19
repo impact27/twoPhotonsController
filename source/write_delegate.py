@@ -21,6 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import numpy as np
 from PyQt5 import QtCore
 from gcode import gcode_reader, gcode_checker
+from serial.serialutil import SerialTimeoutException
 
 class write_delegate(QtCore.QObject):
     def __init__(self, parent):
@@ -94,10 +95,14 @@ class write_thread(QtCore.QThread):
                          wait=True, checkid=self.lockid)
                     self.writeGCode(XYStageLast)
                     
-            self.md.unlock()
+            
+        except SerialTimeoutException:
+            self.parent.error('Timeout')
+            
         except:
             import sys
             print(sys.exc_info())
+        self.md.unlock()
                 
     def writeGCode(self, XYStageLast):
         defaultCubeSpeed=self.md.get_cube_velocity()

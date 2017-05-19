@@ -138,8 +138,16 @@ class linear_controller(stage_controller):
                            self.lineY.qPOS()['1']],dtype=float)
     
     def ESTOP(self):
-        self.lineX.StopAll()
-        self.lineY.StopAll()
+        try:
+            self.lineX.StopAll()
+        except:
+            pass
+        
+        try:
+            self.lineY.StopAll()
+        except:
+            pass
+                
     
     def is_onTarget(self):
         return self.lineX.qONT()['1'] and self.lineY.qONT()['1'] 
@@ -191,7 +199,10 @@ class cube_controller(stage_controller):
         return np.asarray(list(self.cube.qPOS([1,2,3]).values()),dtype=float)
     
     def ESTOP(self):
-        self.cube.StopAll()
+        try:
+            self.cube.StopAll()
+        except:
+            pass
     
     def is_onTarget(self):
         return np.all(self.cube.qONT([1,2,3]).values())
