@@ -62,6 +62,7 @@ class write_thread(QtCore.QThread):
         self.args = None
         self.lockid = None
         self.gcommands = None
+        self.parent = parent
      
     def set_args(self, gcommands, xori, yori, Nx, Ny, dx, dy):
         self.args = (xori, yori, Nx, Ny, dx, dy)
