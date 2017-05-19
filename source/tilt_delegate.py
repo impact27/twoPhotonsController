@@ -49,6 +49,10 @@ class tilt_delegate(QtCore.QObject):
     def solve(self):
         """a*X + b*Y = Z
         """
+        if len(self.validated_positions) == 1:
+            pos = self.validated_positions[0]
+            return np.array([pos['Z'], 0, 0])
+            
         if len(self.validated_positions)<3:
             self.parent.error.emit('Not enough validated positions')
             return np.zeros(3)*np.nan
@@ -179,9 +183,6 @@ class positions_thread(QtCore.QThread):
             return np.sum(imrange >= 
                           np.reshape(np.max(imrange,(1,2))/10,(-1,1,1)),
                           (1,2))
-            
-        def get_spot_size(im):
-            return np.sum(im >= np.max(im)/10)
         
         def max_condition(im,ims):
             return np.max(im)<np.max(ims)-20
@@ -189,6 +190,9 @@ class positions_thread(QtCore.QThread):
         #Coarse
         zPos=np.linspace(*self.zrange,21)
         imrange=self.get_image_range(zPos, max_condition)
+        
+        np.save('coarse_z', zPos)
+        np.save('coarse_im', imrange)
         
         #Medium
         size = get_spot_sizes(imrange)
@@ -203,11 +207,18 @@ class positions_thread(QtCore.QThread):
         zPos=np.linspace(zmin,zmax,21)
         imrange=self.get_image_range(zPos, max_condition)
         
+        np.save('medium_z', zPos)
+        np.save('medium_im', imrange)
+        
         #Fine
         size = get_spot_sizes(imrange)
         zlim=zPos[np.argsort(size)[:2]]
         zPos=np.linspace(*zlim,51)
         imrange=self.get_image_range(zPos)
+        
+        np.save('fine_z', zPos)
+        np.save('fine_im', imrange)
+        
         # Get best
         size = get_spot_sizes(imrange)
         argmin=np.argmin(size)
