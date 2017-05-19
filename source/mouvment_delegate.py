@@ -37,18 +37,19 @@ class mouvment_delegate(QtCore.QObject):
     
     def __init__(self, parent):
         super().__init__()
-        self.linear_controller=linear_controller()
-        self.cube_controller=cube_controller()
+        self.linear_controller = linear_controller()
+        self.cube_controller = cube_controller()
         
-        self.R=np.eye(2)
-        self.offset=np.zeros(2)
-        self.zcoeff=np.zeros(3)
-        self.locked=False
-        self.lockid=None
+        self.R = np.eye(2)
+        self.offset = np.zeros(2)
+        self.zcoeff = np.zeros(3)
+        self.locked = False
+        self.lockid = None
         
-        self.cubeSpeed=1000
-        self.XYSpeed=1000
+        self.cubeSpeed = 1000
+        self.XYSpeed = 1000
         self.parent = parent
+        self.theta = 0
      
     def XsToXm(self, Xs):
         Xs = np.asarray(Xs)
@@ -144,15 +145,18 @@ class mouvment_delegate(QtCore.QObject):
         c,s=np.cos(theta),np.sin(theta)
         R=np.array([[c,-s],[s,c]])
         self.R=R
+        self.theta = theta
         self.offset=offset/1000
         self.parent.orientationCorrected.emit(np.array([theta, *offset]))
         
     def save_XY_correction(self, fn='XY.txt'):
-        print(fn)
-        np.savetxt(fn, [self.R, *self.offset*1000] )
+        np.savetxt(fn, [self.theta, *self.offset*1000] )
         
     def load_XY_correction(self, fn='XY.txt'):
-        self.set_XY_correction(np.loadtxt(fn))
+        try:
+            self.set_XY_correction(np.loadtxt(fn))
+        except FileNotFoundError:
+            self.parent.error.emit('No saved correction')
         
     def get_XY_correction(self):
         theta = np.arccos(self.R[0,0])
@@ -221,7 +225,11 @@ class mouvment_delegate(QtCore.QObject):
         np.savetxt(fn, self.zcoeff )
         
     def load_Z_correction(self, fn='Z.txt'):
-        self.set_Z_correction(np.loadtxt(fn))
+        try:
+            self.set_Z_correction(np.loadtxt(fn))
+        except FileNotFoundError:
+            self.parent.error.emit('No saved correction')
+        
         
     def get_Z_correction(self):
         return self.zcoeff

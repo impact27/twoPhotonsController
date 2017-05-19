@@ -199,8 +199,8 @@ class orientation_tab(QtWidgets.QWidget):
         
         md=application_delegate.mouvment_delegate
 
-        correction_save.clicked.connect(lambda: md.save_Z_correction())
-        correction_load.clicked.connect(lambda: md.load_Z_correction())
+        correction_save.clicked.connect(lambda: md.save_XY_correction())
+        correction_load.clicked.connect(lambda: md.load_XY_correction())
         #======================================================================
         #         Save variables
         #======================================================================
