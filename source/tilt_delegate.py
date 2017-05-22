@@ -227,32 +227,29 @@ class positions_thread(QtCore.QThread):
         return zPos[argmin], imrange[argmin], [zPos, size]
         
     def run(self):
-        try:
-            self.lockid=self.md.lock()
+        self.lockid=self.md.lock()
+        
+        if self.lockid is None:
+            self.error = "Unable to lock the mouvment"
+            return
+        
+        self.positions_done=[]
+        Xslast= self.md.get_XY_position(rawCoordinates=True)
+        for Xm in self.position_todo:
+            #Go to position
+            Xs=self.md.goto_XY_position(Xm, XsFrom=Xslast,
+                                   wait=True,checkid=self.lockid)
             
-            if self.lockid is None:
-                self.error = "Unable to lock the mouvment"
-                return
-            
-            self.positions_done=[]
-            Xslast= self.md.get_XY_position(rawCoordinates=True)
-            for Xm in self.position_todo:
-                #Go to position
-                Xs=self.md.goto_XY_position(Xm, XsFrom=Xslast,
-                                       wait=True,checkid=self.lockid)
-                
-                #Perform Z Scan
-                zMax, im, sizeCurve = self.new_z()
-                self.positions_done.append({
-                        'X' : Xs,
-                        'Z' : zMax,
-                        'Image' : im,
-                        'sizeCurve' : sizeCurve})
-                Xslast=Xs
-            self.md.unlock()
-        except:
-            import sys
-            print(sys.exc_info())
+            #Perform Z Scan
+            zMax, im, sizeCurve = self.new_z()
+            self.positions_done.append({
+                    'X' : Xs,
+                    'Z' : zMax,
+                    'Image' : im,
+                    'sizeCurve' : sizeCurve})
+            Xslast=Xs
+        self.md.unlock()
+
             
             
     

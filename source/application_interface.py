@@ -64,6 +64,7 @@ class imageCanvas(MyMplCanvas):
         self.draw()
         
     def frameshow(self, im):
+        assert False
         if self._imhandle is not None:
             self._imhandle.set_data(im)
             self.draw()

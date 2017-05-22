@@ -100,9 +100,6 @@ class write_thread(QtCore.QThread):
         except SerialTimeoutException:
             self.parent.error('Timeout')
             
-        except:
-            import sys
-            print(sys.exc_info())
         self.md.unlock()
                 
     def writeGCode(self, XYStageLast):
