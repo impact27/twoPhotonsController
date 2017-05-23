@@ -137,9 +137,11 @@ class tilt_delegate(QtCore.QObject):
         lenvp=len(self.validated_positions)
         if idx<lenvp:
             posdir = self.validated_positions[idx]
-            X,Y=posdir['sizeCurve']
+            X,Y,Y2=posdir['sizeCurve']
             self.parent.clearFig()
-            self.parent.imageCanvas.plot(X,Y,'.')
+            self.parent.imageCanvas.plot(X[Y<4*np.min(Y)],Y[Y<4*np.min(Y)],'.')
+            self.parent.imageCanvas._axes.twinx().plot(X,Y2,'x',c='C1')
+            self.parent.imageCanvas.draw()
             
     
     
@@ -185,7 +187,7 @@ class positions_thread(QtCore.QThread):
                           (1,2))
         
         def max_condition(im,ims):
-            return np.max(im)<np.max(ims)-20
+            return np.max(im)<np.max(ims)/2
         
         #Coarse
         zPos=np.linspace(*self.zrange,21)
@@ -195,36 +197,50 @@ class positions_thread(QtCore.QThread):
         np.save('_coarse_im', imrange)
         
         #Medium
-        size = get_spot_sizes(imrange)
-        argmin = np.argmin(size)
-        if argmin == 0:
-            argmin=1
-        elif argmin == len(size)-1:
-            argmin = len(size)-2
-        zmin=zPos[argmin-1]
-        zmax=zPos[argmin+1]
+        intensity = np.max(imrange, (1, 2))
+        argbest = np.argmax(intensity)
+        if argbest == 0:
+            argbest=1
+        elif argbest == len(intensity)-1:
+            argbest = len(intensity)-2
+        zmin=zPos[argbest-1]
+        zmax=zPos[argbest+1]
             
-        zPos=np.linspace(zmin,zmax,21)
+        zPos=np.linspace(zmin,zmax,11)
         imrange=self.get_image_range(zPos, max_condition)
         
         np.save('_medium_z', zPos)
         np.save('_medium_im', imrange)
+        intensity = np.max(imrange, (1, 2))
         
-#        #Fine
-#        size = get_spot_sizes(imrange)
-#        zlim=zPos[np.argsort(size)[:2]]
-#        zPos=np.linspace(*zlim,51)
-#        imrange=self.get_image_range(zPos)
-#        
-#        np.save('fine_z', zPos)
-#        np.save('fine_im', imrange)
+        zPosM = zPos
+        intensityM = intensity
+        sizeM = get_spot_sizes(imrange)
+        
+        #Fine
+        
+        argbest = np.argmax(intensity)
+        if argbest == 0:
+            argbest=1
+        elif argbest == len(intensity)-1:
+            argbestv = len(intensity)-2
+        zmin=zPos[argbest-1]
+        zmax=zPos[argbest+1]
+        zPos=np.linspace(zmin,zmax,11)
+        imrange=self.get_image_range(zPos)
+        
+        np.save('fine_z', zPos)
+        np.save('fine_im', imrange)
         
         # Get best
         size = get_spot_sizes(imrange)
-        argmin=np.argmin(size)
+        intensity = np.max(imrange, (1, 2))
+        argbest=np.argmax(intensity)
 
         #save result and position
-        return zPos[argmin], imrange[argmin], [zPos, size]
+        return zPos[argbest], imrange[argbest], np.asarray([[*zPos, *zPosM], 
+                                                [*size, *sizeM], 
+                                                [*intensity, *intensityM]])
         
     def run(self):
         self.lockid=self.md.lock()
