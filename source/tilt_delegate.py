@@ -191,8 +191,8 @@ class positions_thread(QtCore.QThread):
         zPos=np.linspace(*self.zrange,21)
         imrange=self.get_image_range(zPos, max_condition)
         
-        np.save('coarse_z', zPos)
-        np.save('coarse_im', imrange)
+        np.save('_coarse_z', zPos)
+        np.save('_coarse_im', imrange)
         
         #Medium
         size = get_spot_sizes(imrange)
@@ -207,17 +207,17 @@ class positions_thread(QtCore.QThread):
         zPos=np.linspace(zmin,zmax,21)
         imrange=self.get_image_range(zPos, max_condition)
         
-        np.save('medium_z', zPos)
-        np.save('medium_im', imrange)
+        np.save('_medium_z', zPos)
+        np.save('_medium_im', imrange)
         
-        #Fine
-        size = get_spot_sizes(imrange)
-        zlim=zPos[np.argsort(size)[:2]]
-        zPos=np.linspace(*zlim,51)
-        imrange=self.get_image_range(zPos)
-        
-        np.save('fine_z', zPos)
-        np.save('fine_im', imrange)
+#        #Fine
+#        size = get_spot_sizes(imrange)
+#        zlim=zPos[np.argsort(size)[:2]]
+#        zPos=np.linspace(*zlim,51)
+#        imrange=self.get_image_range(zPos)
+#        
+#        np.save('fine_z', zPos)
+#        np.save('fine_im', imrange)
         
         # Get best
         size = get_spot_sizes(imrange)
