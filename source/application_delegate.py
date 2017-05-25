@@ -122,20 +122,20 @@ class application_delegate(QtCore.QObject):
     
     
     def correct_orientation(self):
-        theta, origin=self.orientation_delegate.solve()
+        phi, theta, origin=self.orientation_delegate.solve()
         
         if np.isnan(theta):
             self.error.emit('Not enough data points!')
         else:
-            self.mouvment_delegate.set_XY_correction([theta, *origin])
+            self.mouvment_delegate.set_XY_correction([phi, theta, *origin])
             self.newPosition.emit()
     
     def reset_orientation(self):
-        coeffs = np.zeros(3)
+        coeffs = np.zeros(4)
         self.mouvment_delegate.set_XY_correction(coeffs)
         
-    def setRanges(self, zcoeffs):
-        O=zcoeffs[1:]
+    def setRanges(self, coeffs):
+        O=coeffs[2:]
         Xrange = self.mouvment_delegate.get_XY_PosRange(0)-O[0]
         Yrange = self.mouvment_delegate.get_XY_PosRange(1)-O[1]
         self.newXRange.emit(*Xrange,3)

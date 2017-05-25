@@ -250,8 +250,9 @@ class orientation_tab(QtWidgets.QWidget):
         
     def updateCorrection(self, coeff):
         self.correction_label.setText(
-                'θ:\t{:.3f}π\nXo:\t[{:.3f}, {:.3f}]μm'.format(coeff[0]/np.pi,
-                                                             *coeff[1:]))
+                'Φ:\t{:.5g}π\nθ:\t{:.5g}π\nXo:\t[{:.3f}, {:.3f}]μm'.format(coeff[0]/np.pi,
+                                                              coeff[1]/np.pi,
+                                                             *coeff[2:]))
         
     
 class layout_wrapper(QtWidgets.QWidget):

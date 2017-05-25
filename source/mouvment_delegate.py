@@ -41,6 +41,7 @@ class mouvment_delegate(QtCore.QObject):
         self.cube_controller = cube_controller()
         
         self.R = np.eye(2)
+        self.M = np.eye(2)
         self.offset = np.zeros(2)
         self.zcoeff = np.zeros(3)
         self.locked = False
@@ -50,16 +51,17 @@ class mouvment_delegate(QtCore.QObject):
         self.XYSpeed = 1000
         self.parent = parent
         self.theta = 0
+        self.phi = 0
      
     def XsToXm(self, Xs):
         Xs = np.asarray(Xs)
         return 1000*self._getXYMaster(Xs/1000)
     
     def _getXYStage(self, XYmaster):
-        return self.R@XYmaster+self.offset
+        return np.linalg.inv(self.M)@(self.R@XYmaster+self.offset)
     
     def _getXYMaster(self, XYstage):
-        return np.linalg.inv(self.R)@(XYstage-self.offset)
+        return np.linalg.inv(self.R)@(self.M@XYstage-self.offset)
     
     def _get_cube_Xs(self, XmCube, XsOrigin=None):
         
@@ -140,17 +142,21 @@ class mouvment_delegate(QtCore.QObject):
         if self.locked:
             self.error.emit('Mouvment is locked!')
             return
-        theta, *offset=coeffs
+        phi, theta, *offset=coeffs
         offset=np.asarray(offset)
         c,s=np.cos(theta),np.sin(theta)
         R=np.array([[c,-s],[s,c]])
-        self.R=R
+        c,s=np.cos(phi),np.sin(phi)
+        M=np.array([[1,s],[0,c]])
+        self.M = M
+        self.R = R
+        self.phi = phi
         self.theta = theta
         self.offset=offset/1000
-        self.parent.orientationCorrected.emit(np.array([theta, *offset]))
+        self.parent.orientationCorrected.emit(np.array(coeffs))
         
     def save_XY_correction(self, fn='XY.txt'):
-        np.savetxt(fn, [self.theta, *self.offset*1000] )
+        np.savetxt(fn, [self.phi, self.theta, *self.offset*1000] )
         
     def load_XY_correction(self, fn='XY.txt'):
         try:
@@ -159,9 +165,10 @@ class mouvment_delegate(QtCore.QObject):
             self.parent.error.emit('No saved correction')
         
     def get_XY_correction(self):
-        theta = np.arccos(self.R[0,0])
+        phi = self.phi
+        theta = self.theta
         offset = self.offset*1000
-        return np.array([theta, *offset])
+        return np.array([phi, theta, *offset])
     
     def get_XY_position(self, rawCoordinates = False):
         X = self.linear_controller.get_position()

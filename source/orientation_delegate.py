@@ -76,14 +76,21 @@ class orientation_delegate(QtCore.QObject):
         with the least square method
         returns the best guess for theta, origin
         """
-        if len(self.positions)==0:
-            return np.nan, [np.nan, np.nan]
         
         Xstage=np.array([pos['Xstage'] for pos in self.positions])
         Xmaster=np.array([pos['Xmaster'] for pos in self.positions])
+        if len(self.positions)==0:
+            return np.nan, [np.nan, np.nan]
+        elif len(self.positions)==1:
+            return 0, 0, np.squeeze(Xstage-Xmaster)
+        elif len(self.positions)==2:
+            return (0, *self.solve2(Xstage, Xmaster))
+        else:
+            return self.solve3(Xstage, Xmaster)
         
-        if len(self.positions)==1:
-            return 0, np.squeeze(Xstage-Xmaster)
+    
+    
+    def solve2(self, Xstage, Xmaster):
         
         def getResidus(theta):
             R=self.get_rotation_matrix(theta)
@@ -113,6 +120,60 @@ class orientation_delegate(QtCore.QObject):
         if residus1<residus2:
             return theta1, origin1
         return theta2, origin2
+    
+    def solve3(self, Xs, Xm):
+        Xs2=Xs-1/len(Xs)*np.sum(Xs,0)
+        Xm2=Xm-1/len(Xm)*np.sum(Xm,0)
+        
+        YsXs2 = np.sum(Xs[:, 1]*Xs2[:, 0])
+        YsXm2 = np.sum(Xs[:, 1]*Xm2[:, 0])
+        YsYm2 = np.sum(Xs[:, 1]*Xm2[:, 1])
+        XmXs2 = np.sum(Xm[:, 0]*Xs2[:, 0])
+        YmXs2 = np.sum(Xm[:, 1]*Xs2[:, 0])
+        XmYs2 = np.sum(Xm[:, 0]*Xs2[:, 1])
+        YmYs2 = np.sum(Xm[:, 1]*Xs2[:, 1])
+        
+        
+        
+        def fun(x, YsXs2, YsXm2, YsYm2, XmXs2, YmXs2, XmYs2, YmYs2):
+            theta, phi = x
+            return [  np.cos(phi)*YsXs2 
+                    - np.cos(theta+phi)*YsXm2 
+                    + np.sin(theta+phi)*YsYm2,
+                      np.cos(theta+phi)*XmYs2
+                    - np.sin(theta+phi)*YmYs2
+                    - np.sin(theta)*XmXs2
+                    - np.cos(theta)*YmXs2]
+            
+        def jac(x, YsXs2, YsXm2, YsYm2, XmXs2, YmXs2, XmYs2, YmYs2):
+            theta, phi = x
+            return [[  np.sin(theta+phi)*YsXm2 
+                     + np.cos(theta+phi)*YsYm2,
+                     - np.sin(phi)*YsXs2 
+                     + np.sin(theta+phi)*YsXm2 
+                     + np.cos(theta+phi)*YsYm2],
+                   [ - np.sin(theta+phi)*XmYs2
+                     - np.cos(theta+phi)*YmYs2
+                     - np.cos(theta)*XmXs2
+                     + np.sin(theta)*YmXs2,
+                     - np.sin(theta+phi)*XmYs2
+                     - np.cos(theta+phi)*YmYs2]]
+                
+        from scipy import optimize
+        sol = optimize.root(fun, [0, 0], jac=jac, method='hybr', 
+                            args=(YsXs2, YsXm2, YsYm2, XmXs2, YmXs2, XmYs2, YmYs2))
+        theta, phi = sol.x
+        
+        Mphi = np.asarray([[1, np.sin(phi)],
+                         [0, np.cos(phi)]])
+        Rtheta = np.asarray([[np.cos(theta), -np.sin(theta)],
+                              [np.sin(theta), np.cos(theta)]])
+                
+        Origin = 1/len(Xs)*np.sum(np.asarray([Mphi@X for X in Xs]) 
+                                - np.asarray([Rtheta@X for X in Xm]),0)
+        
+        return phi, theta, Origin
+        
     
     
 #    
@@ -178,4 +239,6 @@ class orientation_delegate(QtCore.QObject):
 #plt.plot(Xs[:,0],Xs[:,1])
 #theta, origin = solve(Xs,Xm)
 #print(theta-thetaReal,origin-OReal)
+
+
 
