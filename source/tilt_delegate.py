@@ -73,7 +73,7 @@ class tilt_delegate(QtCore.QObject):
     
     def validate_positions(self):
         #turn on laser
-        ld=self.parent.laser_delegate
+#        ld=self.parent.laser_delegate
 #        ld.set_intensity(ld.get_range()[-1])
         #Decrease cam exposure
         cd = self.parent.camera_delegate
@@ -223,7 +223,7 @@ class positions_thread(QtCore.QThread):
         if argbest == 0:
             argbest=1
         elif argbest == len(intensity)-1:
-            argbestv = len(intensity)-2
+            argbest = len(intensity)-2
         zmin=zPos[argbest-1]
         zmax=zPos[argbest+1]
         zPos=np.linspace(zmin,zmax,11)
