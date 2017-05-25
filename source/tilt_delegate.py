@@ -51,7 +51,7 @@ class tilt_delegate(QtCore.QObject):
         """
         if len(self.validated_positions) == 1:
             pos = self.validated_positions[0]
-            return np.array([pos['Z'], 0, 0])
+            return np.array([0, 0, pos['Z']])
             
         if len(self.validated_positions)<3:
             self.parent.error.emit('Not enough validated positions')
