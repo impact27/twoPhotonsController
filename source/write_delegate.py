@@ -139,3 +139,6 @@ class gwriter(gcode_reader):
     def setSpeed(self,F):
         self.md.set_cube_velocity(F, checkid=self.lockid)
         
+    def stop(self):
+        self.ld.switch(False)
+        

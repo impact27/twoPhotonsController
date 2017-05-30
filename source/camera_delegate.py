@@ -15,11 +15,13 @@ else:
 class camera_delegate(QtCore.QObject):
     
     newShutter = QtCore.pyqtSignal(float)
+    shutterState = QtCore.pyqtSignal(bool)
     
     def __init__(self):
         super().__init__()
         self.controller = camera_controller()
         self.isAuto = False
+        self.pixelSize = 1/20 # TODO: check that
         
     def reconnect(self):
         self.controller.reconnect()
@@ -40,6 +42,7 @@ class camera_delegate(QtCore.QObject):
         return self.controller.get_shutter()
     
     def autoShutter(self, on):
+        self.shutterState.emit(on)
         self.isAuto = on
         
     def correctShutter(self, im):

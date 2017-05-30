@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 import numpy as np
-from PyQt5 import QtCore
+from PyQt5 import QtCore, QtWidgets
 import copy
 
 class tilt_delegate(QtCore.QObject):
@@ -78,6 +78,7 @@ class tilt_delegate(QtCore.QObject):
         #Decrease cam exposure
         cd = self.parent.camera_delegate
         cd.set_shutter(cd.shutter_range()[0])
+        cd.autoShutter(False)
         #Start thread
         self.thread.setArgs(self.todo_positions,self.parent)
         self.todo_positions=[]
@@ -143,6 +144,19 @@ class tilt_delegate(QtCore.QObject):
             self.parent.imageCanvas._axes.twinx().plot(X,Y2,'x',c='C1')
             self.parent.imageCanvas.draw()
             
+            
+    def save_errors(self):
+        fn=QtWidgets.QFileDialog.getSaveFileName(
+            self.parent.imageCanvas,'TXT file',QtCore.QDir.homePath(),
+            "Text (*.txt)")[0]
+        ret = np.zeros((len(self.validated_positions)))
+        for i,pos in enumerate(self.validated_positions):
+            Xs = pos['X']
+            z = pos['Z']
+            z2 = self.parent.mouvment_delegate._getZOrigin(Xs)
+            ret[i] = z-z2
+        np.savetxt(fn, ret)
+            
     
     
 class positions_thread(QtCore.QThread):
@@ -193,9 +207,6 @@ class positions_thread(QtCore.QThread):
         zPos=np.linspace(*self.zrange,21)
         imrange=self.get_image_range(zPos, max_condition)
         
-        np.save('_coarse_z', zPos)
-        np.save('_coarse_im', imrange)
-        
         #Medium
         intensity = np.max(imrange, (1, 2))
         argbest = np.argmax(intensity)
@@ -209,8 +220,6 @@ class positions_thread(QtCore.QThread):
         zPos=np.linspace(zmin,zmax,11)
         imrange=self.get_image_range(zPos, max_condition)
         
-        np.save('_medium_z', zPos)
-        np.save('_medium_im', imrange)
         intensity = np.max(imrange, (1, 2))
         
         zPosM = zPos
@@ -228,9 +237,6 @@ class positions_thread(QtCore.QThread):
         zmax=zPos[argbest+1]
         zPos=np.linspace(zmin,zmax,11)
         imrange=self.get_image_range(zPos)
-        
-        np.save('fine_z', zPos)
-        np.save('fine_im', imrange)
         
         # Get best
         size = get_spot_sizes(imrange)

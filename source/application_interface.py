@@ -54,8 +54,10 @@ class imageCanvas(MyMplCanvas):
     def __init__(self, *args, **kwargs):
         MyMplCanvas.__init__(self, *args, **kwargs)
         self.clear()
+        self._lastim=np.zeros((2,2))
         
     def imshow(self, im , vmax = None):
+        self._lastim=im
         self.figure.clear()
         self._axes = self.figure.add_subplot(111)
         self._imhandle=self._axes.imshow(im, vmax = vmax)
@@ -64,6 +66,7 @@ class imageCanvas(MyMplCanvas):
         self.draw()
         
     def frameshow(self, im):
+        self._lastim=im
         if self._imhandle is not None:
             self._imhandle.set_data(im)
             self.draw()
@@ -82,6 +85,9 @@ class imageCanvas(MyMplCanvas):
         self._axes.plot(X, Y, fmt, **kwargs)
         self._axes.axis(axis)
         self.draw()
+        
+    def get_im(self):
+        return self._lastim
         
         
 #==============================================================================
@@ -113,6 +119,7 @@ class orientation_tab(QtWidgets.QWidget):
         Yinput.setText('0')
         
         newpos_button=QtWidgets.QPushButton("New Reference Position")
+        auto_offset_button=QtWidgets.QPushButton("Auto Offset")
         
         pos_list=QtWidgets.QTableWidget()
         pos_list.setColumnCount(3)
@@ -135,6 +142,8 @@ class orientation_tab(QtWidgets.QWidget):
         correction_save = QtWidgets.QPushButton('Save')
         correction_load = QtWidgets.QPushButton('Load')
         
+        save_errors = QtWidgets.QPushButton('Save Errors')
+        
         #======================================================================
         #     Layout    
         #======================================================================
@@ -146,7 +155,7 @@ class orientation_tab(QtWidgets.QWidget):
         coord.addWidget(Yinput)
         
         hbuttons=QtWidgets.QHBoxLayout()
-        hbuttons.addWidget(validate_button)
+        hbuttons.addWidget(save_errors)
         hbuttons.addWidget(clear_list_button)
         
         load_layout = QtWidgets.QHBoxLayout()
@@ -162,7 +171,9 @@ class orientation_tab(QtWidgets.QWidget):
         main_layout.addWidget(coord_label)
         main_layout.addLayout(coord)
         main_layout.addWidget(newpos_button)
+        main_layout.addWidget(auto_offset_button)
         main_layout.addWidget(pos_list)
+        main_layout.addWidget(validate_button)
         main_layout.addLayout(hbuttons)
         main_layout.addLayout(correction_layout)
         self.setLayout(main_layout)
@@ -171,25 +182,22 @@ class orientation_tab(QtWidgets.QWidget):
         #      Connections   
         #======================================================================
         
+        od = application_delegate.orientation_delegate
+        
         pos_list.cellClicked.connect(self.cellClicked)
         pos_list.verticalHeader().sectionClicked.connect(self.rowClicked)
         
         
-        self.deleterow.connect(
-                application_delegate.orientation_delegate.del_position)
-        self.displayrow.connect(
-                application_delegate.orientation_delegate.displayrow)
-        self.newposition.connect(
-                application_delegate.orientation_delegate.newXYpos)
+        self.deleterow.connect(od.del_position)
+        self.displayrow.connect(od.displayrow)
+        self.newposition.connect(od.newXYpos)
         
         newpos_button.clicked.connect(self.newPosClicked)
-        clear_list_button.clicked.connect(
-                application_delegate.orientation_delegate.clear_positions)
+        clear_list_button.clicked.connect(od.clear_positions)
         validate_button.clicked.connect(
                 application_delegate.correct_orientation)
         
-        application_delegate.orientation_delegate.updatelist.connect(
-                self.updateList)
+        od.updatelist.connect(self.updateList)
         
         application_delegate.orientationCorrected.connect(
                 self.updateCorrection)
@@ -199,8 +207,12 @@ class orientation_tab(QtWidgets.QWidget):
         
         md=application_delegate.mouvment_delegate
 
-        correction_save.clicked.connect(lambda: md.save_XY_correction())
-        correction_load.clicked.connect(lambda: md.load_XY_correction())
+        correction_save.clicked.connect(md.save_XY_correction)
+        correction_load.clicked.connect(md.load_XY_correction)
+        
+        auto_offset_button.clicked.connect(od.auto_offset)
+        
+        save_errors.clicked.connect(od.save_errors)
         #======================================================================
         #         Save variables
         #======================================================================
@@ -250,9 +262,8 @@ class orientation_tab(QtWidgets.QWidget):
         
     def updateCorrection(self, coeff):
         self.correction_label.setText(
-                'Φ:\t{:.5g}π\nθ:\t{:.5g}π\nXo:\t[{:.3f}, {:.3f}]μm'.format(coeff[0]/np.pi,
-                                                              coeff[1]/np.pi,
-                                                             *coeff[2:]))
+                'Φ:\t{:.5g}π\nθ:\t{:.5g}π\nXo:\t[{:.3f}, {:.3f}]μm'.format(
+                    coeff[0]/np.pi, coeff[1]/np.pi, *coeff[2:]))
         
     
 class layout_wrapper(QtWidgets.QWidget):
@@ -284,7 +295,6 @@ class tilt_tab(QtWidgets.QWidget):
         newpos_button = QtWidgets.QPushButton("New Reference Position")
         
         path_field = QtWidgets.QLineEdit()
-        browse_button = QtWidgets.QPushButton('Browse')
         pos_file_button = QtWidgets.QPushButton('Load Positions File')
         
         pos_list=QtWidgets.QTableWidget()
@@ -307,6 +317,8 @@ class tilt_tab(QtWidgets.QWidget):
         correction_reset = QtWidgets.QPushButton('Reset')
         correction_save = QtWidgets.QPushButton('Save')
         correction_load = QtWidgets.QPushButton('Load')
+        
+        save_errors = QtWidgets.QPushButton('Save Errors')
         #======================================================================
         #     Layout    
         #======================================================================
@@ -323,7 +335,6 @@ class tilt_tab(QtWidgets.QWidget):
         
         path_layout = QtWidgets.QHBoxLayout()
         path_layout.addWidget(path_field)
-        path_layout.addWidget(browse_button)
         
         tab2Layout=QtWidgets.QVBoxLayout()
         tab2Layout.addLayout(path_layout)
@@ -336,10 +347,6 @@ class tilt_tab(QtWidgets.QWidget):
         tabs_widget.setSizePolicy(QtWidgets.QSizePolicy.Expanding,
                                    QtWidgets.QSizePolicy.Minimum)
         
-        valLayout=QtWidgets.QHBoxLayout()
-        valLayout.addWidget(validate_button)
-        valLayout.addWidget(clear_list_button)
-        
         load_layout = QtWidgets.QHBoxLayout()
         load_layout.addWidget(correction_save)
         load_layout.addWidget(correction_load)
@@ -349,11 +356,16 @@ class tilt_tab(QtWidgets.QWidget):
         correction_layout.addWidget(correction_reset)
         correction_layout.addLayout(load_layout)
         
+        hbuttons=QtWidgets.QHBoxLayout()
+        hbuttons.addWidget(save_errors)
+        hbuttons.addWidget(clear_list_button)
+        
         main_layout=QtWidgets.QVBoxLayout(self)
         main_layout.addWidget(tabs_widget)
         main_layout.addWidget(raise_button)
         main_layout.addWidget(pos_list)
-        main_layout.addLayout(valLayout)
+        main_layout.addWidget(validate_button)
+        main_layout.addLayout(hbuttons)
         main_layout.addLayout(correction_layout)
         self.setLayout(main_layout)
         
@@ -368,11 +380,8 @@ class tilt_tab(QtWidgets.QWidget):
         newpos_button.clicked.connect( lambda: td.add_position(
                                                     float(Xinput.text()),
                                                     float(Yinput.text())))
-        
-        browse_button.clicked.connect(self.openfile)
             
-        pos_file_button.clicked.connect( lambda: 
-                                            td.load_file(path_field.text()))
+        pos_file_button.clicked.connect(self.openfile)
             
         clear_list_button.clicked.connect(td.clear_positions)
         validate_button.clicked.connect(td.validate_positions)
@@ -393,8 +402,10 @@ class tilt_tab(QtWidgets.QWidget):
         application_delegate.newYRange.connect(Y_validator.setRange)
         
         md = application_delegate.mouvment_delegate
-        correction_save.clicked.connect(lambda: md.save_Z_correction())
-        correction_load.clicked.connect(lambda: md.load_Z_correction())
+        correction_save.clicked.connect(md.save_Z_correction)
+        correction_load.clicked.connect(md.load_Z_correction)
+        
+        save_errors.clicked.connect(td.save_errors)
         
         #======================================================================
         #         Save variables
@@ -405,11 +416,20 @@ class tilt_tab(QtWidgets.QWidget):
         self.fninput=path_field
         self.pos_list=pos_list
         self.path_field = path_field
+        self.td = td
         
     def openfile(self):
-        fn=QtWidgets.QFileDialog.getOpenFileName(
+        fn = self.path_field.text()
+        
+        check = QtCore.QFileInfo(fn)
+        
+        if not check.exists() or not check.isFile():
+            fn=QtWidgets.QFileDialog.getOpenFileName(
                     self,'Position File',QtCore.QDir.homePath())
-        self.path_field.setText(fn[0])
+            self.path_field.setText(fn[0])
+            
+        self.td.load_file(fn)
+        
         
     def cellClicked(self, row,column):
         if column==2:
@@ -589,6 +609,9 @@ class control_tab(QtWidgets.QWidget):
         laser_reconnect = QtWidgets.QPushButton('Reconnect')
         laser_switch = QtWidgets.QPushButton('Off')
         laser_switch.setCheckable(True)
+        laser_switch.setChecked(ld.get_state())
+        if ld.get_state():
+            laser_switch.setText("On")
         laser_V_label = QtWidgets.QLabel("I [V]:")
         laser_setV = doubleSelector(ld.get_range(),ld.get_intensity())
         
@@ -800,6 +823,8 @@ class control_tab(QtWidgets.QWidget):
         
         cam_exposure_selector.newValue.connect(cd.set_shutter)
         
+        cd.shutterState.connect(self.setCamShutter)
+        
         def switchLaserText(on):
             if on:
                 laser_switch.setText("On")
@@ -844,6 +869,14 @@ class control_tab(QtWidgets.QWidget):
         self.X_cube_selector = X_cube_selector
         self.Y_cube_selector = Y_cube_selector
         self.Z_cube_selector = Z_cube_selector
+        self.cam_autoshutter = cam_autoshutter
+    
+    def setCamShutter(self, on):
+        if on:
+            txt = "Auto: On"
+        else:
+            txt = "Auto: Off"
+        self.cam_autoshutter.setText(txt)
         
     def goto_XY(self):
             self.application_delegate.goto_XY_position(
@@ -905,7 +938,12 @@ class secondary_widget(QtWidgets.QWidget):
         draw_button = QtWidgets.QPushButton("Start Draw")
         draw_button.setCheckable(True)
         
+        bg_button = QtWidgets.QPushButton("Set Background")
+        bg_button.setCheckable(True)
+        
         clear_button = QtWidgets.QPushButton('Clear Graph')
+        save_im_button = QtWidgets.QPushButton('Save Image')
+        save_fig_button = QtWidgets.QPushButton('Save Figure')
         
         #======================================================================
         #     Layout    
@@ -915,8 +953,11 @@ class secondary_widget(QtWidgets.QWidget):
         main_layout = QtWidgets.QGridLayout(self)
         main_layout.addWidget(live_button,0,0)
         main_layout.addWidget(draw_button,0,1)
-        main_layout.addWidget(clear_button,1,0,1,2)
-        main_layout.addWidget(ESTOP_button,0,2,2,3)
+        main_layout.addWidget(clear_button,1,0)
+        main_layout.addWidget(bg_button,1,1)
+        main_layout.addWidget(ESTOP_button,0,3,2,3)
+        main_layout.addWidget(save_im_button,0,2)
+        main_layout.addWidget(save_fig_button,1,2)
         
         self.setLayout(main_layout)
         #======================================================================
@@ -926,8 +967,19 @@ class secondary_widget(QtWidgets.QWidget):
         
         
         ESTOP_button.clicked.connect(application_delegate.ESTOP)
-
         clear_button.clicked.connect(application_delegate.clearFig)
+        save_im_button.clicked.connect(application_delegate.save_im)
+        save_fig_button.clicked.connect(application_delegate.save_fig)
+        
+        
+        def switchBGButton(on):
+            if on:
+                bg_button.setText('Remove Background')
+            else:
+                bg_button.setText('Set Background')
+        bg_button.toggled.connect(switchBGButton)
+        
+        bg_button.clicked.connect(application_delegate.set_bg)
         
         #======================================================================
         #         Save variables

@@ -40,9 +40,7 @@ class gcode_reader:
         for command in Gcommands:
             if command[0]=='92':
                 #Change intensity without moving
-                for arg in re.findall(self.arg_re,command[1]):
-                    if arg[0]=='E':
-                        self.setIntensity(float(arg[1]))
+                self.stop()
                 
             elif command[0]=='1':
                 #Move straight
@@ -68,6 +66,9 @@ class gcode_reader:
         pass
     
     def setSpeed(self,F):
+        pass
+    
+    def stop(self):
         pass
 
         
@@ -101,6 +102,9 @@ class gcode_checker(gcode_reader):
         if F<self.FRange[0] or F>self.FRange[-1]:
             self.isvalid=False
     
+    def stop(self):
+        self.setIntensity(0)
+    
         
         
 class gcode_draw(gcode_reader):
@@ -132,4 +136,7 @@ class gcode_draw(gcode_reader):
         
     def getDrawing(self):
         return np.asarray(self.written)
+    
+    def stop(self):
+        self.setIntensity(0)
                 

@@ -18,7 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 import numpy as np
-from PyQt5 import QtCore
+from PyQt5 import QtCore, QtWidgets
 
 class orientation_delegate(QtCore.QObject):
     
@@ -36,7 +36,7 @@ class orientation_delegate(QtCore.QObject):
             return
         Xstage=self.md.get_XY_position(rawCoordinates=True)
         Xmaster=[x,y]
-        image=self.parent.camera_delegate.get_image()
+        image=self.parent.get_image(rm_bg=True)
         self.new_position(Xstage,Xmaster, image)
         
     def displayrow(self,row):
@@ -173,8 +173,24 @@ class orientation_delegate(QtCore.QObject):
                                 - np.asarray([Rtheta@X for X in Xm]),0)
         
         return phi, theta, Origin
-        
     
+    def auto_offset(self):
+        if len(self.positions)==0:
+            return
+        refim = self.positions[0]['Image']
+        self.parent.move_offset(refim)
+        
+    def save_errors(self):
+        fn=QtWidgets.QFileDialog.getSaveFileName(
+            self.parent.imageCanvas,'TXT file',QtCore.QDir.homePath(),
+            "Text (*.txt)")[0]
+        ret = np.zeros((len(self.positions),2))
+        for i,pos in enumerate(self.positions):
+            Xm1 = pos['Xmaster']
+            Xm2 = self.md.XsToXm(pos['Xstage'])
+            ret[i] = (Xm1-Xm2)
+        np.savetxt(fn, ret)
+        
     
 #    
 #    

@@ -17,7 +17,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-
+import image_registration.image as ir
 import numpy as np
 from PyQt5 import QtCore, QtWidgets
 from orientation_delegate import orientation_delegate
@@ -30,6 +30,8 @@ cmap = matplotlib.cm.get_cmap('plasma')
 
 from laser_delegate import laser_delegate
 from camera_delegate import camera_delegate
+import tifffile
+import cv2
 
 
 
@@ -81,6 +83,14 @@ class application_delegate(QtCore.QObject):
         self.status_timer.start(1000)
         
         self.orientationCorrected.connect(self.setRanges)
+        
+        self.bg_image = 0
+        
+    def set_bg(self, checked):
+        if checked:
+            self.bg_image = self.camera_delegate.get_image()
+        else:
+            self.bg_image = 0
     
     def updateStatus(self):
         self.newXYState.emit(self.mouvment_delegate.get_XY_state())
@@ -158,6 +168,8 @@ class application_delegate(QtCore.QObject):
         self.imwait = False
         if frame is None:
             frame=self.camera_delegate.get_image()
+            if self.bg_image != 0:
+                frame = frame*1. - self.bg_image
         
         self.imageCanvas.frameshow(frame)
         
@@ -196,8 +208,10 @@ class application_delegate(QtCore.QObject):
         self.write_delegate.write( gpath, xori, yori, Nx, Ny, dx, dy)
         
         
-    def get_image(self):
+    def get_image(self, rm_bg=False):
         im = self.camera_delegate.get_image()
+        if rm_bg:
+            im=im*1. - self.bg_image
         if not self.imwait:
             self.imwait = True
             self.newFrame.emit(im)
@@ -205,5 +219,33 @@ class application_delegate(QtCore.QObject):
     
     def manualFocus(self):
         self.mouvment_delegate.goto_cube_position([0,0,25],rawPos=True)
+        
+    def save_im(self):   
+        fn=QtWidgets.QFileDialog.getSaveFileName(
+            self.imageCanvas,'TIFF file',QtCore.QDir.homePath(),
+            "Images (*.tif)")
+        im = self.imageCanvas.get_im()
+        tifffile.imsave(fn[0], np.asarray(im,dtype='float32'))
+        
+        
+        
+    def save_fig(self):   
+        fn=QtWidgets.QFileDialog.getSaveFileName(
+            self.imageCanvas,'PDF File',QtCore.QDir.homePath(),
+            "Images (*.pdf)")
+        self.imageCanvas.figure.savefig(fn[0])
+        
+    
+    def move_offset(self, refim):
+        curim = self.get_image(True)
+        refim=cv2.GaussianBlur(refim,(11,11),0)
+        curim=cv2.GaussianBlur(curim,(11,11),0)
+        dy, dx = ir.find_shift_cc(refim, curim)
+        
+        dX = np.multiply([dx, dy],self.camera_delegate.pixelSize)
+        X = dX + self.mouvment_delegate.get_XY_position()
+        self.mouvment_delegate.goto_XY_position(X)
+        return dX
+    
         
         
