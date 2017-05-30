@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Created on Wed May 10 16:57:45 2017
-
-@author: quentinpeter
+Copyright (C) 2016  Quentin Peter
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -17,14 +15,4 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-import sys
-sys.path.append('../mylib/')
-from PyQt5 import QtWidgets
-from application_interface import ApplicationWindow
 
-qApp = QtWidgets.QApplication(sys.argv)
-progname = 'Two Photons Controller'
-aw = ApplicationWindow()
-aw.setWindowTitle("%s" % progname)
-aw.show()
-sys.exit(qApp.exec_())
