@@ -256,7 +256,7 @@ class positions_thread(QtCore.QThread):
             return
         
         self.positions_done=[]
-        Xslast= self.md.get_XY_position(rawCoordinates=True)
+        Xslast = None
         for Xm in self.position_todo:
             #Go to position
             Xs=self.md.goto_XY_position(Xm, XsFrom=Xslast,

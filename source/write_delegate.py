@@ -76,7 +76,7 @@ class write_thread(QtCore.QThread):
                 self.error = "Unable to lock the mouvment"
                 return
             
-            XYStageLast= self.md.get_XY_position(rawCoordinates=True)
+            XYStageLast = None
             
             xori, yori, Nx, Ny, dx, dy = self.args
             

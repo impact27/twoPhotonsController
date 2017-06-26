@@ -25,36 +25,10 @@ import numpy as np
 #==============================================================================
 class stage_controller():
     
-    def __init__(self, normV=1):
-        self.normV=normV
+    def __init__(self):
         
     def reconnect(self):
         print("Connected stage")
-        
-    def set_normV(self, normV):
-        self.normV=normV
-        
-    def get_normV(self):
-        return self.normV
-        
-    def goto_position(self, X, Xfrom=None, wait=False):
-        X=np.asarray(X)
-        if Xfrom is None:
-            Xfrom=self.get_position()    
-        else:
-            Xfrom=np.asarray(Xfrom)
-            
-        if np.all(X == Xfrom):
-            return
-        #Get correct speed for each axis   
-        Xdist=(X-Xfrom)
-        Xtime=np.linalg.norm(Xdist)/self.normV
-        V=Xdist/Xtime
-        self.MOVVEL(X,V)
-        if wait:
-            time.sleep(Xtime)
-            while not self.is_onTarget():
-                time.sleep(.01)
     
     def get_position(self):
         pass
@@ -143,9 +117,31 @@ class cube_controller(fake_controller):
         self.startTime=0         
     
     def get_pos_range(self, axis): 
-        return np.array([0,100])
+        if axis<2:
+            return np.array([-50, 50])
+        else:
+            return np.array([-25, 75])
     
     def get_vel_range(self, axis): 
         return np.array([0,4000])
     
+#==============================================================================
+# Z Controller
+#==============================================================================
+    
+class z_controller(fake_controller):
+    def __init__(self):
+        super().__init__()
+        self.position=np.array([0])
+        self.V=np.array([0])
+        self.target=np.array([0])
+        self.startTime=0         
+    
+    def get_pos_range(self, axis): 
+        return np.array([0, 12])
+    
+    def get_vel_range(self, axis): 
+        return np.array([0,3])
+    
+
     

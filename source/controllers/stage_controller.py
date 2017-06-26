@@ -171,9 +171,10 @@ class cube_controller(stage_controller):
         super().__init__()
         self.cube = None
         self.reconnect()
+        self.center = np.array([50, 50, 25])
         
     def autoZero(self):
-        self.cube.ATZ([1,2,3], [0,0,0])
+        self.cube.ATZ([1, 2, 3], [0, 0, 0])
      
     def reconnect(self):
         if self.cube is not None:
@@ -193,10 +194,11 @@ class cube_controller(stage_controller):
                 
     def MOVVEL(self,X,V):
         self.cube.VEL([1,2,3],list(np.abs(V)))
-        self.cube.MOV([1,2,3],list(X))
+        self.cube.MOV([1,2,3],list(X+self.center))
     
     def get_position(self):
-        return np.asarray(list(self.cube.qPOS([1,2,3]).values()),dtype=float)
+        return (np.asarray(list(self.cube.qPOS([1,2,3]).values()),dtype=float)
+                -self.center)
     
     def ESTOP(self):
         try:
@@ -208,7 +210,10 @@ class cube_controller(stage_controller):
         return np.all(self.cube.qONT([1,2,3]).values())
     
     def get_pos_range(self, axis):
-        return np.array([0, 100])
+        if axis<2:
+            return np.array([-50, 50])
+        else:
+            return np.array([-25, 75])
     
     def get_vel_range(self, axis):
         return np.array([0, 4000])
