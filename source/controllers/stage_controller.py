@@ -18,6 +18,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 from pipython import GCSDevice
+import thorlabs_apt as apt
 import time
 import numpy as np
 
@@ -26,36 +27,11 @@ import numpy as np
 #==============================================================================
 class stage_controller():
     
-    def __init__(self, normV=1):
-        self.normV=normV
-        
+    def __init__(self):
+        pass
+    
     def reconnect(self):
         pass
-        
-    def set_normV(self, normV):
-        self.normV=normV
-        
-    def get_normV(self):
-        return self.normV
-        
-    def goto_position(self, X, Xfrom=None, wait=False):
-        X=np.asarray(X)
-        if Xfrom is None:
-            Xfrom=self.get_position()    
-        else:
-            Xfrom=np.asarray(Xfrom)
-            
-        if np.all(X == Xfrom):
-            return
-        #Get correct speed for each axis   
-        Xdist=(X-Xfrom)
-        Xtime=np.linalg.norm(Xdist)/self.normV
-        V=Xdist/Xtime
-        self.MOVVEL(X,V)
-        if wait:
-            time.sleep(Xtime)
-            while not self.is_onTarget():
-                time.sleep(.01)
     
     def get_position(self):
         pass
@@ -127,6 +103,7 @@ class linear_controller(stage_controller):
             time.sleep(.1)
                 
     def MOVVEL(self,X,V):
+        X, V = np.array([X, V])/1000
         self.lineX.VEL(1,np.abs(V[0]))
         self.lineY.VEL(1,np.abs(V[1]))
         self.lineX.MOV(1,X[0])
@@ -135,7 +112,7 @@ class linear_controller(stage_controller):
     
     def get_position(self):
         return np.asarray([self.lineX.qPOS()['1'],
-                           self.lineY.qPOS()['1']],dtype=float)
+                           self.lineY.qPOS()['1']],dtype=float)*1000
     
     def ESTOP(self):
         try:
@@ -153,10 +130,10 @@ class linear_controller(stage_controller):
         return self.lineX.qONT()['1'] and self.lineY.qONT()['1'] 
 
     def get_pos_range(self, axis):
-        return np.array([0,50.])
+        return np.array([0,50.])*1000
     
     def get_vel_range(self, axis):
-        return np.array([0,1.5])      
+        return np.array([0,1.5])*1000  
     
     def get_state(self):
         return self.lineX.IsControllerReady() and self.lineY.IsControllerReady()
@@ -220,13 +197,48 @@ class cube_controller(stage_controller):
     
     def get_state(self):
         return self.cube.IsControllerReady()
+ 
+class z_controller(stage_controller):
+    def __init__(self):
+        super().__init__()
+        self.reconnect()
+    
+    def reconnect(self):
+        self.motor = apt.Motor(27502020)
+        self.motor.move_home(True)
+    
+    def get_position(self):
+        return self.motor.position()*1000
+    
+    def ESTOP(self):
+        self.motor.stop_profiled()
+    
+    def is_onTarget(self):
+        return not self.motor.is_in_motion()
+    
+    def get_pos_range(self, axis):
+        return np.array(self.motor.get_stage_axis_info()[:2])*1000
+    
+    def get_vel_range(self, axis):
+        return np.asarray([0, self.motor.velocity_upper_limit()])*1000
+    
+    def MOVVEL(self, X, V):
+        X, V = np.array([X, V])/1000
+        self.motor.set_velocity_parameters(0, self.motor.acceleration, V)
+        self.motor.move_to(X)
+    
+    def get_state(self):
+        return True
     
 #==============================================================================
 # Helper functions
 #==============================================================================
-def getListDevices():
+def getPIListDevices():
     gcs= GCSDevice('C-863.11')
     return gcs.EnumerateUSB()
+
+def getAPTListDevices():
+    return apt.list_available_devices()
 
 if __name__ == "__main__":
     print(getListDevices())

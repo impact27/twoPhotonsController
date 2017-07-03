@@ -197,13 +197,10 @@ class motor(controller):
         XY = self.XY_c.get_position()
         Z = self.Z_c.get_position()
         X = np.asarray([*XY, Z])
-        X *= 1000 # units
         return X
             
     def _MOVVEL(self, Xs, V):
         self.parent.piezzo.motorMove()
-        V=V/1000
-        Xs=Xs/1000
         self.XY_c.MOVVEL(Xs[:2], V[:2])
         self.Z_c.MOVVEL(Xs[2:], V[2:])
         
@@ -212,16 +209,16 @@ class motor(controller):
     
     def _XSRANGE(self, axis):
         if axis<2:
-            return self.XY_c.get_pos_range(axis)*1000
+            return self.XY_c.get_pos_range(axis)
         elif axis==2:
-            return self.Z_c.get_pos_range(0)*1000
+            return self.Z_c.get_pos_range(0)
         return [np.nan, np.nan]
     
     def _VRANGE(self, axis):
         if axis<2:
-            return self.XY_c.get_vel_range(axis)*1000
+            return self.XY_c.get_vel_range(axis)
         elif axis==2:
-            return self.Z_c.get_vel_range(0)*1000
+            return self.Z_c.get_vel_range(0)
         return [np.nan, np.nan]
     
     def ESTOP(self):

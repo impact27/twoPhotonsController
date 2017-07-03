@@ -29,7 +29,7 @@ class stage_controller():
         pass
     
     def reconnect(self):
-        print("Connected stage")
+        pass
     
     def get_position(self):
         pass
@@ -57,6 +57,9 @@ class fake_controller(stage_controller):
     def __init__(self):
         super().__init__()
         self.normV = 1000
+    
+    def reconnect(self):
+        print("Connected stage")
         
     def MOVVEL(self,X,V):
         self.position=self.get_position()
@@ -95,16 +98,16 @@ class fake_controller(stage_controller):
 class linear_controller(fake_controller):
     def __init__(self):
         super().__init__()
-        self.position=np.array([25,25])
+        self.position=np.array([25,25])*1000
         self.V=np.array([0,0])
-        self.target=np.array([25,25])
+        self.target=np.array([25,25])*1000
         self.startTime=0
         
     def get_pos_range(self, axis): 
-        return np.array([0,50])
+        return np.array([0,50])*1000
     
     def get_vel_range(self, axis): 
-        return np.array([0,1.5])
+        return np.array([0,1.5])*1000
         
 #==============================================================================
 # Cube Controller
@@ -140,10 +143,10 @@ class z_controller(fake_controller):
         self.startTime=0         
     
     def get_pos_range(self, axis): 
-        return np.array([0, 12])
+        return np.array([0, 12])*1000
     
     def get_vel_range(self, axis): 
-        return np.array([0,3])
+        return np.array([0,3])*1000
     
 
     
