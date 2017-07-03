@@ -27,7 +27,6 @@ from gcode import gcode_draw
 from write_delegate import write_delegate
 import matplotlib
 cmap = matplotlib.cm.get_cmap('plasma')
-
 from laser_delegate import laser_delegate
 from camera_delegate import camera_delegate
 import tifffile
@@ -42,24 +41,26 @@ class application_delegate(QtCore.QObject):
     newFrame = QtCore.pyqtSignal(np.ndarray)
     orientationCorrected = QtCore.pyqtSignal(np.ndarray)
     tiltCorrected = QtCore.pyqtSignal(np.ndarray)
-    newXYState = QtCore.pyqtSignal(bool)
+    newMotorState = QtCore.pyqtSignal(bool)
     newCubeState = QtCore.pyqtSignal(bool)
     newPosition = QtCore.pyqtSignal()
-    newXRange = QtCore.pyqtSignal(float, float, int)
-    newYRange = QtCore.pyqtSignal(float, float, int)
-    updateXY = QtCore.pyqtSignal()
+    newPosRange = QtCore.pyqtSignal(np.ndarray)
+    update_motor = QtCore.pyqtSignal()
     
     
     def __init__(self,imageCanvas):
         super().__init__()
+        #Create delegates for I/O
         self.mouvment_delegate = mouvment_delegate(self)
         self.camera_delegate = camera_delegate()
         self.laser_delegate = laser_delegate()
         
+        #Create delegates for actions
         self.orientation_delegate = orientation_delegate(self)
         self.tilt_delegate = tilt_delegate(self)
         self.write_delegate = write_delegate(self)
         
+        #Create timers
         self.live_timer = QtCore.QTimer()
         self.live_timer.timeout.connect(self.showCameraFrame)
         
@@ -69,11 +70,10 @@ class application_delegate(QtCore.QObject):
         self.status_timer = QtCore.QTimer()
         self.status_timer.timeout.connect(self.updateStatus)
         
+        #Save plot canevas
         self.imageCanvas=imageCanvas
         
-        self.mouvment_delegate.error.connect(lambda astr: 
-                                            self.error.emit(astr))
-            
+        
         self.lastpos=[np.nan, np.nan]
         self.lastFracIntensity=np.nan
         self.newFrame.connect(self.showCameraFrame)
@@ -93,9 +93,8 @@ class application_delegate(QtCore.QObject):
             self.bg_image = 0
     
     def updateStatus(self):
-        self.newXYState.emit(self.mouvment_delegate.get_XY_state())
-        self.newCubeState.emit(self.mouvment_delegate.get_cube_state())
-        
+        self.newMotorState.emit(self.mouvment_delegate.motor.state())
+        self.newCubeState.emit(self.mouvment_delegate.piezzo.state())
         
     def switch_live(self, on):
         if on:
@@ -118,7 +117,7 @@ class application_delegate(QtCore.QObject):
 
         
     def drawPos(self):
-        newpos=self.mouvment_delegate.get_laser_XY_position()
+        newpos=self.mouvment_delegate.position
         laserI=self.laser_delegate.get_intensity()
         lRange=self.laser_delegate.get_range()
         f=(laserI-lRange[0])/(lRange[1]-lRange[0])
@@ -145,12 +144,8 @@ class application_delegate(QtCore.QObject):
         self.mouvment_delegate.set_XY_correction(coeffs)
         
     def setRanges(self, coeffs):
-        O=coeffs[2:]
-        Xrange = self.mouvment_delegate.get_XY_PosRange(0)-O[0]
-        Yrange = self.mouvment_delegate.get_XY_PosRange(1)-O[1]
-        self.newXRange.emit(*Xrange,3)
-        self.newYRange.emit(*Yrange,3)
-        self.updateXY.emit()
+        self.newPosRange.emit(self.mouvment_delegate.motor.positionRange)
+        self.update_motor.emit()
     
     def correct_tilt(self):
         zcoeffs = self.tilt_delegate.solve()
@@ -180,12 +175,6 @@ class application_delegate(QtCore.QObject):
         self.mouvment_delegate.ESTOP()
         self.tilt_delegate.thread.terminate()
         self.write_delegate.thread.terminate()
-    
-    def goto_XY_position(self, xpos, ypos):
-        self.mouvment_delegate.goto_XY_position(np.array([xpos,ypos]))
-    
-    def goto_cube_position(self, x, y, z):
-        self.mouvment_delegate.goto_cube_position(np.array([x,y,z]))
         
     def draw_device(self, xori, yori, gpath, Nx, Ny, dx, dy):
         
@@ -202,7 +191,6 @@ class application_delegate(QtCore.QObject):
             for y in np.arange(yori, yori+Ny*dy, dy):
                 self.imageCanvas.plot(gwritten[:,0]+x,gwritten[:,1]+y,
                                       axis='equal')
-        
         
     def write_device(self, xori, yori, gpath, Nx, Ny, dx, dy):
         self.write_delegate.write( gpath, xori, yori, Nx, Ny, dx, dy)

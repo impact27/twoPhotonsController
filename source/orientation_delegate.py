@@ -34,7 +34,8 @@ class orientation_delegate(QtCore.QObject):
         if not self.md.is_onTarget():
             self.parent.error.emit('Stage is Moving!')
             return
-        Xstage=self.md.get_XY_position(rawCoordinates=True)
+        #TODO: Check what happens if piezzo not centered 
+        Xstage=self.md.motor.get_position(raw=True)[:2]
         Xmaster=[x,y]
         image=self.parent.get_image(rm_bg=True)
         self.new_position(Xstage,Xmaster, image)
@@ -187,7 +188,7 @@ class orientation_delegate(QtCore.QObject):
         ret = np.zeros((len(self.positions),2))
         for i,pos in enumerate(self.positions):
             Xm1 = pos['Xmaster']
-            Xm2 = self.md.XsToXm(pos['Xstage'])
+            Xm2 = self.md.motor.XstoXm([*pos['Xstage'],0])[:2]
             ret[i] = (Xm1-Xm2)
         np.savetxt(fn, ret)
         

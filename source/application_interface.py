@@ -23,6 +23,7 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from application_delegate import application_delegate
 from myWidgets import LightWidget, doubleSelector
+from functools import partial
 #%%
         
 
@@ -285,11 +286,11 @@ class tilt_tab(QtWidgets.QWidget):
         #======================================================================
         
         Xinput = QtWidgets.QLineEdit('0')
-        X_validator = QtGui.QDoubleValidator(0,100,3)
+        X_validator = QtGui.QDoubleValidator(-1,100,3)
         Xinput.setValidator(X_validator)
         
         Yinput = QtWidgets.QLineEdit('0')
-        Y_validator = QtGui.QDoubleValidator(0,100,3)
+        Y_validator = QtGui.QDoubleValidator(-1,100,3)
         Yinput.setValidator(Y_validator)
         
         newpos_button = QtWidgets.QPushButton("New Reference Position")
@@ -378,8 +379,8 @@ class tilt_tab(QtWidgets.QWidget):
         pos_list.verticalHeader().sectionClicked.connect(self.rowClicked)
         
         newpos_button.clicked.connect( lambda: td.add_position(
-                                                    float(Xinput.text()),
-                                                    float(Yinput.text())))
+                                               float(Xinput.text()),
+                                               float(Yinput.text())))
             
         pos_file_button.clicked.connect(self.openfile)
             
@@ -398,8 +399,8 @@ class tilt_tab(QtWidgets.QWidget):
         correction_reset.clicked.connect(
                 application_delegate.reset_tilt)
         
-        application_delegate.newXRange.connect(X_validator.setRange)
-        application_delegate.newYRange.connect(Y_validator.setRange)
+#        application_delegate.newPosRange.connect(X_validator.setRange)
+#        application_delegate.newPosRange.connect(Y_validator.setRange)
         
         md = application_delegate.mouvment_delegate
         correction_save.clicked.connect(md.save_Z_correction)
@@ -487,11 +488,11 @@ class write_tab(QtWidgets.QWidget):
         Origin_label = QtWidgets.QLabel('Origin:')
         
         Xinput=QtWidgets.QLineEdit('0')
-        X_validator = QtGui.QDoubleValidator(0,100,3)
+        X_validator = QtGui.QDoubleValidator(-1,100,3)
         Xinput.setValidator(X_validator)
         
         Yinput=QtWidgets.QLineEdit('0')
-        Y_validator = QtGui.QDoubleValidator(0,100,3)
+        Y_validator = QtGui.QDoubleValidator(-1,100,3)
         Yinput.setValidator(Y_validator)
         
         gcode_label = QtWidgets.QLabel("GCode Path:")
@@ -575,8 +576,8 @@ class write_tab(QtWidgets.QWidget):
         
         browse_button.clicked.connect(self.browse_gfile)
         
-        application_delegate.newXRange.connect(X_validator.setRange)
-        application_delegate.newYRange.connect(Y_validator.setRange)
+#        application_delegate.newXRange.connect(X_validator.setRange)
+#        application_delegate.newYRange.connect(Y_validator.setRange)
         
         #======================================================================
         #         Save variables
@@ -615,63 +616,53 @@ class control_tab(QtWidgets.QWidget):
         laser_V_label = QtWidgets.QLabel("I [V]:")
         laser_setV = doubleSelector(ld.get_range(),ld.get_intensity())
         
-        XY_label = QtWidgets.QLabel('Linear Stage')
-        XY_label.setStyleSheet("font: bold large")
-        XY_status = LightWidget()
-        stage_XY_reconnect = QtWidgets.QPushButton('Reconnect')
+        motor_label = QtWidgets.QLabel('Linear Stage')
+        motor_label.setStyleSheet("font: bold large")
+        motor_status = LightWidget()
+        stage_motor_reconnect = QtWidgets.QPushButton('Reconnect')
         stage_cube_reconnect = QtWidgets.QPushButton('Reconnect')
         
         
-        vel_XY_range = md.get_XY_VelRange(0)
-        vel_cube_range = md.get_cube_VelRange(0)
+        vel_motor_range = md.motor.get_velocityRange(0)
+        vel_cube_range = md.piezzo.get_velocityRange(0)
         
-        vel_XY_label = QtWidgets.QLabel('V [μm/s]:')
+        vel_motor_label = QtWidgets.QLabel('V [μm/s]:')
         vel_cube_label = QtWidgets.QLabel('V [μm/s]:')
-        vel_XY_selector = doubleSelector(vel_XY_range, md.get_XY_velocity())
-        vel_cube_selector =doubleSelector(vel_cube_range, md.get_cube_velocity())
+        vel_motor_selector = doubleSelector(vel_motor_range, md.motor.velocity)
+        vel_cube_selector = doubleSelector(vel_cube_range, md.piezzo.velocity)
         
-        X_XY_Range =md.get_XY_PosRange(0)
-        Y_XY_Range =md.get_XY_PosRange(1)
+        motor_Ranges =md.motor.positionRange
         
-        X_XY_label = QtWidgets.QLabel('X [μm]: ')
-        Y_XY_label = QtWidgets.QLabel('Y [μm]: ')
-        x, y = md.get_XY_position()
-        X_XY_selector = doubleSelector(X_XY_Range, x)
-        Y_XY_selector = doubleSelector(Y_XY_Range, y)
+        AxisNames = ['X', 'Y', 'Z']
         
-        X_step_label = QtWidgets.QLabel('X Step [μm]: ')
-        X_plus = QtWidgets.QPushButton(' + ')
-        X_step = QtWidgets.QLineEdit('1')
-        validator=QtGui.QDoubleValidator(0,X_XY_Range[-1]-X_XY_Range[0],3)
-        validator.setNotation(QtGui.QDoubleValidator.StandardNotation)
-        X_step.setValidator(validator)
-        X_minus = QtWidgets.QPushButton(' - ')
+        motor_labels = [QtWidgets.QLabel(s + ' [μm]: ') for s in AxisNames]
+        motor_position = md.motor.position
+        motor_selectors = [doubleSelector(r, x)for r, x in zip(motor_Ranges, 
+                                                               motor_position)]
+    
         
-        Y_step_label = QtWidgets.QLabel('Y Step [μm]: ')
-        Y_plus = QtWidgets.QPushButton(' + ')
-        Y_step = QtWidgets.QLineEdit('1')
-        validator=QtGui.QDoubleValidator(0,Y_XY_Range[-1]-Y_XY_Range[0],3)
-        validator.setNotation(QtGui.QDoubleValidator.StandardNotation)
-        Y_step.setValidator(validator)
-        Y_minus = QtWidgets.QPushButton(' - ')
+        step_labels = [QtWidgets.QLabel(s + ' Step [μm]: ') for s in AxisNames]
+        pluses = [QtWidgets.QPushButton(' + ') for s in AxisNames]
+        minuses = [QtWidgets.QPushButton(' - ') for s in AxisNames]
+        steps = [QtWidgets.QLineEdit('1') for s in AxisNames]
+        validators = [QtGui.QDoubleValidator(0, motor_Ranges[i, -1]
+                                -motor_Ranges[i, 0], 3) for i in range(3)]
+        for v, step in zip(validators, steps) :
+            v.setNotation(QtGui.QDoubleValidator.StandardNotation)
+            step.setValidator(v)
         
-        goto_XY_button = QtWidgets.QPushButton("GO")
-        getcurr_XY_button = QtWidgets.QPushButton("Get Current")
+        goto_motor_button = QtWidgets.QPushButton("GO")
+        getcurr_motor_button = QtWidgets.QPushButton("Get Current")
         
         cube_label = QtWidgets.QLabel('Piezzo Stage')
         cube_label.setStyleSheet("font: bold large")
         cube_status = LightWidget()
-        X_cube_Range =md.get_cube_PosRange(0)
-        Y_cube_Range =md.get_cube_PosRange(1)
-        Z_cube_Range =md.get_cube_PosRange(3)
         
-        X_cube_label = QtWidgets.QLabel('X [μm]: ')
-        Y_cube_label = QtWidgets.QLabel('Y [μm]: ')
-        Z_cube_label = QtWidgets.QLabel('Z [μm]: ')
-        x, y, z = md.get_cube_position()
-        X_cube_selector = doubleSelector(X_cube_Range, x)
-        Y_cube_selector = doubleSelector(Y_cube_Range, y)
-        Z_cube_selector = doubleSelector(Z_cube_Range, y)
+        cube_ranges = md.piezzo.positionRange
+        cube_pos = md.piezzo.position
+        cube_selectors = [doubleSelector(r, x) for r, x in zip(cube_ranges, 
+                                                               cube_pos)]
+        cube_labels = [QtWidgets.QLabel(s + ' [μm]: ') for s in AxisNames]
         
         goto_cube_button = QtWidgets.QPushButton("GO")
         getcurr_cube_button = QtWidgets.QPushButton("Get Current")
@@ -697,40 +688,29 @@ class control_tab(QtWidgets.QWidget):
         laser_layout.addWidget(laser_V_label)
         laser_layout.addWidget(laser_setV)
         
-        XY_H_layout = QtWidgets.QHBoxLayout()
-        XY_H_layout.addWidget(XY_label)
-        XY_H_layout.addWidget(XY_status)
-        XY_H_layout.addWidget(stage_XY_reconnect)
+        motor_H_layout = QtWidgets.QHBoxLayout()
+        motor_H_layout.addWidget(motor_label)
+        motor_H_layout.addWidget(motor_status)
+        motor_H_layout.addWidget(stage_motor_reconnect)
         
-        X_layout = QtWidgets.QHBoxLayout()
-        X_layout.addStretch()
-        X_layout.addWidget(X_step_label)
-        X_layout.addWidget(X_step)
-        X_layout.addWidget(X_minus)
-        X_layout.addWidget(X_plus)
-        X_layout.addStretch()
+        motor_layout = QtWidgets.QGridLayout()
+        motor_layout.addWidget(vel_motor_label, 0, 0)
+        motor_layout.addWidget(vel_motor_selector, 0, 1)
+        for i in range(3):
+            motor_layout.addWidget(motor_labels[i], 1+2*i, 0)
+            motor_layout.addWidget(motor_selectors[i], 1+2*i, 1)
+            layout = QtWidgets.QHBoxLayout()
+            layout.addStretch()
+            layout.addWidget(step_labels[i])
+            layout.addWidget(steps[i])
+            layout.addWidget(minuses[i])
+            layout.addWidget(pluses[i])
+            layout.addStretch()
+            motor_layout.addLayout(layout, 2*(1+i), 0, 1, 2)
         
-        Y_layout = QtWidgets.QHBoxLayout()
-        Y_layout.addStretch()
-        Y_layout.addWidget(Y_step_label)
-        Y_layout.addWidget(Y_step)
-        Y_layout.addWidget(Y_minus)
-        Y_layout.addWidget(Y_plus)
-        Y_layout.addStretch()
-        
-        XY_layout = QtWidgets.QGridLayout()
-        XY_layout.addWidget(vel_XY_label, 0, 0)
-        XY_layout.addWidget(vel_XY_selector, 0, 1)
-        XY_layout.addWidget(X_XY_label, 1, 0)
-        XY_layout.addWidget(Y_XY_label, 3, 0)
-        XY_layout.addWidget(X_XY_selector, 1, 1)
-        XY_layout.addWidget(Y_XY_selector, 3, 1)
-        XY_layout.addLayout(X_layout, 2, 0, 1, 2)
-        XY_layout.addLayout(Y_layout, 4, 0, 1, 2)
-        
-        XY_GO_layout = QtWidgets.QHBoxLayout()
-        XY_GO_layout.addWidget(getcurr_XY_button)
-        XY_GO_layout.addWidget(goto_XY_button)
+        motor_GO_layout = QtWidgets.QHBoxLayout()
+        motor_GO_layout.addWidget(getcurr_motor_button)
+        motor_GO_layout.addWidget(goto_motor_button)
         
         
         cube_H_layout = QtWidgets.QHBoxLayout()
@@ -741,12 +721,9 @@ class control_tab(QtWidgets.QWidget):
         cube_layout = QtWidgets.QGridLayout()
         cube_layout.addWidget(vel_cube_label, 0, 0)
         cube_layout.addWidget(vel_cube_selector, 0, 1)
-        cube_layout.addWidget(X_cube_label, 1, 0)
-        cube_layout.addWidget(Y_cube_label, 2, 0)
-        cube_layout.addWidget(Z_cube_label, 3, 0)
-        cube_layout.addWidget(X_cube_selector, 1, 1)
-        cube_layout.addWidget(Y_cube_selector, 2, 1)
-        cube_layout.addWidget(Z_cube_selector, 3, 1)
+        for i in range(3):
+            cube_layout.addWidget(cube_labels[i], 1+i, 0)
+            cube_layout.addWidget(cube_selectors[i], 1+i, 1)
         
         cube_GO_layout = QtWidgets.QHBoxLayout()
         cube_GO_layout.addWidget(getcurr_cube_button)
@@ -761,9 +738,9 @@ class control_tab(QtWidgets.QWidget):
         cam_layout.addWidget(cam_exposure_selector)
         
         main_layout = QtWidgets.QVBoxLayout()
-        main_layout.addLayout(XY_H_layout)
-        main_layout.addLayout(XY_layout)
-        main_layout.addLayout(XY_GO_layout)
+        main_layout.addLayout(motor_H_layout)
+        main_layout.addLayout(motor_layout)
+        main_layout.addLayout(motor_GO_layout)
         
         line = QtWidgets.QFrame()
         line.setFrameShape(QtWidgets.QFrame.HLine);
@@ -802,22 +779,17 @@ class control_tab(QtWidgets.QWidget):
         laser_switch.toggled.connect(ld.switch)
         laser_setV.newValue.connect(ld.set_intensity)
         
-        stage_XY_reconnect.clicked.connect(md.XY_reconnect)
-        stage_cube_reconnect.clicked.connect(md.cube_reconnect)
+        stage_motor_reconnect.clicked.connect(md.motor.reconnect)
+        stage_cube_reconnect.clicked.connect(md.piezzo.reconnect)
         
-        goto_XY_button.clicked.connect(self.goto_XY)
+        goto_motor_button.clicked.connect(self.goto_motor)
             
-        goto_cube_button.clicked.connect(lambda:
-            application_delegate.goto_cube_position(
-                    X_cube_selector.getValue(),
-                    Y_cube_selector.getValue(),
-                    Z_cube_selector.getValue()))
+        goto_cube_button.clicked.connect(lambda: md.piezzo.goto_position(
+                                    [s.getValue() for s in cube_selectors]))
         
-        vel_XY_selector.newValue.connect( 
-            application_delegate.mouvment_delegate.set_XY_velocity)
+        vel_motor_selector.newValue.connect(md.motor.set_velocity)
         
-        vel_cube_selector.newValue.connect(
-            application_delegate.mouvment_delegate.set_cube_velocity)
+        vel_cube_selector.newValue.connect(md.piezzo.set_velocity)
         
         cam_reconnect.clicked.connect(cd.reconnect)
         
@@ -838,38 +810,39 @@ class control_tab(QtWidgets.QWidget):
         
         cd.newShutter.connect(cam_exposure_selector.setValue)
         
-        application_delegate.newXYState.connect(XY_status.setOn)
+        application_delegate.newMotorState.connect(motor_status.setOn)
         application_delegate.newCubeState.connect(cube_status.setOn)
         
-        X_plus.clicked.connect(lambda: self.step('X',float(X_step.text())))
-        X_minus.clicked.connect(lambda: self.step('X',-float(X_step.text())))
-        Y_plus.clicked.connect(lambda: self.step('Y',float(Y_step.text())))
-        Y_minus.clicked.connect(lambda: self.step('Y',-float(Y_step.text())))
-        
+        for i in range(3):
+            pluses[i].clicked.connect(partial(self.step, i, 1))
+            minuses[i].clicked.connect(partial(self.step, i, -1))
+            
         getcurr_cube_button.clicked.connect(self.updateCube)
-        getcurr_XY_button.clicked.connect(self.updateXY)
+        getcurr_motor_button.clicked.connect(self.update_motor)
         
-        application_delegate.updateXY.connect(self.updateXY)
+        application_delegate.update_motor.connect(self.update_motor)
         
         application_delegate.newPosition.connect(self.updatePos)
         
         cam_autoshutter.toggled.connect(cd.autoShutter)
         
-        application_delegate.newXRange.connect(X_XY_selector.setRange)
-        application_delegate.newYRange.connect(Y_XY_selector.setRange)
+        def setMotorPos(motor_selectors, ranges):
+            for s, r in zip(motor_selectors, ranges):
+                s.setRange(*r,3)
+            
+        application_delegate.newPosRange.connect(partial(setMotorPos, 
+                                                         motor_selectors))
         
         #======================================================================
         #         Save variables
         #======================================================================
         self.application_delegate = application_delegate
-        self.vel_XY_selector = vel_XY_selector
-        self.X_XY_selector = X_XY_selector
-        self.Y_XY_selector = Y_XY_selector
+        self.vel_motor_selector = vel_motor_selector
+        self.motor_selectors = motor_selectors
         self.vel_cube_selector = vel_cube_selector
-        self.X_cube_selector = X_cube_selector
-        self.Y_cube_selector = Y_cube_selector
-        self.Z_cube_selector = Z_cube_selector
+        self.cube_selectors = cube_selectors
         self.cam_autoshutter = cam_autoshutter
+        self.steps = steps
     
     def setCamShutter(self, on):
         if on:
@@ -878,42 +851,33 @@ class control_tab(QtWidgets.QWidget):
             txt = "Auto: Off"
         self.cam_autoshutter.setText(txt)
         
-    def goto_XY(self):
-            self.application_delegate.goto_XY_position(
-                    self.X_XY_selector.getValue(),
-                    self.Y_XY_selector.getValue())
+    def goto_motor(self):
+            self.application_delegate.mouvment_delegate.motor.goto_position(
+                    [s.getValue() for s in self.motor_selectors])
             
-    def step(self, axis, step):
-        if axis == 'X':
-            selector = self.X_XY_selector
-        elif axis == 'Y':
-            selector = self.Y_XY_selector
-        else:
-            return
-        
+    def step(self, axis, d):
+        step = d*float(self.steps[axis].text())
+        selector = self.motor_selectors[axis]
         val = selector.getValue()
         selector.setValue(val+step)
-        self.goto_XY()
+        self.goto_motor()
         
-    def updateXY(self):
-        V = self.application_delegate.mouvment_delegate.get_XY_velocity()
-        X, Y = self.application_delegate.mouvment_delegate.get_XY_position()
-        self.vel_XY_selector.setValue(V)
-        self.X_XY_selector.setValue(X)
-        self.Y_XY_selector.setValue(Y)
+    def update_motor(self):
+        V = self.application_delegate.mouvment_delegate.motor.velocity
+        Pos = self.application_delegate.mouvment_delegate.motor.position
+        self.vel_motor_selector.setValue(V)
+        [s.setValue(x) for s, x in zip(self.motor_selectors, Pos)]
         
         
     def updateCube(self):
         md = self.application_delegate.mouvment_delegate
-        V = md.get_cube_velocity()
-        X, Y, Z = md.get_cube_position()
+        V = md.piezzo.velocity
+        Pos = md.piezzo.position
         self.vel_cube_selector.setValue(V)
-        self.X_cube_selector.setValue(X)
-        self.Y_cube_selector.setValue(Y)
-        self.Z_cube_selector.setValue(Z)
+        [s.setValue(x) for s, x in zip(self.cube_selectors, Pos)]
         
     def updatePos(self):
-        self.updateXY()
+        self.update_motor()
         self.updateCube()
         
         

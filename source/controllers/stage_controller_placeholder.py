@@ -26,7 +26,8 @@ import numpy as np
 class stage_controller():
     
     def __init__(self):
-        
+        pass
+    
     def reconnect(self):
         print("Connected stage")
     
@@ -55,6 +56,7 @@ class stage_controller():
 class fake_controller(stage_controller):
     def __init__(self):
         super().__init__()
+        self.normV = 1000
         
     def MOVVEL(self,X,V):
         self.position=self.get_position()
