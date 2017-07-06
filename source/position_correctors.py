@@ -16,7 +16,7 @@ class XYcorrector():
         self.motor = motor
         self.camera = camera
         
-    def align(self, wait=True):
+    def align(self, wait=True, checkid=None):
         """Use camera to align current image with ref image
         """
         if self._refim is None:
@@ -24,7 +24,7 @@ class XYcorrector():
             self._refim = self.camera.get_image()
         else:
             #Move
-            self.motor.move_by(self.getOffset(), wait=wait)
+            self.motor.move_by(self.getOffset(), wait=wait, checkid=checkid)
            
     def getOffset(self):
         """Get offset between reference and current image
@@ -38,7 +38,7 @@ class XYcorrector():
         curim=cv2.GaussianBlur(curim,(11,11),0)
         #Get offset in um
         dy, dx = ir.find_shift_cc(refim, curim)
-        dX = np.multiply([dx, dy, 0],self.camera_delegate.pixelSize)
+        dX = np.multiply([dx, dy, 0],self.camera.pixelSize)
         return dX
     
     
@@ -51,6 +51,7 @@ class Zcorrector():
         self.error = None
         self._empty_im = np.zeros_like(self.camera.get_image())
         self.ZRangeSize = ZRangeSize
+        self.lockid = None
         
     
     def get_image_range(self, zPos, condition=None):
@@ -58,7 +59,7 @@ class Zcorrector():
         
         condition gives the stop value
         """
-        imrange=np.tile(self._empty_im, (len(zPos), 1))
+        imrange=np.tile(self._empty_im, (len(zPos), 1, 1))
         
         if condition is None:
             def condition(a,b): return False
@@ -71,7 +72,7 @@ class Zcorrector():
                 return imrange
         return imrange
      
-    def startLaser(self):
+    def startlaser(self):
         self.camera.autoShutter(False)
         self._camshutter = self.camera.shutter
         self.camera.set_shutter(self.camera.shutter_range()[0])
@@ -81,9 +82,10 @@ class Zcorrector():
         self.camera.shutter = self._camshutter
 #         self.laser.close_shutter()
         
-    def focus(self, Npass=3):
+    def focus(self, Npass=3, checkid=None):
         """ Go to the best focal point for the laser
         """
+        self.lockid = checkid
         def get_spot_sizes(imrange):
             return np.sum(imrange >= 
                           np.reshape(np.max(imrange,(1,2))/10,(-1,1,1)),

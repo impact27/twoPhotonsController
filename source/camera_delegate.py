@@ -65,6 +65,6 @@ class camera_delegate(QtCore.QObject):
         self._bg = 0
         
     def set_bg(self):
-        self._bg = self.camera_delegate.get_image()
+        self._bg = self.controller.get_image()
 
             

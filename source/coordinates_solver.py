@@ -53,7 +53,7 @@ class XYsolver():
 #         XYstage=np.array([pos['XYstage'] for pos in self.positions])
 #         XYmaster=np.array([pos['XYmaster'] for pos in self.positions])
         if N==0:
-            return 0, 0, [0, 0]
+            return np.zeros(4)
         elif N==1:
             return self.solve1(XYstage, XYmaster)
         elif N==2:
@@ -63,7 +63,7 @@ class XYsolver():
         
     
     def solve1(self, XYstage, XYmaster):
-        return 0, 0, np.squeeze(XYstage-XYmaster)
+        return np.asarray((0, 0, *np.squeeze(XYstage-XYmaster)))
     
     def solve2(self, XYstage, XYmaster):
         
@@ -93,8 +93,8 @@ class XYsolver():
         
         #return best result
         if residus1<residus2:
-            return 0, theta1, origin1
-        return 0, theta2, origin2
+            return np.asarray([0, theta1, *origin1])
+        return np.asarray([0, theta2, *origin2])
     
     def solve3(self, XYs, XYm):
         XYs2=XYs-1/len(XYs)*np.sum(XYs,0)
@@ -147,7 +147,7 @@ class XYsolver():
         Origin = 1/len(XYs)*np.sum(np.asarray([Mphi@XY for XY in XYs]) 
                                 - np.asarray([Rtheta@XY for XY in XYm]),0)
         
-        return phi, theta, Origin
+        return np.asarray([phi, theta, *Origin])
     
     def get_rotation_matrix(self,theta):
         c,s=np.cos(theta),np.sin(theta)

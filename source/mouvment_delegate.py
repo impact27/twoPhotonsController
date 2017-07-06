@@ -46,7 +46,7 @@ class controller():
         self.parent = parent
         self._lastXs = None
         self.zcoeff = np.zeros(3)
-        self.ndim = 3
+        self._ndim = 3
       
     
    
@@ -103,7 +103,7 @@ class controller():
         V=Xdist/Xtime
         
         #Move
-        self._MOVVEL(Xs, V)
+        self._MOVVEL(Xs, V, checkid=checkid)
         
         #Wait for movment to end
         if wait:
@@ -113,14 +113,14 @@ class controller():
                 
     position =  property(get_position, goto_position)
     
-    def move_by(self, dX, wait=False):
+    def move_by(self, dX, wait=False, checkid=None):
         """Move by dX. This is an easy way but makes a lot of calls"""
         Xm = dX + self.position
-        self.goto_position(Xm, wait=wait)
+        self.goto_position(Xm, wait=wait, checkid=checkid)
                 
     def get_positionRange(self, axis=None):
-        ret = np.zeros((self.ndim,2))
-        for i in range(self.ndim):
+        ret = np.zeros((self._ndim,2))
+        for i in range(self._ndim):
             ret[i,:] = self._XSRANGE(i)
         
         Xss = np.stack(np.meshgrid(*ret), -1).reshape(-1, 3)
@@ -176,7 +176,7 @@ class controller():
     def _XSPOS(self):
         pass
            
-    def _MOVVEL(self, Xs, V):
+    def _MOVVEL(self, Xs, V, checkid=None):
         pass
     
     def _XSRANGE(self, axis):
@@ -193,20 +193,23 @@ class motor(controller):
         super().__init__(1000, parent)
         self.XY_c = linear_controller()
         self.Z_c = z_controller()
-        self.R = np.eye(2)
-        self.M = np.eye(2)
-        self.offset = np.zeros(2)
-        self.ndim = 3
+        self._R = np.eye(2)
+        self._M = np.eye(2)
+        self._offset = np.zeros(2)
+        
+    @property
+    def offset(self):
+        return self._offset
         
     def XstoXm(self, Xs):
         Xm = np.zeros_like(Xs)
-        Xm[:2] = np.linalg.inv(self.R)@(self.M@Xs[:2]-self.offset)
+        Xm[:2] = np.linalg.inv(self._R)@(self._M@Xs[:2]-self._offset)
         Xm[2] = Xs[2] - self._getZOrigin(Xs[:2])
         return Xm
     
     def XmtoXs(self, Xm):
         Xs = np.zeros_like(Xm)
-        Xs[:2] = np.linalg.inv(self.M)@(self.R@Xm[:2]+self.offset)
+        Xs[:2] = np.linalg.inv(self._M)@(self._R@Xm[:2]+self._offset)
         Xs[2] = Xm[2] + self._getZOrigin(Xs[:2])
         return Xs
     
@@ -216,8 +219,8 @@ class motor(controller):
         X = np.asarray([*XY, Z])
         return X
             
-    def _MOVVEL(self, Xs, V):
-        self.parent.piezzo.motorMove()
+    def _MOVVEL(self, Xs, V, checkid=None):
+        self.parent.piezzo.motorMove(checkid=checkid)
         self.XY_c.MOVVEL(Xs[:2], V[:2])
         self.Z_c.MOVVEL(Xs[2:], V[2:])
         
@@ -250,40 +253,39 @@ class motor(controller):
         self.Z_c.reconnect()
         
     def set_XY_correction(self, R, M, offset):
-        self.R = R
-        self.M = M
-        self.offset = offset
+        self._R = R
+        self._M = M
+        self._offset = offset
     
     
 class piezzo(controller):
     def __init__(self, parent):
         super().__init__(1000, parent)
         self.XYZ_c = cube_controller() 
-        self.R = np.eye(2)
-        self.offset = np.array([50, 50, 25])
-        self.ndim = 3
+        self._R = np.eye(2)
+        self._offset = np.array([50, 50, 25])
         
-    def motorMove(self):
-        self.goto_position([0,0,0], isRaw=True)
+    def motorMove(self, checkid=None):
+        self.goto_position([0,0,0], isRaw=True, checkid=checkid)
         self.zcoeff = np.zeros(3)
         
     def XstoXm(self, Xs):
         Xm = np.zeros_like(Xs)
-        Xm[:2] = np.linalg.inv(self.R)@(Xs[:2] - self.offset[:2])
-        Xm[2] = Xs[2] - self.offset[2] - self._getZOrigin(Xs[:2]) 
+        Xm[:2] = np.linalg.inv(self._R)@(Xs[:2] - self._offset[:2])
+        Xm[2] = Xs[2] - self._offset[2] - self._getZOrigin(Xs[:2]) 
         return Xm 
     
     def XmtoXs(self, Xm):
         Xs = np.zeros_like(Xm)
-        Xs[:2] = self.R@Xm[:2]
+        Xs[:2] = self._R@Xm[:2]
         Xs[2] = Xm[2] + self._getZOrigin(Xs[:2])
-        Xs =  Xs + self.offset
+        Xs =  Xs + self._offset
         return Xs
 
     def _XSPOS(self):
         return np.asarray(self.XYZ_c.get_position())
            
-    def _MOVVEL(self, Xs, V):
+    def _MOVVEL(self, Xs, V, checkid=None):
         self.XYZ_c.MOVVEL(Xs, V)
         
     def is_onTarget(self):
@@ -306,7 +308,7 @@ class piezzo(controller):
         self.XYZ_c.reconnect()
         
     def set_XY_correction(self, R):
-        self.R = R
+        self._R = R
         
 
 class mouvment_delegate(QtCore.QObject): 
@@ -366,7 +368,7 @@ class mouvment_delegate(QtCore.QObject):
     #     Corrections
     #==========================================================================
 
-    def set_XY_correction(self, coeffs):
+    def _set_XY_correction(self, coeffs):
         if self.locked:
             self.error.emit('Mouvment is locked!')
             return
@@ -383,21 +385,12 @@ class mouvment_delegate(QtCore.QObject):
         self.motor.set_XY_correction(R, M, offset)
         self.piezzo.set_XY_correction(R)
         
-        self.parent.orientationCorrected.emit(coeffs)
-        
-    def set_Z_correction(self, coeffs):
+    def _set_Z_correction(self, coeffs):
         if self.locked:
             self.error.emit('Mouvment is locked!')
             return
         self.zcoeff=coeffs
         self.motor.set_Z_correction(coeffs)
-        self.parent.tiltCorrected.emit(coeffs)
-        
-    def get_XY_correction(self):
-        return np.array(self.XYcorr)
-    
-    def get_Z_correction(self):
-        return self.zcoeff
       
     def save_corrections(self, fn='corrections.txt'):
         with open(fn,'bw') as f:
@@ -413,8 +406,9 @@ class mouvment_delegate(QtCore.QObject):
             self.parent.error.emit('No saved correction')
             
     def set_corrections(self, XYcorr, Zcorr):
-        self.set_XY_correction(XYcorr)
-        self.set_Z_correction(Zcorr)
+        self._set_XY_correction(XYcorr)
+        self._set_Z_correction(Zcorr)
+        self.parent.coordinatesCorrected.emit(XYcorr, Zcorr)
         
     def get_corrections(self):
         return self.XYcorr, self.zcoeff

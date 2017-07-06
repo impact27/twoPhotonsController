@@ -30,16 +30,14 @@ class coordinates_delegate(QtCore.QObject):
         super().__init__()
         self._positions = []
         self._current_pos = None
-        self._bgOffset= np.array([100, 100, 0])
         self.parent = application_delegate
         self.camera = application_delegate.camera_delegate
         self._md = application_delegate.mouvment_delegate
         self.motor = application_delegate.mouvment_delegate.motor
-        self.XYcorrector = XYcorrector(self.motor, self.camera)
-        self.Zcorrector = Zcorrector(self.motor, self.camera, 500)
         self.Zsolver = Zsolver()
         self.XYsolver = XYsolver()
-        self.thread = None TODO
+        self.thread = positionThread(self, [100, 100, 0])
+        self.thread.finished.connect(self.endThread)
      
     def add_position(self, Xm):
         self._positions.append(
@@ -88,25 +86,16 @@ class coordinates_delegate(QtCore.QObject):
         
     def processPos(self):
         #Add that in a thread
+        self.thread.start()
         
-        #Turn off autoshutter
-        self.camera.autoShutter(False)
-        #go to bg position
-        self.motor.move_by(self._bgOffset, wait=True)
-        #focus using laser
-        graphs = self.Zcorrector.focus()
-        #take bg
-        self.camera.set_bg()
-        #return to image position
-        self.motor.move_by(-self._bgOffset, wait=True)
-        #correct XY if reference image exists, otherwise set reference image
-        self.XYcorrector.align()
+    def endThread(self):
         #Save new position
-        self._newPos(graphs)
+        self._newPos(self.thread.graphs)
         #if still positions in the list & position is reachable:
         if self._load_next():
         	#go to position
-            self.motor.goto_position(self._current_pos['Xm'], wait=True)
+            self.motor.goto_position(self._current_pos['Xm'])
+        
             
     def save_errors(self):
         fn = QtWidgets.QFileDialog.getSaveFileName(
@@ -137,37 +126,63 @@ class coordinates_delegate(QtCore.QObject):
         
     def _updateXYZCorr(self):
         #get Xm and Xs
-        Xm = np.asarray([p['Xm'] for p in self._positions])
-        Xs = np.asarray([p['Xs'] for p in self._positions])
-        valid = [p is None for p in Xs]
-        Xm = Xm[valid]
-        Xs = np.asarray(list(Xs[valid]))
-        #Get coeffs
-        zcoeffs = self.Zsolver.solve(Xs)
-        xycoeffs = self.XYsolver.solve(Xs[:2], Xm[:2])
-        #Apply correction
-        self._md.set_XY_correction(xycoeffs)
-        self._md.set_Z_correction(zcoeffs)
-        
-        self.parent.coordinatesCorrected.emit(xycoeffs, zcoeffs)
+        Xms = np.asarray([p['Xm'] for p in self._positions])
+        Xss = np.asarray([p['Xs'] for p in self._positions])
+        valid = [p is not None for p in Xss]
+        if np.any(valid):
+            Xms = Xms[valid]
+            Xss= np.asarray(list(Xss[valid]))
+            #Get coeffs
+            zcoeffs = self.Zsolver.solve(Xss)
+            xycoeffs = self.XYsolver.solve(Xss[:,:2], Xms[:,:2])
+            #Apply correction
+            self._md.set_corrections(xycoeffs, zcoeffs)
+            
+            self.parent.coordinatesCorrected.emit(xycoeffs, zcoeffs)
         
     def _update(self):
         #use saved info to correct coordinates
         self._updateXYZCorr()
         self.updatelist.emit(self._positions)
         
+ 
+class positionThread(QtCore.QThread):
     
-    
+    def __init__(self, delegate, bgOffset):
+        super().__init__()
+        self.delegate = delegate
+        self.motor = delegate.motor
+        self.camera = delegate.camera
+        self._md = delegate._md
+        self.XYcorrector = XYcorrector(self.motor, self.camera)
+        self.Zcorrector = Zcorrector(self.motor, self.camera, 500)
+        self._bgOffset = np.asarray(bgOffset)
+     
+    def set_bgOffset(bgOffset):
+        bgOffset = np.asarray(bgOffset)
+        self._bgOffset = bgOffset
         
-    
-#     def run(self):
-#         self.lockid=self.md.lock()
-#         
-#         if self.lockid is None:
-#             self.error = "Unable to lock the mouvment"
-#             return
-#         
-#         self.md.unlock()
+        
+    def run(self):
+        self.lockid=self._md.lock()
+        if self.lockid is None:
+            self.error = "Unable to lock the mouvment"
+            return
+        
+        #Turn off autoshutter
+        self.camera.autoShutter(False)
+        #go to bg position
+        self.motor.move_by(self._bgOffset, wait=True, checkid=self.lockid)
+        #focus using laser
+        self.graphs = self.Zcorrector.focus(checkid=self.lockid)
+        #take bg
+        self.camera.set_bg()
+        #return to image position
+        self.motor.move_by(-self._bgOffset, wait=True, checkid=self.lockid)
+        #correct XY if reference image exists, otherwise set reference image
+        self.XYcorrector.align(checkid=self.lockid)
+        
+        self._md.unlock()
         
 
         

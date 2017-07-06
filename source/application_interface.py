@@ -112,9 +112,9 @@ class coordinates_tab(QtWidgets.QWidget):
         #       Create Widgets
         #======================================================================
         
-        Xinput = QtWidgets.QLineEdit('0')
-        X_validator = QtGui.QDoubleValidator(-1,100,3)
-        Xinput.setValidator(X_validator)
+        Xinput = QtWidgets.QLineEdit('0, 0, 0')
+#         X_validator = QtGui.QDoubleValidator(-1,100,3)
+#         Xinput.setValidator(X_validator)
         
         newpos_button = QtWidgets.QPushButton("New Reference Position")
         
