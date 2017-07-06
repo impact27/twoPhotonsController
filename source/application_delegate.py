@@ -83,14 +83,33 @@ class application_delegate(QtCore.QObject):
         self.status_timer.start(1000)
         
         self.orientationCorrected.connect(self.setRanges)
+    
+    def correct_orientation(self):
+        phi, theta, origin=self.orientation_delegate.solve()
         
-        self.bg_image = 0
-        
-    def set_bg(self, checked):
-        if checked:
-            self.bg_image = self.camera_delegate.get_image()
+        if np.isnan(theta):
+            self.error.emit('Not enough data points!')
         else:
-            self.bg_image = 0
+            self.mouvment_delegate.set_XY_correction([phi, theta, *origin])
+            self.newPosition.emit()
+    
+    def reset_orientation(self):
+        coeffs = np.zeros(4)
+        self.mouvment_delegate.set_XY_correction(coeffs)
+    
+    def correct_tilt(self):
+        zcoeffs = self.tilt_delegate.solve()
+        
+        if np.any(np.isnan(zcoeffs)):
+            self.error.emit("Can't correct tilt")
+        else:
+            self.mouvment_delegate.set_Z_correction(zcoeffs)
+            
+    def reset_tilt(self):
+        zcoeffs = np.zeros(3)
+        self.mouvment_delegate.set_Z_correction(zcoeffs)
+    
+    
     
     def updateStatus(self):
         self.newMotorState.emit(self.mouvment_delegate.motor.state())
@@ -130,44 +149,10 @@ class application_delegate(QtCore.QObject):
         self.lastFracIntensity=f
     
     
-    def correct_orientation(self):
-        phi, theta, origin=self.orientation_delegate.solve()
-        
-        if np.isnan(theta):
-            self.error.emit('Not enough data points!')
-        else:
-            self.mouvment_delegate.set_XY_correction([phi, theta, *origin])
-            self.newPosition.emit()
-    
-    def reset_orientation(self):
-        coeffs = np.zeros(4)
-        self.mouvment_delegate.set_XY_correction(coeffs)
-        
     def setRanges(self, coeffs):
         self.newPosRange.emit(self.mouvment_delegate.motor.positionRange)
         self.update_motor.emit()
     
-    def correct_tilt(self):
-        zcoeffs = self.tilt_delegate.solve()
-        
-        if np.any(np.isnan(zcoeffs)):
-            self.error.emit("Can't correct tilt")
-        else:
-            self.mouvment_delegate.set_Z_correction(zcoeffs)
-            
-    def reset_tilt(self):
-        zcoeffs = np.zeros(3)
-        self.mouvment_delegate.set_Z_correction(zcoeffs)
-        
-    def showCameraFrame(self, frame = None):
-        self.imwait = False
-        if frame is None:
-            frame=self.camera_delegate.get_image()
-            if self.bg_image != 0:
-                frame = frame*1. - self.bg_image
-        
-        self.imageCanvas.frameshow(frame)
-        
     def clearFig(self):
         self.imageCanvas.clear()
         
@@ -195,27 +180,31 @@ class application_delegate(QtCore.QObject):
     def write_device(self, xori, yori, gpath, Nx, Ny, dx, dy):
         self.write_delegate.write( gpath, xori, yori, Nx, Ny, dx, dy)
         
+    
         
     def get_image(self, rm_bg=False):
         im = self.camera_delegate.get_image()
-        if rm_bg:
-            im=im*1. - self.bg_image
         if not self.imwait:
             self.imwait = True
             self.newFrame.emit(im)
         return im
     
-    def manualFocus(self):
-        self.mouvment_delegate.goto_cube_position([0,0,25],rawPos=True)
+    def showCameraFrame(self, frame = None):
+        self.imwait = False
+        if frame is None:
+            frame=self.camera_delegate.get_image()
         
+        self.imageCanvas.frameshow(frame)
+       
+# =============================================================================
+#     Plot stuffs
+# =============================================================================
     def save_im(self):   
         fn=QtWidgets.QFileDialog.getSaveFileName(
             self.imageCanvas,'TIFF file',QtCore.QDir.homePath(),
             "Images (*.tif)")
         im = self.imageCanvas.get_im()
-        tifffile.imsave(fn[0], np.asarray(im,dtype='float32'))
-        
-        
+        tifffile.imsave(fn[0], np.asarray(im,dtype='float32')) 
         
     def save_fig(self):   
         fn=QtWidgets.QFileDialog.getSaveFileName(
@@ -223,17 +212,5 @@ class application_delegate(QtCore.QObject):
             "Images (*.pdf)")
         self.imageCanvas.figure.savefig(fn[0])
         
-    
-    def move_offset(self, refim):
-        curim = self.get_image(True)
-        refim=cv2.GaussianBlur(refim,(11,11),0)
-        curim=cv2.GaussianBlur(curim,(11,11),0)
-        dy, dx = ir.find_shift_cc(refim, curim)
-        
-        dX = np.multiply([dx, dy],self.camera_delegate.pixelSize)
-        X = dX + self.mouvment_delegate.get_XY_position()
-        self.mouvment_delegate.goto_XY_position(X)
-        return dX
-    
         
         

@@ -307,8 +307,7 @@ class tilt_tab(QtWidgets.QWidget):
         pos_list.horizontalHeader().setStretchLastSection(True)
         
         clear_list_button = QtWidgets.QPushButton("Clear List")
-        validate_button = QtWidgets.QPushButton("Validate") 
-        raise_button = QtWidgets.QPushButton("Raise cube for manual focusing")
+        validate_button = QtWidgets.QPushButton("Validate")
         
         correction_label = QtWidgets.QLabel('')
         self.correction_label = correction_label
@@ -363,7 +362,6 @@ class tilt_tab(QtWidgets.QWidget):
         
         main_layout=QtWidgets.QVBoxLayout(self)
         main_layout.addWidget(tabs_widget)
-        main_layout.addWidget(raise_button)
         main_layout.addWidget(pos_list)
         main_layout.addWidget(validate_button)
         main_layout.addLayout(hbuttons)
@@ -391,7 +389,6 @@ class tilt_tab(QtWidgets.QWidget):
         self.displayrow.connect(td.display_row)
         self.plotCurveRow.connect(td.plotCurveRow)
         td.updatelist.connect(self.updateList)
-        raise_button.clicked.connect(application_delegate.manualFocus)
         
         application_delegate.tiltCorrected.connect(
                 self.updateCorrection)
@@ -943,7 +940,7 @@ class secondary_widget(QtWidgets.QWidget):
                 bg_button.setText('Set Background')
         bg_button.toggled.connect(switchBGButton)
         
-        bg_button.clicked.connect(application_delegate.set_bg)
+        bg_button.clicked.connect(application_delegate.camera_delegate.set_bg)
         
         #======================================================================
         #         Save variables

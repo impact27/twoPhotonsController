@@ -58,6 +58,10 @@ class controller():
    
     def goto_position(self, Xm, speed=np.nan, wait=False, checkid=None, 
                       useLastPos=False, isRaw=False):
+        """
+        
+        Any value of Xm set to nan will not be moved
+        """
         #Check lock
         if not self.parent._checklock(checkid):
             return
@@ -73,10 +77,15 @@ class controller():
         else:
             XsFrom = self._XSPOS()
         
+        #points to replace
+        toreplace = np.isnan(Xm)
         #Get final point
         if isRaw:
-            Xs=Xm
+            Xs = Xm
+            Xs[toreplace] = XsFrom[toreplace]
         else:
+            if np.any(toreplace):
+                Xm[toreplace] = self.XstoXm(XsFrom)[toreplace]
             Xs=self.XmtoXs(Xm)
         
         self._lastXs = Xs
@@ -100,6 +109,11 @@ class controller():
                 time.sleep(.01)
                 
     position =  property(get_position, goto_position)
+    
+    def move_by(self, dX, wait=False):
+        """Move by dX. This is an easy way but makes a lot of calls"""
+        Xm = dX + self.position
+        self.goto_position(Xm, wait=wait)
                 
     def get_positionRange(self, axis=None):
         ret = np.zeros((self.ndim,2))

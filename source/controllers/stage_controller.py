@@ -116,12 +116,12 @@ class linear_controller(stage_controller):
     
     def ESTOP(self):
         try:
-            self.lineX.StopAll()
+            self.lineX.HLT()
         except:
             pass
         
         try:
-            self.lineY.StopAll()
+            self.lineY.HLT()
         except:
             pass
                 
@@ -179,7 +179,7 @@ class cube_controller(stage_controller):
     
     def ESTOP(self):
         try:
-            self.cube.StopAll()
+            self.cube.HLT()
         except:
             pass
     
@@ -241,4 +241,5 @@ def getAPTListDevices():
     return apt.list_available_devices()
 
 if __name__ == "__main__":
-    print(getListDevices())
+    print(getPIListDevices())
+    print(getAPTListDevices())

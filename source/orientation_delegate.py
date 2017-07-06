@@ -20,6 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import numpy as np
 from PyQt5 import QtCore, QtWidgets
 
+
 class orientation_delegate(QtCore.QObject):
     
     updatelist = QtCore.pyqtSignal(list)
@@ -64,122 +65,6 @@ class orientation_delegate(QtCore.QObject):
     def del_position(self,idx):
         del self.positions[idx]
         self.updatelist.emit(self.positions)
-    
-    def get_rotation_matrix(self,theta):
-        c,s=np.cos(theta),np.sin(theta)
-        R=np.array([[c,-s],[s,c]])
-        return R
-        
-    def solve(self):
-        """ solve the rotation and translation of Xstage and Xmaster
-        
-        
-        with the least square method
-        returns the best guess for theta, origin
-        """
-        
-        Xstage=np.array([pos['Xstage'] for pos in self.positions])
-        Xmaster=np.array([pos['Xmaster'] for pos in self.positions])
-        if len(self.positions)==0:
-            return np.nan, [np.nan, np.nan]
-        elif len(self.positions)==1:
-            return 0, 0, np.squeeze(Xstage-Xmaster)
-        elif len(self.positions)==2:
-            return (0, *self.solve2(Xstage, Xmaster))
-        else:
-            return self.solve3(Xstage, Xmaster)
-        
-    
-    
-    def solve2(self, Xstage, Xmaster):
-        
-        def getResidus(theta):
-            R=self.get_rotation_matrix(theta)
-            RXm=np.array([R@X for X in Xmaster])
-            origin=1/len(Xstage)*np.sum(Xstage-RXm,axis=0)
-            residus=np.sum((RXm+origin-Xstage)**2)
-            return origin, residus
-    
-        #Get best theta
-        Xs2=1/len(Xstage)*np.sum(Xstage,0)-Xstage
-        
-        dividend = np.sum(Xs2*Xmaster)
-        divisor = np.sum(np.cross(Xs2,Xmaster))
-        
-        if divisor==0:
-            theta1=0
-        else:
-            theta1 = (np.arctan(dividend/divisor)
-                      -np.pi/2)
-        
-        #Theta is defined +-pi. Must test theta+pi
-        origin1, residus1= getResidus(theta1)
-        theta2=theta1+np.pi
-        origin2, residus2 = getResidus(theta2)
-        
-        #return best result
-        if residus1<residus2:
-            return theta1, origin1
-        return theta2, origin2
-    
-    def solve3(self, Xs, Xm):
-        Xs2=Xs-1/len(Xs)*np.sum(Xs,0)
-        Xm2=Xm-1/len(Xm)*np.sum(Xm,0)
-        
-        YsXs2 = np.sum(Xs[:, 1]*Xs2[:, 0])
-        YsXm2 = np.sum(Xs[:, 1]*Xm2[:, 0])
-        YsYm2 = np.sum(Xs[:, 1]*Xm2[:, 1])
-        XmXs2 = np.sum(Xm[:, 0]*Xs2[:, 0])
-        YmXs2 = np.sum(Xm[:, 1]*Xs2[:, 0])
-        XmYs2 = np.sum(Xm[:, 0]*Xs2[:, 1])
-        YmYs2 = np.sum(Xm[:, 1]*Xs2[:, 1])
-        
-        
-        
-        def fun(x, YsXs2, YsXm2, YsYm2, XmXs2, YmXs2, XmYs2, YmYs2):
-            theta, phi = x
-            return [  np.cos(phi)*YsXs2 
-                    - np.cos(theta+phi)*YsXm2 
-                    + np.sin(theta+phi)*YsYm2,
-                      np.cos(theta+phi)*XmYs2
-                    - np.sin(theta+phi)*YmYs2
-                    - np.sin(theta)*XmXs2
-                    - np.cos(theta)*YmXs2]
-            
-        def jac(x, YsXs2, YsXm2, YsYm2, XmXs2, YmXs2, XmYs2, YmYs2):
-            theta, phi = x
-            return [[  np.sin(theta+phi)*YsXm2 
-                     + np.cos(theta+phi)*YsYm2,
-                     - np.sin(phi)*YsXs2 
-                     + np.sin(theta+phi)*YsXm2 
-                     + np.cos(theta+phi)*YsYm2],
-                   [ - np.sin(theta+phi)*XmYs2
-                     - np.cos(theta+phi)*YmYs2
-                     - np.cos(theta)*XmXs2
-                     + np.sin(theta)*YmXs2,
-                     - np.sin(theta+phi)*XmYs2
-                     - np.cos(theta+phi)*YmYs2]]
-                
-        from scipy import optimize
-        sol = optimize.root(fun, [0, 0], jac=jac, method='hybr', 
-                            args=(YsXs2, YsXm2, YsYm2, XmXs2, YmXs2, XmYs2, YmYs2))
-        theta, phi = sol.x
-        
-        Mphi = np.asarray([[1, np.sin(phi)],
-                         [0, np.cos(phi)]])
-        Rtheta = np.asarray([[np.cos(theta), -np.sin(theta)],
-                              [np.sin(theta), np.cos(theta)]])
-                
-        Origin = 1/len(Xs)*np.sum(np.asarray([Mphi@X for X in Xs]) 
-                                - np.asarray([Rtheta@X for X in Xm]),0)
-        
-        return phi, theta, Origin
-    
-    def auto_offset(self):
-        if len(self.positions)==0:
-            return
-        refim = self.positions[0]['Image']
-        self.parent.move_offset(refim)
         
     def save_errors(self):
         fn=QtWidgets.QFileDialog.getSaveFileName(
@@ -191,6 +76,10 @@ class orientation_delegate(QtCore.QObject):
             Xm2 = self.md.motor.XstoXm([*pos['Xstage'],0])[:2]
             ret[i] = (Xm1-Xm2)
         np.savetxt(fn, ret)
+        
+    
+    
+    
         
     
 #    
