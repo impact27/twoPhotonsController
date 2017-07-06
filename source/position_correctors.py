@@ -49,7 +49,7 @@ class Zcorrector():
         self.motor = motor
         self.camera = camera
         self.error = None
-        self._empty_im = np.zero_like(self.camera.get_image())
+        self._empty_im = np.zeros_like(self.camera.get_image())
         self.ZRangeSize = ZRangeSize
         
     

@@ -122,10 +122,7 @@ class cube_controller(fake_controller):
         self.startTime=0         
     
     def get_pos_range(self, axis): 
-        if axis<2:
-            return np.array([-50, 50])
-        else:
-            return np.array([-25, 75])
+        return np.array([0, 100])
     
     def get_vel_range(self, axis): 
         return np.array([0,4000])

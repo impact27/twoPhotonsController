@@ -20,31 +20,71 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import numpy as np
 from position_correctors import XYcorrector, Zcorrector
 from coordinates_solver import Zsolver, XYsolver
+from PyQt5 import QtCore, QtWidgets
 
-class coordinate_delegate():
+class coordinates_delegate(QtCore.QObject):
     
-    def __init__(self, camera, mouvment_delegate):
+    updatelist = QtCore.pyqtSignal(list)
+    
+    def __init__(self, application_delegate): 
+        super().__init__()
         self._positions = []
         self._current_pos = None
         self._bgOffset= np.array([100, 100, 0])
-        self.camera = camera
-        self._md = mouvment_delegate
-        self.motor = mouvment_delegate.motor
-        self.XYcorrector = XYcorrector()
-        self.Zcorrector = Zcorrector()
+        self.parent = application_delegate
+        self.camera = application_delegate.camera_delegate
+        self._md = application_delegate.mouvment_delegate
+        self.motor = application_delegate.mouvment_delegate.motor
+        self.XYcorrector = XYcorrector(self.motor, self.camera)
+        self.Zcorrector = Zcorrector(self.motor, self.camera, 500)
         self.Zsolver = Zsolver()
         self.XYsolver = XYsolver()
-        
+        self.thread = None TODO
+     
+    def add_position(self, Xm):
+        self._positions.append(
+           {'Xm' : Xm,
+            'Xs' : None,
+            'im' : None,
+            'graphs' : None,
+            'showim' : False})
+        self._load_next()
+        self._update()
+    
     def load_list(self, fn):
         """Read file containing 3 x N float numbers"""
         positions = list(np.loadtxt(fn))
         for pos in positions:
-            self._positions.append(
-                   {'Xm' : pos,
-                    'Xs' : None,
-                    'im' : None,
-                    'graphs' : None})
-        self._load_next()
+            self.add_position(pos)
+        
+    def displayrow(self,row):
+        pos = self._positions[row]
+        if pos['im'] is None:
+            return
+        if pos['showim']:
+            im=pos['im']
+            self.parent.imageCanvas.imshow(im)
+            pos['showim'] = False
+        else:        
+            X,Y,Y2=pos['graphs']
+            self.parent.clearFig()
+            self.parent.imageCanvas.plot(X[Y<4*np.min(Y)],Y[Y<4*np.min(Y)],'.')
+            self.parent.imageCanvas._axes.twinx().plot(X,Y2,'x',c='C1')
+            self.parent.imageCanvas.draw()
+            pos['showim'] = True
+        
+    @property
+    def positions(self):
+        return self._positions
+    
+    def clear_positions(self):
+        self._positions=[]
+        self._current_pos = None
+        self._update()
+        
+    def del_position(self,idx):
+        del self._positions[idx]
+        self._update()
         
     def processPos(self):
         #Add that in a thread
@@ -63,12 +103,21 @@ class coordinate_delegate():
         self.XYcorrector.align()
         #Save new position
         self._newPos(graphs)
-        #use saved info to correct coordinates
-        self._updateXYZCorr()
         #if still positions in the list & position is reachable:
         if self._load_next():
         	#go to position
             self.motor.goto_position(self._current_pos['Xm'], wait=True)
+            
+    def save_errors(self):
+        fn = QtWidgets.QFileDialog.getSaveFileName(
+                self.parent.imageCanvas,'TXT file',QtCore.QDir.homePath(),
+                "Text (*.txt)")[0]
+        ret = np.zeros((len(self._positions), 3))
+        for i,pos in enumerate(self._positions):
+            Xm1 = pos['Xm']
+            Xm2 = self.md.motor.XstoXm(pos['Xs'])
+            ret[i] = (Xm1-Xm2)
+        np.savetxt(fn, ret)
         
     def _load_next(self):
         for pos in self._positions:
@@ -79,12 +128,12 @@ class coordinate_delegate():
         return False
     
     def _newPos(self, graphs):
+        assert self._md.is_onTarget(), "Stage is moving!"
         #Save XYZ as new value
         self._current_pos['Xs'] = self.motor.get_position(raw = True)
         self._current_pos['im'] = self.camera.get_image()
         self._current_pos['graphs'] = graphs
-        
-    
+        self._update()
         
     def _updateXYZCorr(self):
         #get Xm and Xs
@@ -100,7 +149,14 @@ class coordinate_delegate():
         self._md.set_XY_correction(xycoeffs)
         self._md.set_Z_correction(zcoeffs)
         
-        self.parent.correctTilt()
+        self.parent.coordinatesCorrected.emit(xycoeffs, zcoeffs)
+        
+    def _update(self):
+        #use saved info to correct coordinates
+        self._updateXYZCorr()
+        self.updatelist.emit(self._positions)
+        
+    
     
         
     

@@ -17,12 +17,10 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-import image_registration.image as ir
 import numpy as np
 from PyQt5 import QtCore, QtWidgets
-from orientation_delegate import orientation_delegate
+from coordinates_delegate import coordinates_delegate
 from mouvment_delegate import mouvment_delegate
-from tilt_delegate import tilt_delegate
 from gcode import gcode_draw
 from write_delegate import write_delegate
 import matplotlib
@@ -30,17 +28,13 @@ cmap = matplotlib.cm.get_cmap('plasma')
 from laser_delegate import laser_delegate
 from camera_delegate import camera_delegate
 import tifffile
-import cv2
-
-
 
 class application_delegate(QtCore.QObject):
     error = QtCore.pyqtSignal(str)
     liveSwitched = QtCore.pyqtSignal(bool)
     drawSwitched = QtCore.pyqtSignal(bool)
     newFrame = QtCore.pyqtSignal(np.ndarray)
-    orientationCorrected = QtCore.pyqtSignal(np.ndarray)
-    tiltCorrected = QtCore.pyqtSignal(np.ndarray)
+    coordinatesCorrected = QtCore.pyqtSignal(np.ndarray, np.ndarray)
     newMotorState = QtCore.pyqtSignal(bool)
     newCubeState = QtCore.pyqtSignal(bool)
     newPosition = QtCore.pyqtSignal()
@@ -56,8 +50,7 @@ class application_delegate(QtCore.QObject):
         self.laser_delegate = laser_delegate()
         
         #Create delegates for actions
-        self.orientation_delegate = orientation_delegate(self)
-        self.tilt_delegate = tilt_delegate(self)
+        self.coordinates_delegate = coordinates_delegate(self)
         self.write_delegate = write_delegate(self)
         
         #Create timers
@@ -82,34 +75,7 @@ class application_delegate(QtCore.QObject):
         
         self.status_timer.start(1000)
         
-        self.orientationCorrected.connect(self.setRanges)
-    
-    def correct_orientation(self):
-        phi, theta, origin=self.orientation_delegate.solve()
-        
-        if np.isnan(theta):
-            self.error.emit('Not enough data points!')
-        else:
-            self.mouvment_delegate.set_XY_correction([phi, theta, *origin])
-            self.newPosition.emit()
-    
-    def reset_orientation(self):
-        coeffs = np.zeros(4)
-        self.mouvment_delegate.set_XY_correction(coeffs)
-    
-    def correct_tilt(self):
-        zcoeffs = self.tilt_delegate.solve()
-        
-        if np.any(np.isnan(zcoeffs)):
-            self.error.emit("Can't correct tilt")
-        else:
-            self.mouvment_delegate.set_Z_correction(zcoeffs)
-            
-    def reset_tilt(self):
-        zcoeffs = np.zeros(3)
-        self.mouvment_delegate.set_Z_correction(zcoeffs)
-    
-    
+        self.coordinatesCorrected.connect(self.setRanges)
     
     def updateStatus(self):
         self.newMotorState.emit(self.mouvment_delegate.motor.state())
@@ -149,7 +115,7 @@ class application_delegate(QtCore.QObject):
         self.lastFracIntensity=f
     
     
-    def setRanges(self, coeffs):
+    def setRanges(self, coeffs, zcoeffs):
         self.newPosRange.emit(self.mouvment_delegate.motor.positionRange)
         self.update_motor.emit()
     
@@ -158,8 +124,7 @@ class application_delegate(QtCore.QObject):
         
     def ESTOP(self):
         self.mouvment_delegate.ESTOP()
-        self.tilt_delegate.thread.terminate()
-        self.write_delegate.thread.terminate()
+        self.coordinates_delegate.thread.terminate()
         
     def draw_device(self, xori, yori, gpath, Nx, Ny, dx, dy):
         

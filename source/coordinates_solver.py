@@ -15,7 +15,10 @@ class Zsolver():
         Xstage = np.asarray(Xstage)
         
         N = len(Xstage)
-        if N<3:
+        if N==0:
+            return np.zeros(3)
+
+        elif N<3:
             return np.array([0, 0, np.mean(Xstage[:,2],0)])
             
         X, Y, Z = Xstage.T
@@ -50,7 +53,7 @@ class XYsolver():
 #         XYstage=np.array([pos['XYstage'] for pos in self.positions])
 #         XYmaster=np.array([pos['XYmaster'] for pos in self.positions])
         if N==0:
-            return np.nan, np.nan, [np.nan, np.nan]
+            return 0, 0, [0, 0]
         elif N==1:
             return self.solve1(XYstage, XYmaster)
         elif N==2:
