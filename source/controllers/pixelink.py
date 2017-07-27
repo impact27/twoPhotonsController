@@ -285,7 +285,7 @@ class PxLapi(object):
             else:
                 rc = result
 
-            if rc != 0:
+            if rc < 0:
                 if len(args) > 0 and isinstance(args[0], C.c_void_p):
                     hCamera = args[0]
                 else:
@@ -335,7 +335,7 @@ class PxLapi(object):
         """
         numCameras = C.c_ulong(0)
         rc = self.__lib.PxLGetNumberCameras(None, C.byref(numCameras))
-        if rc != 0:
+        if rc < 0:
             return (rc, [])
 
         serialNumbers = (C.c_long*numCameras.value)()
@@ -351,7 +351,7 @@ class PxLapi(object):
         """
         hCamera = W.HANDLE(0)
         rc = self.__lib.PxLInitialize(C.c_uint32(serialNumber), C.POINTER(W.HANDLE)(hCamera))
-        if (0 == rc):
+        if (rc >= 0):
             return (rc, hCamera)
         return (rc, 0)
 
@@ -413,7 +413,7 @@ class PxLapi(object):
         flags = C.c_ulong(0)
         paramLen = C.c_ulong(numParams)
         rc = self.__lib.PxLGetFeature(hCamera, feature, C.byref(flags), C.byref(paramLen), C.byref(value))
-        if rc != 0:
+        if rc < 0:
             return (rc, 0)
         else:
             if numParams == 1:
@@ -481,11 +481,11 @@ class PixeLINK(Camera):
     """ High level interface to the PixeLINK camera. """
 
     # --------------------------------------------------------------------------
-    def __init__(self, logid="CAM", startStreaming=True):
+    def __init__(self, logid="CAM", startStreaming=True, serialNumber=729002025):
         super(PixeLINK, self).__init__(logid)
         self._mutex = threading.Lock()
         self._api = PxLapi()
-        self._hCamera = self._api.Initialize(0)
+        self._hCamera = self._api.Initialize(serialNumber)
         self._streaming = False
         self._roi = self.get_property_value(PxLapi.FEATURE_ROI)
         if startStreaming:
@@ -703,10 +703,10 @@ def TestCameraAPI():
     api = PxLapi()
     hCamera = None
     try:
-        serialNums =  api.GetNumberCameras()
-        print(serialNums)
+#        serialNums =  api.GetNumberCameras()
+#        print(serialNums)
 
-        hCamera = api.Initialize()
+        hCamera = api.Initialize(729002025)
 
         # test integration time setting
         print("shutter", api.GetFeature(hCamera, PxLapi.FEATURE_SHUTTER))
@@ -745,7 +745,7 @@ def TestCameraAPI():
 # =============================================================================
 def TestCameraClass():
     print("Running tests on the Camera class...")
-    cam = PixeLINK()
+    cam = PixeLINK(serialNumber=729002025)
     shutter0 = cam.shutter
     print("shutter0", shutter0)
     roi0 = cam.roi
@@ -783,7 +783,7 @@ def TestCameraClass():
     cam.shutter = shutter0
     cam.close()
 
-    Save('test.bmp', data)
+#    Save('test.bmp', data)
 
 # =============================================================================
 def RunTests():

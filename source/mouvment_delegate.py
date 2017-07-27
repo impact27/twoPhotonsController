@@ -28,7 +28,7 @@ from PyQt5 import QtCore
 import sys
 import time
 
-if sys.platform == "darwin":
+if True:#sys.platform == "darwin":
     from controllers.stage_controller_placeholder import (linear_controller, 
                                                           cube_controller,
                                                           z_controller)

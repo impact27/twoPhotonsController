@@ -28,7 +28,7 @@ class laser_controller():
         
     def reconnect(self):
         del self.ser
-        self.ser = serial.Serial('COM8', timeout=1)
+        self.ser = serial.Serial('COM3', timeout=1)
         self.sendCommand('*IDN?')
         res=self.ser.readline().decode()
         print(res)
