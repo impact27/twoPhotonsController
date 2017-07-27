@@ -6,8 +6,8 @@ Created on Mon May 29 18:36:42 2017
 """
 #%%
 
-import image_registration.image as ir
-import image_registration.channel as cr
+import registrator.image as ir
+import registrator.channel as cr
 from tifffile import imread
 from matplotlib.pyplot import figure, imshow, plot
 import cv2

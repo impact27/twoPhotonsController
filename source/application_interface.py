@@ -123,11 +123,12 @@ class coordinates_tab(QtWidgets.QWidget):
         
         pos_list=QtWidgets.QTableWidget()
         pos_list.setColumnCount(3)
-        pos_list.setHorizontalHeaderLabels(['Position','Z','Delete'])
+        pos_list.setHorizontalHeaderLabels(['Xm','Xs','Delete'])
         pos_list.setColumnWidth(0,90)
-        pos_list.setColumnWidth(1,40)
+        pos_list.setColumnWidth(1,90)
         pos_list.setColumnWidth(2,40)
         pos_list.horizontalHeader().setStretchLastSection(True)
+        pos_list.verticalHeader().setDefaultSectionSize(48)
         
         clear_list_button = QtWidgets.QPushButton("Clear List")
         validate_button = QtWidgets.QPushButton("Process next Position")

@@ -11,8 +11,8 @@ import numpy as np
 from numpy.fft import fft2, fftshift,ifft2
 from glob import glob
 import matplotlib.pyplot as plt
-import image_registration.image as ir
-import image_registration.channel as cr
+import registrator.image as ir
+import registrator.channel as cr
 cmap = mpl.cm.get_cmap('inferno')
 import re
 from PIL import Image

@@ -7,7 +7,7 @@ Created on Tue Jul  4 18:29:57 2017
 import cv2
 import numpy as np
 
-import image_registration.image as ir
+import registrator.image as ir
 
 class XYcorrector():
     

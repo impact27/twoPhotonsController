@@ -77,8 +77,12 @@ class fake_controller(stage_controller):
         self.position=self.target
     
     def is_onTarget(self):
-        return not (time.time()-self.startTime
-                < np.linalg.norm((self.target-self.position))/self.normV)  
+        elapsed = time.time()-self.startTime
+        expected = np.linalg.norm((self.target-self.position))/self.normV
+        isT = elapsed > expected  
+        if not isT:
+            print(self, elapsed, expected)
+        return isT 
     
     def set_normV(self, normV):
         self.position=self.get_position()
