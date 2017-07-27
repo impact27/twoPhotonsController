@@ -93,190 +93,17 @@ class imageCanvas(MyMplCanvas):
         
 #==============================================================================
 # Tabs            
-#==============================================================================
-        
-class orientation_tab(QtWidgets.QWidget):
-    
-    #Signals
-    deleterow = QtCore.pyqtSignal(int)
-    displayrow = QtCore.pyqtSignal(int)
-    newposition = QtCore.pyqtSignal(float, float)
-    
-    def __init__(self, application_delegate, *args, **kwargs):
-        QtWidgets.QWidget.__init__(self, *args, **kwargs)
-        
-        #======================================================================
-        #       Create Widgets
-        #======================================================================
-        
-        coord_label=QtWidgets.QLabel("Position in master coordinates [μm]")
-        
-        Xinput=QtWidgets.QLineEdit()
-        Xinput.setValidator(QtGui.QDoubleValidator(-1e6,1e6,3))
-        Xinput.setText('0')
-        
-        Yinput=QtWidgets.QLineEdit()
-        Yinput.setValidator(QtGui.QDoubleValidator(-1e6,1e6,3))
-        Yinput.setText('0')
-        
-        newpos_button=QtWidgets.QPushButton("New Reference Position")
-        auto_offset_button=QtWidgets.QPushButton("Auto Offset")
-        
-        pos_list=QtWidgets.QTableWidget()
-        pos_list.setColumnCount(3)
-        pos_list.setHorizontalHeaderLabels(['Xmaster','Xstage','Delete'])
-        pos_list.setColumnWidth(0,100)
-        pos_list.setColumnWidth(1,100)
-        pos_list.setColumnWidth(2,40)
-        pos_list.horizontalHeader().setStretchLastSection(True)
-        
-        clear_list_button=QtWidgets.QPushButton("Clear List")
-        validate_button=QtWidgets.QPushButton("Validate")
-        
-        
-        correction_label = QtWidgets.QLabel('')
-        self.correction_label = correction_label
-        self.updateCorrection(
-                application_delegate.mouvment_delegate.get_XY_correction())
-        
-        correction_reset = QtWidgets.QPushButton('Reset')
-        correction_save = QtWidgets.QPushButton('Save')
-        correction_load = QtWidgets.QPushButton('Load')
-        
-        save_errors = QtWidgets.QPushButton('Save Errors')
-        
-        #======================================================================
-        #     Layout    
-        #======================================================================
-        
-        coord= QtWidgets.QHBoxLayout()
-        coord.addWidget(QtWidgets.QLabel("X:"))
-        coord.addWidget(Xinput)
-        coord.addWidget(QtWidgets.QLabel("Y:"))
-        coord.addWidget(Yinput)
-        
-        hbuttons=QtWidgets.QHBoxLayout()
-        hbuttons.addWidget(save_errors)
-        hbuttons.addWidget(clear_list_button)
-        
-        load_layout = QtWidgets.QHBoxLayout()
-        load_layout.addWidget(correction_save)
-        load_layout.addWidget(correction_load)
-        
-        correction_layout = QtWidgets.QVBoxLayout()
-        correction_layout.addWidget(correction_label)
-        correction_layout.addWidget(correction_reset)
-        correction_layout.addLayout(load_layout)
-        
-        main_layout=QtWidgets.QVBoxLayout(self)
-        main_layout.addWidget(coord_label)
-        main_layout.addLayout(coord)
-        main_layout.addWidget(newpos_button)
-        main_layout.addWidget(auto_offset_button)
-        main_layout.addWidget(pos_list)
-        main_layout.addWidget(validate_button)
-        main_layout.addLayout(hbuttons)
-        main_layout.addLayout(correction_layout)
-        self.setLayout(main_layout)
-        
-        #======================================================================
-        #      Connections   
-        #======================================================================
-        
-        od = application_delegate.orientation_delegate
-        
-        pos_list.cellClicked.connect(self.cellClicked)
-        pos_list.verticalHeader().sectionClicked.connect(self.rowClicked)
-        
-        
-        self.deleterow.connect(od.del_position)
-        self.displayrow.connect(od.displayrow)
-        self.newposition.connect(od.newXYpos)
-        
-        newpos_button.clicked.connect(self.newPosClicked)
-        clear_list_button.clicked.connect(od.clear_positions)
-        validate_button.clicked.connect(
-                application_delegate.correct_orientation)
-        
-        od.updatelist.connect(self.updateList)
-        
-        application_delegate.orientationCorrected.connect(
-                self.updateCorrection)
-        
-        correction_reset.clicked.connect(
-                application_delegate.reset_orientation)
-        
-        md=application_delegate.mouvment_delegate
-
-        correction_save.clicked.connect(md.save_XY_correction)
-        correction_load.clicked.connect(md.load_XY_correction)
-        
-        auto_offset_button.clicked.connect(od.auto_offset)
-        
-        save_errors.clicked.connect(od.save_errors)
-        #======================================================================
-        #         Save variables
-        #======================================================================
-        
-        self.xpos = Xinput
-        self.ypos = Yinput
-        self.pos_list = pos_list
-        
-    def newPosClicked(self,checked):
-        self.newposition.emit(float(self.xpos.text()),float(self.ypos.text()))
-        
-    def cellClicked(self, row,column):
-        if column==2:
-            self.deleterow.emit(row)
-        else:
-            self.displayrow.emit(row)
-            
-    def rowClicked(self, row):
-        self.displayrow.emit(row)
-        
-    def updateList(self,dictlist):
-        self.pos_list.clearContents()
-        self.pos_list.setRowCount(0)
-        for d in dictlist:
-            Xm=d['Xmaster']
-            Xs=d['Xstage']
-            self.addRow(Xm,Xs)
-        
-    def addRow(self, Xmaster, Xstage):
-        """Assume X are [x,y]"""
-        row=self.pos_list.rowCount()
-        self.pos_list.insertRow(row)
-        
-        Xm_label=QtWidgets.QLabel("[{:.0f},\n {:.0f}]".format(*Xmaster))
-        Xm_label.setAlignment(QtCore.Qt.AlignCenter)
-        
-        Xs_label=QtWidgets.QLabel("[{:.0f},\n {:.0f}]".format(*Xstage))
-        Xs_label.setAlignment(QtCore.Qt.AlignCenter)
-        
-        Delete=QtWidgets.QLabel('Delete')
-        Delete.setStyleSheet("background-color: red")
-        Delete.setAlignment(QtCore.Qt.AlignCenter)
-        
-        self.pos_list.setCellWidget(row,0,Xm_label)
-        self.pos_list.setCellWidget(row,1,Xs_label)
-        self.pos_list.setCellWidget(row,2,Delete)
-        
-    def updateCorrection(self, coeff):
-        self.correction_label.setText(
-                'Φ:\t{:.5g}π\nθ:\t{:.5g}π\nXo:\t[{:.3f}, {:.3f}]μm'.format(
-                    coeff[0]/np.pi, coeff[1]/np.pi, *coeff[2:]))
-        
+#==============================================================================        
     
 class layout_wrapper(QtWidgets.QWidget):
     def __init__(self, layout, *args, **kwargs):       
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
         self.setLayout(layout)
         
-class tilt_tab(QtWidgets.QWidget):
+class coordinates_tab(QtWidgets.QWidget):
     
     deleterow = QtCore.pyqtSignal(int)
     displayrow = QtCore.pyqtSignal(int)
-    plotCurveRow = QtCore.pyqtSignal(int)
     
     def __init__(self, application_delegate, *args, **kwargs):
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
@@ -285,13 +112,9 @@ class tilt_tab(QtWidgets.QWidget):
         #       Create Widgets
         #======================================================================
         
-        Xinput = QtWidgets.QLineEdit('0')
-        X_validator = QtGui.QDoubleValidator(-1,100,3)
-        Xinput.setValidator(X_validator)
-        
-        Yinput = QtWidgets.QLineEdit('0')
-        Y_validator = QtGui.QDoubleValidator(-1,100,3)
-        Yinput.setValidator(Y_validator)
+        Xinput = QtWidgets.QLineEdit('0, 0, 0')
+#         X_validator = QtGui.QDoubleValidator(-1,100,3)
+#         Xinput.setValidator(X_validator)
         
         newpos_button = QtWidgets.QPushButton("New Reference Position")
         
@@ -300,20 +123,20 @@ class tilt_tab(QtWidgets.QWidget):
         
         pos_list=QtWidgets.QTableWidget()
         pos_list.setColumnCount(3)
-        pos_list.setHorizontalHeaderLabels(['Position','Z','Delete'])
+        pos_list.setHorizontalHeaderLabels(['Xm','Xs','Delete'])
         pos_list.setColumnWidth(0,90)
-        pos_list.setColumnWidth(1,40)
+        pos_list.setColumnWidth(1,90)
         pos_list.setColumnWidth(2,40)
         pos_list.horizontalHeader().setStretchLastSection(True)
+        pos_list.verticalHeader().setDefaultSectionSize(48)
         
         clear_list_button = QtWidgets.QPushButton("Clear List")
-        validate_button = QtWidgets.QPushButton("Validate") 
-        raise_button = QtWidgets.QPushButton("Raise cube for manual focusing")
+        validate_button = QtWidgets.QPushButton("Process next Position")
         
         correction_label = QtWidgets.QLabel('')
         self.correction_label = correction_label
         self.updateCorrection(
-                application_delegate.mouvment_delegate.get_Z_correction())
+                *application_delegate.mouvment_delegate.get_corrections())
         
         correction_reset = QtWidgets.QPushButton('Reset')
         correction_save = QtWidgets.QPushButton('Save')
@@ -325,10 +148,8 @@ class tilt_tab(QtWidgets.QWidget):
         #======================================================================
         
         coord= QtWidgets.QHBoxLayout()
-        coord.addWidget(QtWidgets.QLabel("X:"))
+        coord.addWidget(QtWidgets.QLabel("X (x, y, z):"))
         coord.addWidget(Xinput)
-        coord.addWidget(QtWidgets.QLabel("Y:"))
-        coord.addWidget(Yinput)
         
         tab1Layout=QtWidgets.QVBoxLayout()
         tab1Layout.addLayout(coord)
@@ -363,7 +184,6 @@ class tilt_tab(QtWidgets.QWidget):
         
         main_layout=QtWidgets.QVBoxLayout(self)
         main_layout.addWidget(tabs_widget)
-        main_layout.addWidget(raise_button)
         main_layout.addWidget(pos_list)
         main_layout.addWidget(validate_button)
         main_layout.addLayout(hbuttons)
@@ -373,51 +193,42 @@ class tilt_tab(QtWidgets.QWidget):
         #======================================================================
         #      Connections   
         #======================================================================
-        td = application_delegate.tilt_delegate
+        cd = application_delegate.coordinates_delegate
         
         pos_list.cellClicked.connect(self.cellClicked)
         pos_list.verticalHeader().sectionClicked.connect(self.rowClicked)
         
-        newpos_button.clicked.connect( lambda: td.add_position(
-                                               float(Xinput.text()),
-                                               float(Yinput.text())))
+        newpos_button.clicked.connect( lambda: cd.add_position(
+                    np.fromstring(Xinput.text(), sep=',')))
             
         pos_file_button.clicked.connect(self.openfile)
             
-        clear_list_button.clicked.connect(td.clear_positions)
-        validate_button.clicked.connect(td.validate_positions)
+        clear_list_button.clicked.connect(cd.clear_positions)
+        validate_button.clicked.connect(cd.processPos)
         
-        self.deleterow.connect(td.deleteIdx)
-        self.displayrow.connect(td.display_row)
-        self.plotCurveRow.connect(td.plotCurveRow)
-        td.updatelist.connect(self.updateList)
-        raise_button.clicked.connect(application_delegate.manualFocus)
+        self.deleterow.connect(cd.del_position)
+        self.displayrow.connect(cd.displayrow)
+        cd.updatelist.connect(self.updateList)
         
-        application_delegate.tiltCorrected.connect(
-                self.updateCorrection)
         
-        correction_reset.clicked.connect(
-                application_delegate.reset_tilt)
-        
-#        application_delegate.newPosRange.connect(X_validator.setRange)
-#        application_delegate.newPosRange.connect(Y_validator.setRange)
+        application_delegate.coordinatesCorrected.connect(self.updateCorrection)
+        correction_reset.clicked.connect(cd.clear_positions)
         
         md = application_delegate.mouvment_delegate
-        correction_save.clicked.connect(md.save_Z_correction)
-        correction_load.clicked.connect(md.load_Z_correction)
+        correction_save.clicked.connect(md.save_corrections)
+        correction_load.clicked.connect(md.load_corrections)
         
-        save_errors.clicked.connect(td.save_errors)
+        save_errors.clicked.connect(cd.save_errors)
         
         #======================================================================
         #         Save variables
         #======================================================================
         
         self.xinput=Xinput
-        self.yinput=Yinput
         self.fninput=path_field
         self.pos_list=pos_list
         self.path_field = path_field
-        self.td = td
+        self.cd = cd
         
     def openfile(self):
         fn = self.path_field.text()
@@ -429,14 +240,12 @@ class tilt_tab(QtWidgets.QWidget):
                     self,'Position File',QtCore.QDir.homePath())
             self.path_field.setText(fn[0])
             
-        self.td.load_file(fn)
+        self.cd.load_list(fn)
         
         
     def cellClicked(self, row,column):
         if column==2:
             self.deleterow.emit(row)
-        elif column==1:
-            self.plotCurveRow.emit(row)
         else:
             self.displayrow.emit(row)
             
@@ -447,36 +256,39 @@ class tilt_tab(QtWidgets.QWidget):
         self.pos_list.clearContents()
         self.pos_list.setRowCount(0)
         for d in dictlist:
-            Pos=d['X']
-            Z=d['Z']
-            self.addRow(Pos,Z)
+            Xm=d['Xm']
+            Xs=d['Xs']
+            self.addRow(Xm, Xs)
         
-    def addRow(self, Position, Z):
+    def addRow(self, Xm, Xs):
         """Assume X are [x,y]"""
         row=self.pos_list.rowCount()
         self.pos_list.insertRow(row)
         
-        pos_label=QtWidgets.QLabel("[{:.0f},\n {:.0f}]".format(*Position))
-        pos_label.setAlignment(QtCore.Qt.AlignCenter)
+        Xmtext = "[{:.0f},\n {:.0f},\n {:.0f}]".format(*Xm)
+        Xm_label=QtWidgets.QLabel(Xmtext)
+        Xm_label.setAlignment(QtCore.Qt.AlignCenter)
         
-        ztext="{:.2f}".format(Z)
-        if np.isnan(Z):
-            ztext='?'
-        z_label=QtWidgets.QLabel(ztext)
-        z_label.setAlignment(QtCore.Qt.AlignCenter)
+        if Xs is None:
+            Xstext = '?'
+        else:
+            Xstext = "[{:.0f},\n {:.0f},\n {:.0f}]".format(*Xs)
+        Xs_label=QtWidgets.QLabel(Xstext)
+        Xs_label.setAlignment(QtCore.Qt.AlignCenter)
         
         Delete=QtWidgets.QLabel('Delete')
         Delete.setStyleSheet("background-color: red")
         Delete.setAlignment(QtCore.Qt.AlignCenter)
         
-        self.pos_list.setCellWidget(row,0,pos_label)
-        self.pos_list.setCellWidget(row,1,z_label)
+        self.pos_list.setCellWidget(row,0,Xm_label)
+        self.pos_list.setCellWidget(row,1,Xs_label)
         self.pos_list.setCellWidget(row,2,Delete)
         
-    def updateCorrection(self, coeff):
-        self.correction_label.setText(
-                '{:.3e}X + {:.3e}Y\n+ {:.3f}μm'.format(*coeff))
-        
+    def updateCorrection(self, XYcoeff, Zcoeffs):
+        text = ( '{:.3e}X + {:.3e}Y\n+ {:.3f}μm\n'.format(*Zcoeffs)
+                + 'Φ:\t{:.5g}π\nθ:\t{:.5g}π\nXo:\t[{:.3f}, {:.3f}]μm'.format(
+                    XYcoeff[0]/np.pi, XYcoeff[1]/np.pi, *XYcoeff[2:]))
+        self.correction_label.setText(text)
     
 class write_tab(QtWidgets.QWidget):
     def __init__(self, application_delegate, *args, **kwargs):
@@ -943,7 +755,7 @@ class secondary_widget(QtWidgets.QWidget):
                 bg_button.setText('Set Background')
         bg_button.toggled.connect(switchBGButton)
         
-        bg_button.clicked.connect(application_delegate.set_bg)
+        bg_button.clicked.connect(application_delegate.camera_delegate.set_bg)
         
         #======================================================================
         #         Save variables
@@ -1018,10 +830,8 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         #Create tab widget
         tabs_widget=QtWidgets.QTabWidget()
 
-        tabs_widget.addTab(orientation_tab(self.application_delegate),
-                           'Orientation')
-        tabs_widget.addTab(tilt_tab(self.application_delegate),
-                           'Tilt')
+        tabs_widget.addTab(coordinates_tab(self.application_delegate),
+                           'Coordinates')
         tabs_widget.addTab(write_tab(self.application_delegate),
                            'Write')
         

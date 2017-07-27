@@ -22,14 +22,17 @@ class camera_delegate(QtCore.QObject):
         self.controller = camera_controller()
         self.isAuto = False
         self.pixelSize = 1/20 # TODO: check that
+        self.reset_bg()
         
     def reconnect(self):
         self.controller.reconnect()
         
-    def get_image(self):
+    def get_image(self, rmbg=True):
         im = self.controller.get_image()
         if self.isAuto:
             self.correctShutter(im)
+        if rmbg:
+            im=im*1. - self._bg
         return im
     
     def shutter_range(self):
@@ -40,6 +43,8 @@ class camera_delegate(QtCore.QObject):
         self.controller.set_shutter(time)
     def get_shutter(self):
         return self.controller.get_shutter()
+    
+    shutter = property(get_shutter, set_shutter)
     
     def autoShutter(self, on):
         self.shutterState.emit(on)
@@ -55,4 +60,11 @@ class camera_delegate(QtCore.QObject):
             overprct = np.sum(im>254)/np.prod(np.shape(im))
             if overprct > .1: # 10% image overexposed
                 self.set_shutter(time/2)
+                        
+    def reset_bg(self):
+        self._bg = 0
+        
+    def set_bg(self):
+        self._bg = self.controller.get_image()
+
             
