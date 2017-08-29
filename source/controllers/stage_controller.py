@@ -185,7 +185,6 @@ class cube_controller(stage_controller):
         return np.all(self.cube.qONT([1,2,3]).values())
     
     def get_pos_range(self, axis):
-        print('hello')
         return np.array([0, 100])
     
     def get_vel_range(self, axis):

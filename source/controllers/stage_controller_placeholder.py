@@ -80,8 +80,6 @@ class fake_controller(stage_controller):
         elapsed = time.time()-self.startTime
         expected = np.linalg.norm((self.target-self.position))/self.normV
         isT = elapsed > expected  
-        if not isT:
-            print(self, elapsed, expected)
         return isT 
     
     def set_normV(self, normV):
