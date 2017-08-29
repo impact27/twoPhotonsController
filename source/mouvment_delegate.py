@@ -28,7 +28,7 @@ from PyQt5 import QtCore
 import sys
 import time
 
-if True:#sys.platform == "darwin":
+if sys.platform == "darwin":
     from controllers.stage_controller_placeholder import (linear_controller, 
                                                           cube_controller,
                                                           z_controller)
@@ -100,7 +100,7 @@ class controller():
         #Get correct speed for each axis   
         Xdist=(Xs-XsFrom)
         Xtime=np.linalg.norm(Xdist)/speed
-        V=Xdist/Xtime
+        V=np.abs(Xdist/Xtime)
         
         #Move
         self._MOVVEL(Xs, V, checkid=checkid)

@@ -204,7 +204,7 @@ class z_controller(stage_controller):
         self.motor.move_home(True)
     
     def get_position(self):
-        return self.motor.position()*1000
+        return self.motor.position*1000
     
     def ESTOP(self):
         self.motor.stop_profiled()
