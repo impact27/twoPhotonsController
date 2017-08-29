@@ -125,6 +125,7 @@ class coordinates_delegate(QtCore.QObject):
         self._update()
         
     def _updateXYZCorr(self):
+            
         #get Xm and Xs
         Xms = np.asarray([p['Xm'] for p in self._positions])
         Xss = np.asarray([p['Xs'] for p in self._positions])
@@ -135,10 +136,12 @@ class coordinates_delegate(QtCore.QObject):
             #Get coeffs
             zcoeffs = self.Zsolver.solve(Xss)
             xycoeffs = self.XYsolver.solve(Xss[:,:2], Xms[:,:2])
-            #Apply correction
-            self._md.set_corrections(xycoeffs, zcoeffs)
-            
-            self.parent.coordinatesCorrected.emit(xycoeffs, zcoeffs)
+        else:
+            zcoeffs = np.zeros(3)
+            xycoeffs = np.zeros(4)
+        #Apply correction
+        self._md.set_corrections(xycoeffs, zcoeffs)
+        self.parent.coordinatesCorrected.emit(xycoeffs, zcoeffs)
         
     def _update(self):
         #use saved info to correct coordinates
