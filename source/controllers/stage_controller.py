@@ -97,8 +97,10 @@ class linear_controller(stage_controller):
         self.lineY.CloseConnection()
     
     def Ref(self):
-        self.lineX.FRF(1)
-        self.lineY.FRF(1)
+        if not self.lineX.qFRF(1):
+            self.lineX.FRF(1)
+        if not self.lineY.qFRF(1):
+            self.lineY.FRF(1)
         while not self.get_state():
             time.sleep(.1)
                 
@@ -201,7 +203,8 @@ class z_controller(stage_controller):
     
     def reconnect(self):
         self.motor = apt.Motor(zmotorSN)
-        self.motor.move_home(True)
+        if not self.motor.has_homing_been_completed():
+            self.motor.move_home(True)
     
     def get_position(self):
         return self.motor.position*1000
