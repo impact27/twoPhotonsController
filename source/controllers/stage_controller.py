@@ -69,7 +69,7 @@ class linear_controller(stage_controller):
         self.reconnect()
         time.sleep(1)
         self.Ref()
-        
+    @profile   
     def reconnect(self):
         if self.lineX is not None:
             self.lineX.CloseConnection()
@@ -159,6 +159,7 @@ class cube_controller(stage_controller):
     def autoZero(self):
         self.cube.ATZ([1, 2, 3], [0, 0, 0])
      
+    @profile
     def reconnect(self):
         if self.cube is not None:
             self.cube.CloseConnection()
@@ -209,7 +210,7 @@ class z_controller(stage_controller):
     def reconnect(self):
         self.motor = apt.Motor(zmotorSN)
         self.motor.set_velocity_parameters(0, self.motor.acceleration, 1)
-        if not self.motor.has_homing_been_completed():
+        if not self.motor.has_homing_been_completed:
             self.motor.move_home(True)
     
     def get_position(self):
