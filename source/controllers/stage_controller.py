@@ -21,6 +21,7 @@ from pipython import GCSDevice
 import thorlabs_apt as apt
 import time
 import numpy as np
+from PyQt5 import QtCore
 
 #==============================================================================
 # Stage controller
@@ -66,41 +67,39 @@ class linear_controller(stage_controller):
         super().__init__()
         self.lineX = None
         self.lineY = None
+        self.Xthread = linethread(XStageName)
+        self.Ythread = linethread(YStageName)
+        self.Xthread.finished.connect(lambda: self.endThread('X'))
+        self.Ythread.finished.connect(lambda: self.endThread('Y'))
         self.reconnect()
-        time.sleep(1)
-        self.Ref()
-    @profile   
+
+    def endThread(self, axis):
+        if axis == 'X':
+            self.lineX = self.Xthread.stage
+        if axis == 'Y':
+            self.lineY = self.Ythread.stage
+            
+    @property
+    def connected(self):
+        return (self.lineX is not None) and (self.lineY is not None)
+    
     def reconnect(self):
         if self.lineX is not None:
             self.lineX.CloseConnection()
             del self.lineX
+            self.lineX = None
             
         if self.lineY is not None:
             self.lineY.CloseConnection()
             del self.lineY
+            self.lineY = None
             
-        self.lineX = GCSDevice('C-863.11')
-        self.lineY = GCSDevice('C-863.11')
-        
-        self.lineX.ConnectUSB(XStageName)
-        assert(self.lineX.qCST()['1']=='M-404.2DG')
-        print('Connected',self.lineX.qIDN())
-        self.lineX.SVO(1,True)
-        
-        self.lineY.ConnectUSB(YStageName)
-        assert(self.lineY.qCST()['1']=='M-404.2DG')
-        print('Connected',self.lineY.qIDN())
-        self.lineY.SVO(1,True)        
-
+        self.Xthread.start() 
+        self.Ythread.start() 
+    
     def __del__(self):
         self.lineX.CloseConnection()
         self.lineY.CloseConnection()
-    
-    def Ref(self):
-        if not self.lineX.qFRF(1):
-            self.lineX.FRF(1)
-        if not self.lineY.qFRF(1):
-            self.lineY.FRF(1)
         
     def waitState(self, timeout=30):
         startt = time.time()
@@ -143,8 +142,27 @@ class linear_controller(stage_controller):
         return np.array([0,1.5])*1000  
     
     def get_state(self):
+        if self.lineX is None or self.lineY is None:
+            return False
         return self.lineX.IsControllerReady() and self.lineY.IsControllerReady()
+ 
+class linethread(QtCore.QThread):
+    def __init__(self, StageName):
+        super().__init__()
+        self.StageName = StageName
+        self.stage = None
         
+    def run(self):
+        self.stage = None
+        stage = GCSDevice('C-863.11')
+        stage.ConnectUSB(self.StageName)
+        assert(stage.qCST()['1']=='M-404.2DG')
+        print('Connected',stage.qIDN())
+        stage.SVO(1,True)
+        #time.sleep(1)
+        if not stage.qFRF(1):
+            stage.FRF(1)
+        self.stage = stage
 #==============================================================================
 # Cube Controller
 #==============================================================================
@@ -154,24 +172,20 @@ class cube_controller(stage_controller):
     def __init__(self):
         super().__init__()
         self.cube = None
+        self.thread = cubethread(cubeName)
+        self.thread.finished.connect(self.threadend)
         self.reconnect()
         
-    def autoZero(self):
-        self.cube.ATZ([1, 2, 3], [0, 0, 0])
-     
-    @profile
+    def threadend(self):
+        self.cube = self.thread.stage
+        
     def reconnect(self):
         if self.cube is not None:
             self.cube.CloseConnection()
             del self.cube
-            
-        self.cube = GCSDevice('E-727')
-        self.cube.ConnectUSB(cubeName)
-        assert(self.cube.qCST()['1']=='P-611.3S')
-        print('Connected',self.cube.qIDN())
-        self.cube.SVO([1,2,3],[True,True,True])
-        
-        self.autoZero()
+            self.cube = None
+          
+        self.thread.start()
         
     def __del__(self):
         self.cube.CloseConnection()
@@ -200,18 +214,40 @@ class cube_controller(stage_controller):
     
     def get_state(self):
         return self.cube.IsControllerReady()
+    
+class cubethread(QtCore.QThread):
+    def __init__(self, StageName):
+        super().__init__()
+        self.StageName = StageName
+        self.stage = None
+        
+    def run(self):
+        self.stage = None
+        stage = GCSDevice('E-727')
+        stage.ConnectUSB(self.StageName)
+        assert(stage.qCST()['1']=='P-611.3S')
+        print('Connected',stage.qIDN())
+        stage.SVO([1,2,3],[True,True,True])
+        stage.ATZ([1, 2, 3], [0, 0, 0])
+        self.stage = stage
  
 zmotorSN = 27502020
 class z_controller(stage_controller):
     def __init__(self):
         super().__init__()
+        self.motor = None
+        self.thread = Zthread(zmotorSN)
+        self.thread.finished.connect(self.endthread)
         self.reconnect()
     
+    def endthread(self):
+        self.motor = self.thread.stage
+        
     def reconnect(self):
-        self.motor = apt.Motor(zmotorSN)
-        self.motor.set_velocity_parameters(0, self.motor.acceleration, 1)
-        if not self.motor.has_homing_been_completed:
-            self.motor.move_home(True)
+        is self.motor is not None:
+            del self.motor
+            self.motor = None
+        self.thread.start()   
     
     def get_position(self):
         return self.motor.position*1000
@@ -235,8 +271,22 @@ class z_controller(stage_controller):
             self.motor.move_to(X)
     
     def get_state(self):
-        return True
-    
+        return self.motor is not None
+    def __del__(self):
+  
+class Zthread(QtCore.QThread):
+    def __init__(self, SN):
+        super().__init__()
+        self.SN = SN
+        self.stage = None
+        
+    def run(self):
+        self.stage = None
+        stage = apt.Motor(zmotorSN)
+        stage.set_velocity_parameters(0, self.motor.acceleration, 1)
+        if not stage.has_homing_been_completed:
+            stage.move_home(True)
+        self.stage = stage
 #==============================================================================
 # Helper functions
 #==============================================================================
