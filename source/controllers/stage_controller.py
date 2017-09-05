@@ -208,13 +208,9 @@ class z_controller(stage_controller):
     
     def reconnect(self):
         self.motor = apt.Motor(zmotorSN)
-<<<<<<< HEAD
         self.motor.set_velocity_parameters(0, self.motor.acceleration, 1)
-        self.motor.move_home(True)
-=======
         if not self.motor.has_homing_been_completed():
             self.motor.move_home(True)
->>>>>>> bd9cfef5fee9a4555645476cdf61d487ac42a333
     
     def get_position(self):
         return self.motor.position*1000

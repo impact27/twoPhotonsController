@@ -28,7 +28,3 @@ aw = ApplicationWindow()
 aw.setWindowTitle("%s" % progname)
 aw.show()
 sys.exit(qApp.exec_())
-
-#%%
-import matplotlib.pyplot as plt
-plt.imshow()
