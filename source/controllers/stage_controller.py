@@ -99,8 +99,13 @@ class linear_controller(stage_controller):
     def Ref(self):
         self.lineX.FRF(1)
         self.lineY.FRF(1)
+        
+    def waitState(self, timeout=30):
+        startt = time.time()
         while not self.get_state():
             time.sleep(.1)
+            if time.time() - startt > timeout:
+                raise RuntimeError("Linear Stage not responding")
                 
     def MOVVEL(self,X,V):
         X, V = np.array([X, V])/1000
@@ -201,6 +206,7 @@ class z_controller(stage_controller):
     
     def reconnect(self):
         self.motor = apt.Motor(zmotorSN)
+        self.motor.set_velocity_parameters(0, self.motor.acceleration, 1)
         self.motor.move_home(True)
     
     def get_position(self):
@@ -210,7 +216,7 @@ class z_controller(stage_controller):
         self.motor.stop_profiled()
     
     def is_onTarget(self):
-        return not self.motor.is_in_motion()
+        return not self.motor.is_in_motion
     
     def get_pos_range(self, axis):
         return np.array(self.motor.get_stage_axis_info()[:2])*1000
@@ -219,9 +225,10 @@ class z_controller(stage_controller):
         return np.asarray([0, self.motor.velocity_upper_limit()])*1000
     
     def MOVVEL(self, X, V):
-        X, V = np.array([X, V])/1000
-        self.motor.set_velocity_parameters(0, self.motor.acceleration, V)
-        self.motor.move_to(X)
+        if V > 0:
+            X, V = np.array([X, V])/1000
+            self.motor.set_velocity_parameters(0, self.motor.acceleration, V)
+            self.motor.move_to(X)
     
     def get_state(self):
         return True

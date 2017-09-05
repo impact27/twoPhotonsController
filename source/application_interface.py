@@ -56,6 +56,7 @@ class imageCanvas(MyMplCanvas):
         MyMplCanvas.__init__(self, *args, **kwargs)
         self.clear()
         self._lastim=np.zeros((2,2))
+        self._autoc = False
         
     def imshow(self, im , vmax = None):
         self._lastim=im
@@ -70,6 +71,8 @@ class imageCanvas(MyMplCanvas):
         self._lastim=im
         if self._imhandle is not None:
             self._imhandle.set_data(im)
+            if self._autoc:
+                self._imhandle.set_clim(im.min(), im.max())
             self.draw()
         else:
             self.imshow(im, vmax = 255)
@@ -751,11 +754,11 @@ class secondary_widget(QtWidgets.QWidget):
         def switchBGButton(on):
             if on:
                 bg_button.setText('Remove Background')
+                application_delegate.camera_delegate.set_bg()
             else:
                 bg_button.setText('Set Background')
+                application_delegate.camera_delegate.reset_bg()
         bg_button.toggled.connect(switchBGButton)
-        
-        bg_button.clicked.connect(application_delegate.camera_delegate.set_bg)
         
         #======================================================================
         #         Save variables

@@ -36,7 +36,7 @@ class coordinates_delegate(QtCore.QObject):
         self.motor = application_delegate.mouvment_delegate.motor
         self.Zsolver = Zsolver()
         self.XYsolver = XYsolver()
-        self.thread = positionThread(self, [100, 100, 0])
+        self.thread = positionThread(self, [1000, 1000, 0])
         self.thread.finished.connect(self.endThread)
      
     def add_position(self, Xm):
@@ -161,7 +161,7 @@ class positionThread(QtCore.QThread):
         self.Zcorrector = Zcorrector(self.motor, self.camera, 500)
         self._bgOffset = np.asarray(bgOffset)
      
-    def set_bgOffset(bgOffset):
+    def set_bgOffset(self, bgOffset):
         bgOffset = np.asarray(bgOffset)
         self._bgOffset = bgOffset
         

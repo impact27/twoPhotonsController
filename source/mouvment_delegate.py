@@ -193,6 +193,7 @@ class motor(controller):
         super().__init__(1000, parent)
         self.XY_c = linear_controller()
         self.Z_c = z_controller()
+        self.XY_c.waitState()
         self._R = np.eye(2)
         self._M = np.eye(2)
         self._offset = np.zeros(2)
