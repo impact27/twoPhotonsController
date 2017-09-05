@@ -22,6 +22,7 @@ import thorlabs_apt as apt
 import time
 import numpy as np
 from PyQt5 import QtCore
+from functools import partial
 
 #==============================================================================
 # Stage controller
@@ -65,39 +66,27 @@ YStageName='PI C-863 Mercury SN 0165500227'
 class linear_controller(stage_controller):
     def __init__(self):
         super().__init__()
-        self.lineX = None
-        self.lineY = None
-        self.Xthread = linethread(XStageName, lambda s: self.set_stage(s, 'X'))
-        self.Ythread = linethread(YStageName, lambda s: self.set_stage(s, 'Y'))
+        self.lines = [None, None]
+        self.threads = [linethread(sn, partial(self.set_stage, i)) 
+                        for i, sn in enumerate([XStageName, YStageName])]
         self.reconnect()
 
-    def set_stage(self, stage, axis):
-        if axis == 'X':
-            self.lineX = stage
-        if axis == 'Y':
-            self.lineY = stage
+    def set_stage(self, axis, stage):
+        self.lines[axis] = stage
             
     @property
     def connected(self):
-        return (self.lineX is not None) and (self.lineY is not None)
+        return np.all([l is not None for l in self.lines])
     
     def reconnect(self):
-        if self.lineX is not None:
-            self.lineX.CloseConnection()
-            del self.lineX
-            self.lineX = None
-            
-        if self.lineY is not None:
-            self.lineY.CloseConnection()
-            del self.lineY
-            self.lineY = None
-            
-        self.Xthread.start() 
-        self.Ythread.start() 
+        for i in range(2):
+            if self.lines[i] is not None:
+                self.lines[i].CloseConnection()
+                self.lines[i] = None
+        [t.start() for t in self.threads]
     
     def __del__(self):
-        self.lineX.CloseConnection()
-        self.lineY.CloseConnection()
+        [l.CloseConnection() for l in self.lines]
         
     def waitState(self, timeout=30):
         startt = time.time()
@@ -108,30 +97,24 @@ class linear_controller(stage_controller):
                 
     def MOVVEL(self,X,V):
         X, V = np.array([X, V])/1000
-        self.lineX.VEL(1,np.abs(V[0]))
-        self.lineY.VEL(1,np.abs(V[1]))
-        self.lineX.MOV(1,X[0])
-        self.lineY.MOV(1,X[1])
-        
+        for x, v, l in zip(X, V, self.lines):
+            if v>0:
+                l.VEL(1, v)
+                l.MOV(1, x)
     
     def get_position(self):
-        return np.asarray([self.lineX.qPOS()['1'],
-                           self.lineY.qPOS()['1']],dtype=float)*1000
+        return np.asarray([l.qPOS()['1'] for l in self.lines],
+                dtype=float)*1000
     
     def ESTOP(self):
-        try:
-            self.lineX.HLT()
-        except:
-            pass
-        
-        try:
-            self.lineY.HLT()
-        except:
-            pass
-                
+        for l in self.lines:
+            try:
+               l.HLT()
+            except:
+                pass
     
     def is_onTarget(self):
-        return self.lineX.qONT()['1'] and self.lineY.qONT()['1'] 
+        return np.all([l.qONT()['1'] for l in self.lines]) 
 
     def get_pos_range(self, axis):
         return np.array([0,50.])*1000
@@ -140,10 +123,10 @@ class linear_controller(stage_controller):
         return np.array([0,1.5])*1000  
     
     def get_state(self):
-        if self.lineX is None or self.lineY is None:
+        if np.any([l is None for l in self.lines]):
             return False
-        return self.lineX.IsControllerReady() and self.lineY.IsControllerReady()
- 
+        return np.all([l.IsControllerReady() for l in self.lines])
+    
 class linethread(QtCore.QThread):
     def __init__(self, StageName, callback):
         super().__init__()
@@ -153,7 +136,9 @@ class linethread(QtCore.QThread):
     def run(self):
         stage = GCSDevice('C-863.11')
         stage.ConnectUSB(self.StageName)
-        assert(stage.qCST()['1']=='M-404.2DG')
+        if stage.qCST()['1'] != 'M-404.2DG':
+            print(stage.qCST()['1'])
+            raise RuntimeError("Incorrect stage connected")
         print('Connected',stage.qIDN())
         stage.SVO(1,True)
         #time.sleep(1)
@@ -222,7 +207,9 @@ class cubethread(QtCore.QThread):
     def run(self):
         stage = GCSDevice('E-727')
         stage.ConnectUSB(self.StageName)
-        assert(stage.qCST()['1']=='P-611.3S')
+        if stage.qCST()['1'] != 'P-611.3S':
+            print(stage.qCST()['1'])
+            raise RuntimeError("Incorrect stage connected")
         print('Connected',stage.qIDN())
         stage.SVO([1,2,3],[True,True,True])
         stage.ATZ([1, 2, 3], [0, 0, 0])
@@ -282,6 +269,10 @@ class Zthread(QtCore.QThread):
         if not stage.has_homing_been_completed:
             print("Reference move")
             stage.move_home(True)
+        #Need to move otherwise forgets if is moving
+        stage.move_to(5.9)
+        time.sleep(.1)
+        stage.move_to(6)
         self.callback(stage)
 
 #==============================================================================

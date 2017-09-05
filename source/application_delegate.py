@@ -48,6 +48,9 @@ class application_delegate(QtCore.QObject):
         self.camera_delegate = camera_delegate()
         self.laser_delegate = laser_delegate()
         
+        #Save plot canevas
+        self.imageCanvas=imageCanvas
+        
         #Create delegates for actions
         self.coordinates_delegate = coordinates_delegate(self)
         self.write_delegate = write_delegate(self)
@@ -61,10 +64,6 @@ class application_delegate(QtCore.QObject):
         
         self.status_timer = QtCore.QTimer()
         self.status_timer.timeout.connect(self.updateStatus)
-        
-        #Save plot canevas
-        self.imageCanvas=imageCanvas
-        
         
         self.lastpos=[np.nan, np.nan]
         self.lastFracIntensity=np.nan

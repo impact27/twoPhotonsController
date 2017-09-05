@@ -36,8 +36,7 @@ class coordinates_delegate(QtCore.QObject):
         self.motor = application_delegate.mouvment_delegate.motor
         self.Zsolver = Zsolver()
         self.XYsolver = XYsolver()
-        self.thread = positionThread(self, [1000, 1000, 0])
-        self.thread.finished.connect(self.endThread)
+        self.thread = positionThread(self, [-1000, -1000, 0])
      
     def add_position(self, Xm):
         self._positions.append(
@@ -88,9 +87,9 @@ class coordinates_delegate(QtCore.QObject):
         #Add that in a thread
         self.thread.start()
         
-    def endThread(self):
+    def endThread(self, graph):
         #Save new position
-        self._newPos(self.thread.graphs)
+        self._newPos(graph)
         #if still positions in the list & position is reachable:
         if self._load_next():
         	#go to position
@@ -158,7 +157,7 @@ class positionThread(QtCore.QThread):
         self.camera = delegate.camera
         self._md = delegate._md
         self.XYcorrector = XYcorrector(self.motor, self.camera)
-        self.Zcorrector = Zcorrector(self.motor, self.camera, 500)
+        self.Zcorrector = Zcorrector(self.motor, self.camera, 500, delegate.parent.imageCanvas)
         self._bgOffset = np.asarray(bgOffset)
      
     def set_bgOffset(self, bgOffset):
@@ -177,7 +176,7 @@ class positionThread(QtCore.QThread):
         #go to bg position
         self.motor.move_by(self._bgOffset, wait=True, checkid=self.lockid)
         #focus using laser
-        self.graphs = self.Zcorrector.focus(checkid=self.lockid)
+        graphs = self.Zcorrector.focus(checkid=self.lockid)
         #take bg
         self.camera.set_bg()
         #return to image position
@@ -186,6 +185,8 @@ class positionThread(QtCore.QThread):
         self.XYcorrector.align(checkid=self.lockid)
         
         self._md.unlock()
+        
+        self.delegate.endThread(graphs)
         
 
         

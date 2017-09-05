@@ -44,7 +44,7 @@ class XYcorrector():
     
 class Zcorrector():
     
-    def __init__(self, motor, camera, ZRangeSize):
+    def __init__(self, motor, camera, ZRangeSize, imageCanvas):
         super().__init__()
         self.motor = motor
         self.camera = camera
@@ -52,6 +52,7 @@ class Zcorrector():
         self._empty_im = np.zeros_like(self.camera.get_image())
         self.ZRangeSize = ZRangeSize
         self.lockid = None
+        self.ic = imageCanvas
         
     
     def get_image_range(self, zPos, condition=None):
@@ -81,7 +82,11 @@ class Zcorrector():
     def endlaser(self):
         self.camera.shutter = self._camshutter
 #         self.laser.close_shutter()
-        
+       
+    def plot(self, X, Y, Y2):
+        self.ic.plot(X[Y<4*np.min(Y)],Y[Y<4*np.min(Y)],'.', c='C0')
+        self.ic._axes.twinx().plot(X,Y2,'x',c='C1')
+        self.ic.draw()
     def focus(self, Npass=3, checkid=None):
         """ Go to the best focal point for the laser
         """
@@ -116,9 +121,11 @@ class Zcorrector():
                 zrange = [zPos[argbest-1], zPos[argbest+1]]
             
             if i>0:
+                size = get_spot_sizes(imrange)
                 Zs.extend(zPos)
                 Is.extend(intensity)
-                Ss.extend(get_spot_sizes(imrange))
+                Ss.extend(size)
+                self.plot(zPos, intensity, size)
                 
         self.motor.goto_position([np.nan , np.nan, zPos[argbest]], 
                                  wait=True, checkid=self.lockid)
