@@ -67,17 +67,15 @@ class linear_controller(stage_controller):
         super().__init__()
         self.lineX = None
         self.lineY = None
-        self.Xthread = linethread(XStageName)
-        self.Ythread = linethread(YStageName)
-        self.Xthread.finished.connect(lambda: self.endThread('X'))
-        self.Ythread.finished.connect(lambda: self.endThread('Y'))
+        self.Xthread = linethread(XStageName, lambda s: self.set_stage(s, 'X'))
+        self.Ythread = linethread(YStageName, lambda s: self.set_stage(s, 'Y'))
         self.reconnect()
 
-    def endThread(self, axis):
+    def set_stage(self, stage, axis):
         if axis == 'X':
-            self.lineX = self.Xthread.stage
+            self.lineX = stage
         if axis == 'Y':
-            self.lineY = self.Ythread.stage
+            self.lineY = stage
             
     @property
     def connected(self):
@@ -147,22 +145,22 @@ class linear_controller(stage_controller):
         return self.lineX.IsControllerReady() and self.lineY.IsControllerReady()
  
 class linethread(QtCore.QThread):
-    def __init__(self, StageName):
+    def __init__(self, StageName, callback):
         super().__init__()
         self.StageName = StageName
-        self.stage = None
+        self.callback = callback
         
     def run(self):
-        self.stage = None
         stage = GCSDevice('C-863.11')
         stage.ConnectUSB(self.StageName)
         assert(stage.qCST()['1']=='M-404.2DG')
         print('Connected',stage.qIDN())
         stage.SVO(1,True)
         #time.sleep(1)
-        if not stage.qFRF(1):
+        if not stage.qFRF()['1']:
+            print("Reference move")
             stage.FRF(1)
-        self.stage = stage
+        self.callback(stage)
 #==============================================================================
 # Cube Controller
 #==============================================================================
@@ -172,19 +170,17 @@ class cube_controller(stage_controller):
     def __init__(self):
         super().__init__()
         self.cube = None
-        self.thread = cubethread(cubeName)
-        self.thread.finished.connect(self.threadend)
+        self.thread = cubethread(cubeName, self.set_stage)
         self.reconnect()
         
-    def threadend(self):
-        self.cube = self.thread.stage
+    def set_stage(self, stage):
+        self.cube = stage
         
     def reconnect(self):
         if self.cube is not None:
             self.cube.CloseConnection()
             del self.cube
             self.cube = None
-          
         self.thread.start()
         
     def __del__(self):
@@ -213,41 +209,41 @@ class cube_controller(stage_controller):
         return np.array([0, 4000])
     
     def get_state(self):
+        if self.cube is None:
+            return False
         return self.cube.IsControllerReady()
     
 class cubethread(QtCore.QThread):
-    def __init__(self, StageName):
+    def __init__(self, StageName, callback):
         super().__init__()
         self.StageName = StageName
-        self.stage = None
+        self.callback = callback
         
     def run(self):
-        self.stage = None
         stage = GCSDevice('E-727')
         stage.ConnectUSB(self.StageName)
         assert(stage.qCST()['1']=='P-611.3S')
         print('Connected',stage.qIDN())
         stage.SVO([1,2,3],[True,True,True])
         stage.ATZ([1, 2, 3], [0, 0, 0])
-        self.stage = stage
+        self.callback(stage)
  
 zmotorSN = 27502020
 class z_controller(stage_controller):
     def __init__(self):
         super().__init__()
         self.motor = None
-        self.thread = Zthread(zmotorSN)
-        self.thread.finished.connect(self.endthread)
+        self.thread = Zthread(zmotorSN, self.set_stage)
         self.reconnect()
     
-    def endthread(self):
-        self.motor = self.thread.stage
+    def set_stage(self, stage):
+        self.motor = stage
         
     def reconnect(self):
-        is self.motor is not None:
+        if self.motor is not None:
             del self.motor
             self.motor = None
-        self.thread.start()   
+        self.thread.run()   
     
     def get_position(self):
         return self.motor.position*1000
@@ -272,21 +268,22 @@ class z_controller(stage_controller):
     
     def get_state(self):
         return self.motor is not None
-    def __del__(self):
   
 class Zthread(QtCore.QThread):
-    def __init__(self, SN):
+    def __init__(self, SN, callback):
         super().__init__()
         self.SN = SN
-        self.stage = None
-        
+        self.callback = callback
+    
     def run(self):
-        self.stage = None
         stage = apt.Motor(zmotorSN)
-        stage.set_velocity_parameters(0, self.motor.acceleration, 1)
+        print("Zstage Connected")
+        stage.set_velocity_parameters(0, stage.acceleration, 1)
         if not stage.has_homing_been_completed:
+            print("Reference move")
             stage.move_home(True)
-        self.stage = stage
+        self.callback(stage)
+
 #==============================================================================
 # Helper functions
 #==============================================================================

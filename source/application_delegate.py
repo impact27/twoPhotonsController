@@ -41,7 +41,6 @@ class application_delegate(QtCore.QObject):
     newPosRange = QtCore.pyqtSignal(np.ndarray)
     update_motor = QtCore.pyqtSignal()
     
-    
     def __init__(self,imageCanvas):
         super().__init__()
         #Create delegates for I/O
