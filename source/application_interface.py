@@ -53,7 +53,7 @@ class MyMplCanvas(FigureCanvas):
     
 class imageCanvas(MyMplCanvas):
     def __init__(self, *args, **kwargs):
-        MyMplCanvas.__init__(self, *args, **kwargs)
+        super().__init__(self, *args, **kwargs)
         self.clear()
         self._lastim=np.zeros((2,2))
         self._autoc = False
@@ -66,16 +66,18 @@ class imageCanvas(MyMplCanvas):
         self._axes.axis('image')
         self.figure.colorbar(self._imhandle)
         self.draw()
-        
+       
+#    @profile
     def frameshow(self, im):
         self._lastim=im
         if self._imhandle is not None:
-            self._imhandle.set_data(im)
-            if self._autoc:
-                self._imhandle.set_clim(im.min(), im.max())
-            self.draw()
+            self._imhandle.set_data(im[::2, ::2])
+#            if self._autoc:
+#                self._imhandle.set_clim(im.min(), im.max())
+            self.draw_artist(self._imhandle)
+            self.blit(self._axes.bbox)
         else:
-            self.imshow(im, vmax = 255)
+            self.imshow(im[::2, ::2], vmax = 255)
             
     def clear(self):
         self._imhandle=None

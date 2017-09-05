@@ -152,6 +152,7 @@ class application_delegate(QtCore.QObject):
             self.newFrame.emit(im)
         return im
     
+#    @profile
     def showCameraFrame(self, frame = None):
         self.imwait = False
         if frame is None:
