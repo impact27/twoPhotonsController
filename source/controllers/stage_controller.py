@@ -18,11 +18,22 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 from pipython import GCSDevice
-import thorlabs_apt as apt
 import time
 import numpy as np
 from PyQt5 import QtCore
 from functools import partial
+import clr
+import sys
+from System import Decimal
+# constants
+sys.path.append(r"C:\Program Files\Thorlabs\Kinesis")
+# Add references so Python can see .Net
+clr.AddReference("Thorlabs.MotionControl.Controls")
+clr.AddReference("Thorlabs.MotionControl.DeviceManagerCLI")
+clr.AddReference("Thorlabs.MotionControl.KCube.DCServoCLI")
+import Thorlabs.MotionControl.Controls
+from Thorlabs.MotionControl.DeviceManagerCLI import DeviceManagerCLI
+from Thorlabs.MotionControl.KCube.DCServoCLI import KCubeDCServo
 
 #==============================================================================
 # Stage controller
@@ -215,46 +226,111 @@ class cubethread(QtCore.QThread):
         stage.ATZ([1, 2, 3], [0, 0, 0])
         self.callback(stage)
  
-zmotorSN = 27502020
-class z_controller(stage_controller):
-    def __init__(self):
+
+
+kserial = '27502020'
+class kCube():
+    def __init__(self, serial=kserial):
         super().__init__()
-        self.motor = None
-        self.thread = Zthread(zmotorSN, self.set_stage)
-        self.reconnect()
-    
-    def set_stage(self, stage):
-        self.motor = stage
-        
+        self._kCubeDCServoMotor = None
+        self.thread = Zthread(serial, self.set_stage)
+        if serial is not None:
+            self.connect(serial )
+       
     def reconnect(self):
-        if self.motor is not None:
-            del self.motor
-            self.motor = None
-        self.thread.run()   
-    
+        if self._kCubeDCServoMotor is not None:
+            self.disconnect()
+        self.connect()
+        
     def get_position(self):
-        return self.motor.position*1000
+        return float(str(self._kCubeDCServoMotor.Position))*1e3
     
     def ESTOP(self):
-        self.motor.stop_profiled()
+        self.stop()
     
     def is_onTarget(self):
-        return not self.motor.is_in_motion
+        return (abs(float(str(self._kCubeDCServoMotor.Position)) 
+                - float(str(self._kCubeDCServoMotor.TargetPosition)))
+                < 1e-6)
     
     def get_pos_range(self, axis):
-        return np.array(self.motor.get_stage_axis_info()[:2])*1000
+        return [float(str(self._kCubeDCServoMotor.AdvancedMotorLimits
+                                  .LengthMinimum))*1e3,
+                float(str(self._kCubeDCServoMotor.AdvancedMotorLimits
+                                  .LengthMaximum))*1e3]
     
     def get_vel_range(self, axis):
-        return np.asarray([0, self.motor.velocity_upper_limit()])*1000
+        return [
+            0, 
+            1000*self._kCubeDCServoMotor.AdvancedMotorLimits.VelocityMaximum]
     
-    def MOVVEL(self, X, V):
-        if V > 0:
-            X, V = np.array([X, V])/1000
-            self.motor.set_velocity_parameters(0, self.motor.acceleration, V)
-            self.motor.move_to(X)
+    def MOVVEL(self,X,V):
+        self.set_velocity(V)
+        self.move_to(X)
     
     def get_state(self):
-        return self.motor is not None
+        return self._kCubeDCServoMotor.IsDeviceBusy
+    
+    def set_velocity(self, V):
+        velocity_parameters = self._kCubeDCServoMotor.GetVelocityParams()
+        velocity_parameters.MaxVelocity = Decimal(V/1000)
+        self._kCubeDCServoMotor.SetVelocityParams(velocity_parameters)
+
+    def connect(self, serialNumber=kserial):
+        
+        if self._kCubeDCServoMotor is not None:
+            print("Cube already connected")
+            return
+        
+        self.thread.run()
+    
+    def disconnect(self):
+        if self._kCubeDCServoMotor is None:
+            print("Cube not connected")
+            return
+        try:
+            # Shuts down this device and frees any resources it is using.
+            self._kCubeDCServoMotor.ShutDown();
+
+            self._kCubeDCServoMotor = None;
+        except:
+            print("Can't disconnect")
+            raise
+            
+    def home(self):
+        try:
+            # We pass in a wait timeout of zero to indicates we don't care how
+            # long it takes to perform the home operation.
+            self._kCubeDCServoMotor.Home(0);
+        
+        except:
+            print("Unable to return device to home position\n")
+            raise
+        
+    def move_to(self, pos, timeout=0):
+        try:
+            # Move the device to position 0. We specify 0 as the wait timeout
+            # as we don't care how long it takes.
+            self._kCubeDCServoMotor.MoveTo(Decimal(pos/1000), timeout);
+        
+        except:
+            print("Unable to move to position\n")
+            raise
+
+    def stop(self):
+        try:
+            # We ask the device to throw an exception if the operation takes
+            # longer than 1000ms (1s).
+            self._kCubeDCServoMotor.Stop(1000);
+        
+        except:
+            print("Unable to stop\n")
+            raise
+    def is_homing(self):
+        return self._kCubeDCServoMotor.Status.IsHoming
+    
+    def set_stage(self, stage):
+        self._kCubeDCServoMotor = stage 
   
 class Zthread(QtCore.QThread):
     def __init__(self, SN, callback):
@@ -263,17 +339,42 @@ class Zthread(QtCore.QThread):
         self.callback = callback
     
     def run(self):
-        stage = apt.Motor(zmotorSN)
+        # Instructs the DeviceManager to build and maintain the list of
+        # devices connected.
+        DeviceManagerCLI.BuildDeviceList();
+
+        kCubeDCServoMotor = KCubeDCServo.CreateKCubeDCServo(self.SN);
+
+        # Establish a connection with the device.
+        kCubeDCServoMotor.Connect(self.SN);
+
+        # Wait for the device settings to initialize. We ask the device to
+        # throw an exception if this takes more than 5000ms (5s) to complete.
+        kCubeDCServoMotor.WaitForSettingsInitialized(5000);
+
+        # Initialize the DeviceUnitConverter object required for real world
+        # unit parameters.
+        kCubeDCServoMotor.GetMotorConfiguration(self.SN);
+
+        # This starts polling the device at intervals of 250ms (0.25s).
+        kCubeDCServoMotor.StartPolling(20);
+
+        # We are now able to enable the device for commands.
+        kCubeDCServoMotor.EnableDevice();
+        
+        assert(kCubeDCServoMotor.IsActuatorDefined)
+        
         print("Zstage Connected")
-        stage.set_velocity_parameters(0, stage.acceleration, 1)
-        if not stage.has_homing_been_completed:
-            print("Reference move")
-            stage.move_home(True)
-        #Need to move otherwise forgets if is moving
-        stage.move_to(5.9)
-        time.sleep(.1)
-        stage.move_to(6)
-        self.callback(stage)
+        
+        velocity_parameters = kCubeDCServoMotor.GetVelocityParams()
+        velocity_parameters.MaxVelocity = Decimal(1)
+        kCubeDCServoMotor.SetVelocityParams(velocity_parameters)
+        
+        if not kCubeDCServoMotor.Status.IsHomed:
+            kCubeDCServoMotor.Home(0)
+    
+        kCubeDCServoMotor.MoveTo(Decimal(6),0)
+        self.callback(kCubeDCServoMotor)
 
 #==============================================================================
 # Helper functions
@@ -281,9 +382,6 @@ class Zthread(QtCore.QThread):
 def getPIListDevices():
     gcs= GCSDevice('C-863.11')
     return gcs.EnumerateUSB()
-
-def getAPTListDevices():
-    return apt.list_available_devices()
 
 if __name__ == "__main__":
     print(getPIListDevices())
