@@ -251,7 +251,7 @@ class kCube():
     def is_onTarget(self):
         return (abs(float(str(self._kCubeDCServoMotor.Position)) 
                 - float(str(self._kCubeDCServoMotor.TargetPosition)))
-                < 1e-6)
+                < 1e-6) and not self._kCubeDCServoMotor.IsDeviceBusy
     
     def get_pos_range(self, axis):
         return [float(str(self._kCubeDCServoMotor.AdvancedMotorLimits
