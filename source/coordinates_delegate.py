@@ -46,6 +46,8 @@ class coordinates_delegate(QtCore.QObject):
             'graphs' : None,
             'showim' : False})
         self._load_next()
+        # Added to test
+        self._newPos(None)
         self._update()
     
     def load_list(self, fn):
@@ -85,7 +87,8 @@ class coordinates_delegate(QtCore.QObject):
         
     def processPos(self):
         #Add that in a thread
-        self.thread.start()
+        pass
+#        self.thread.start()
         
     def endThread(self, graph):
         #Save new position
