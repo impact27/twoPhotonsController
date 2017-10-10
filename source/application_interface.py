@@ -53,7 +53,7 @@ class MyMplCanvas(FigureCanvas):
     
 class imageCanvas(MyMplCanvas):
     def __init__(self, *args, **kwargs):
-        super().__init__(self, *args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.clear()
         self._lastim=np.zeros((2,2))
         self._autoc = False
@@ -74,7 +74,7 @@ class imageCanvas(MyMplCanvas):
             self._imhandle.set_data(im[::2, ::2])
 #            if self._autoc:
 #                self._imhandle.set_clim(im.min(), im.max())
-            self.draw_artist(self._imhandle)
+            self._axes.draw_artist(self._imhandle)
             self.blit(self._axes.bbox)
         else:
             self.imshow(im[::2, ::2], vmax = 255)

@@ -247,7 +247,7 @@ class motor(controller):
         self.Z_c.ESTOP()
       
     def state(self):
-        return self.XY_c.get_state() and self.Z_c.get_state()
+        return self.XY_c.is_ready() and self.Z_c.is_ready()
     
     def reconnect(self):
         self.XY_c.reconnect()
@@ -303,7 +303,7 @@ class piezzo(controller):
         self.XYZ_c.ESTOP()
         
     def state(self):
-        return self.XYZ_c.get_state()
+        return self.XYZ_c.is_ready()
     
     def reconnect(self):
         self.XYZ_c.reconnect()

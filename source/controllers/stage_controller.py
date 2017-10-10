@@ -64,7 +64,7 @@ class stage_controller():
     def MOVVEL(self,X,V):
         pass
     
-    def get_state(self):
+    def is_ready(self):
         pass
 
 #==============================================================================
@@ -101,7 +101,7 @@ class linear_controller(stage_controller):
         
     def waitState(self, timeout=30):
         startt = time.time()
-        while not self.get_state():
+        while not self.is_ready():
             time.sleep(.1)
             if time.time() - startt > timeout:
                 raise RuntimeError("Linear Stage not responding")
@@ -133,7 +133,7 @@ class linear_controller(stage_controller):
     def get_vel_range(self, axis):
         return np.array([0,1.5])*1000  
     
-    def get_state(self):
+    def is_ready(self):
         if np.any([l is None for l in self.lines]):
             return False
         return np.all([l.IsControllerReady() for l in self.lines])
@@ -204,7 +204,7 @@ class cube_controller(stage_controller):
     def get_vel_range(self, axis):
         return np.array([0, 4000])
     
-    def get_state(self):
+    def is_ready(self):
         if self.cube is None:
             return False
         return self.cube.IsControllerReady()
@@ -229,7 +229,7 @@ class cubethread(QtCore.QThread):
 
 
 kserial = '27502020'
-class kCube():
+class z_controller(stage_controller):
     def __init__(self, serial=kserial):
         super().__init__()
         self._kCubeDCServoMotor = None
@@ -265,15 +265,17 @@ class kCube():
             1000*self._kCubeDCServoMotor.AdvancedMotorLimits.VelocityMaximum]
     
     def MOVVEL(self,X,V):
-        self.set_velocity(V)
-        self.move_to(X)
+        if V[0] > 0:
+            self.set_velocity(V[0])
+            self.move_to(X[0])
     
-    def get_state(self):
-        return self._kCubeDCServoMotor.IsDeviceBusy
+    def is_ready(self):
+        return not self._kCubeDCServoMotor.IsDeviceBusy
     
     def set_velocity(self, V):
+        V = V / 1000
         velocity_parameters = self._kCubeDCServoMotor.GetVelocityParams()
-        velocity_parameters.MaxVelocity = Decimal(V/1000)
+        velocity_parameters.MaxVelocity = Decimal(float(V))
         self._kCubeDCServoMotor.SetVelocityParams(velocity_parameters)
 
     def connect(self, serialNumber=kserial):
@@ -309,9 +311,10 @@ class kCube():
         
     def move_to(self, pos, timeout=0):
         try:
+            pos = pos / 1000
             # Move the device to position 0. We specify 0 as the wait timeout
             # as we don't care how long it takes.
-            self._kCubeDCServoMotor.MoveTo(Decimal(pos/1000), timeout);
+            self._kCubeDCServoMotor.MoveTo(Decimal(float(pos)), timeout);
         
         except:
             print("Unable to move to position\n")
@@ -385,4 +388,3 @@ def getPIListDevices():
 
 if __name__ == "__main__":
     print(getPIListDevices())
-    print(getAPTListDevices())
