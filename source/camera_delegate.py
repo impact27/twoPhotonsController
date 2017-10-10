@@ -16,6 +16,7 @@ class camera_delegate(QtCore.QObject):
     
     newShutter = QtCore.pyqtSignal(float)
     shutterState = QtCore.pyqtSignal(bool)
+    ext_shutterState = QtCore.pyqtSignal(bool)
     
     def __init__(self):
         super().__init__()
@@ -49,6 +50,11 @@ class camera_delegate(QtCore.QObject):
     def autoShutter(self, on):
         self.shutterState.emit(on)
         self.isAuto = on
+    
+    def extShutter(self, on):
+        self.ext_shutterState.emit(on)
+        self.controller.ext_shutter(on)
+        
         
     def correctShutter(self, im):
         amax = np.max(im)

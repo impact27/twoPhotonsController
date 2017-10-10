@@ -36,7 +36,7 @@ class coordinates_delegate(QtCore.QObject):
         self.motor = application_delegate.mouvment_delegate.motor
         self.Zsolver = Zsolver()
         self.XYsolver = XYsolver()
-        self.thread = positionThread(self, [-1000, -1000, 0])
+        self.thread = positionThread(self, [1000, 1000, 0])
      
     def add_position(self, Xm):
         self._positions.append(
