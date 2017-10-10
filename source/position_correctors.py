@@ -125,7 +125,10 @@ class Zcorrector():
                 Zs.extend(zPos)
                 Is.extend(intensity)
                 Ss.extend(size)
-                self.plot(zPos, intensity, size)
+                try:
+                    self.plot(zPos, intensity, size)
+                except BaseException as error:
+                    print("Can't Plot!!!", error.args[0])
                 
         self.motor.goto_position([np.nan , np.nan, zPos[argbest]], 
                                  wait=True, checkid=self.lockid)
