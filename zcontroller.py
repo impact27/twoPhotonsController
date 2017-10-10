@@ -193,15 +193,5 @@ if __name__ == "__main__":
         sleep(1)
         while cube.is_homing():
             sleep(.1)
-    #%%
-    print(float(str(cube._kCubeDCServoMotor.TargetPosition)), cube.get_position())
-    cube.move_to(0)
-    sleep(.02)
-    print(float(str(cube._kCubeDCServoMotor.TargetPosition)), cube.get_position())
-    print(float(str(cube._kCubeDCServoMotor.TargetPosition)), cube.get_position())
-    sleep(.1)
-    print(float(str(cube._kCubeDCServoMotor.TargetPosition)), cube.get_position())
-#    while not cube.is_onTarget():
-#        print(cube._kCubeDCServoMotor.Status.IsMoving, cube.get_position())
     
     
