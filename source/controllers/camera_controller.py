@@ -19,11 +19,19 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 import numpy as np
 from .pixelink import PixeLINK
+import serial
+
+ext_shutter_com = 'COM6'
 
 class camera_controller():
     def __init__(self):
         self.cam = None
         self.reconnect()
+        self._ext_shutter = serial.Serial(ext_shutter_com)
+        self._ext_shutter.write('OFF\n'.encode())
+        
+    def __del__(self):
+        self._ext_shutter.close()
         
     def reconnect(self):
         del self.cam
@@ -49,3 +57,11 @@ class camera_controller():
         
     def get_shutter(self):
         return self.cam.shutter
+    
+    def ext_shutter(self, Open):
+        if Open:
+            self._ext_shutter.write('ON\n'.encode())
+        else:
+            self._ext_shutter.write('OFF\n'.encode())
+    
+    

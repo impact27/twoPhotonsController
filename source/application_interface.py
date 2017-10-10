@@ -492,7 +492,9 @@ class control_tab(QtWidgets.QWidget):
         cam_exposure_label = QtWidgets.QLabel('Exp. [s]:')
         cam_exposure_selector = doubleSelector(cam_range, cam_init, isLog=True)
         cam_autoshutter = QtWidgets.QPushButton('Auto')
+        cam_extshutter = QtWidgets.QPushButton('Shutter')
         cam_autoshutter.setCheckable(True)
+        cam_extshutter.setCheckable(True)
         #======================================================================
         #     Layout    
         #======================================================================
@@ -554,6 +556,10 @@ class control_tab(QtWidgets.QWidget):
         cam_layout.addWidget(cam_exposure_label)
         cam_layout.addWidget(cam_exposure_selector)
         
+        cam_Button_layout = QtWidgets.QHBoxLayout()
+        cam_Button_layout.addWidget(cam_autoshutter)
+        cam_Button_layout.addWidget(cam_extshutter)
+        
         main_layout = QtWidgets.QVBoxLayout()
         main_layout.addLayout(motor_H_layout)
         main_layout.addLayout(motor_layout)
@@ -584,7 +590,7 @@ class control_tab(QtWidgets.QWidget):
         
         main_layout.addLayout(cam_H_layout)
         main_layout.addLayout(cam_layout)
-        main_layout.addWidget(cam_autoshutter)
+        main_layout.addLayout(cam_Button_layout)
         
         main_layout.addStretch()
         
@@ -642,6 +648,7 @@ class control_tab(QtWidgets.QWidget):
         application_delegate.newPosition.connect(self.updatePos)
         
         cam_autoshutter.toggled.connect(cd.autoShutter)
+        cam_extshutter.toggled.connect(cd.extShutter)
         
         def setMotorPos(motor_selectors, ranges):
             for s, r in zip(motor_selectors, ranges):
