@@ -110,8 +110,8 @@ class doubleSelector(QtWidgets.QWidget):
         return float(self.lineInput.text())
     
     def setValue(self, value):
-        self.setInputValue(value)
         self.setSliderValue(value)
+        self.setInputValue(value)
         
     def setSliderValue(self, val):
         if self.isLog:
