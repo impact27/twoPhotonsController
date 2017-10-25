@@ -19,6 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 import numpy as np
+import sys
 from PyQt5 import QtCore
 from gcode import gcode_reader, gcode_checker
 from serial.serialutil import SerialTimeoutException
@@ -51,6 +52,10 @@ class write_delegate(QtCore.QObject):
         
     def endwrite(self):
         self.parent.newPosition.emit()
+        
+    def ESTOP(self):
+        self.thread.terminate()
+        self.parent.mouvment_delegate.unlock()
 
 
 class write_thread(QtCore.QThread):
@@ -82,30 +87,38 @@ class write_thread(QtCore.QThread):
                 dx=1
             if Ny==1:
                 dy=1
-                
+             
+            z = self.md.motor.position[2]
             for par,y in enumerate(np.arange(yori, yori+Ny*dy, dy)):
                 #Want to draw s
                 parity=2*((par+1)%2)-1
                 for x in np.arange(xori, xori+Nx*dx, dx)[::parity]:
+                    self.md.motor.goto_position([np.nan, np.nan, z-1000], 
+                        wait=True, checkid=self.lockid)
+                    self.md.motor.goto_position([x, y, z-1000],
+                        wait=True, checkid=self.lockid)
+                    self.md.motor.goto_position([x, y, z],
+                            wait=True, checkid=self.lockid)
                     
-                    Xorigin=np.asarray([x, y, np.nan])
-                    self.md.motor.goto_position(Xorigin, 
-                         wait=True, checkid=self.lockid)
                     self.writeGCode()
                     
             
         except SerialTimeoutException:
             self.parent.error('Timeout')
-        except BaseException as e:
-            print(e)
+        except:
+            print("Unknown exception during write")
+            print(sys.exc_info()[0])
+            raise
             
         self.md.unlock()
                 
     def writeGCode(self,):
+#        self.parent.camera_delegate.extShutter(False)
         defaultCubeSpeed=self.md.piezzo.get_velocity()
         writer = gwriter(self.md,self.ld,self.lockid)
         writer.readGcommands(self.gcommands)
         self.md.piezzo.set_velocity(defaultCubeSpeed, checkid = self.lockid)
+        self.parent.camera_delegate.extShutter(True)
         
 class gwriter(gcode_reader):
     

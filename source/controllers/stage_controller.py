@@ -246,7 +246,10 @@ class z_controller(stage_controller):
         return float(str(self._kCubeDCServoMotor.Position))*1e3
     
     def ESTOP(self):
-        self.stop()
+        try:
+            self.stop()
+        except:
+            pass
     
     def is_onTarget(self):
         return (abs(float(str(self._kCubeDCServoMotor.Position)) 
@@ -318,7 +321,8 @@ class z_controller(stage_controller):
             # Move the device to position 0. We specify 0 as the wait timeout
             # as we don't care how long it takes.
             self._kCubeDCServoMotor.MoveTo(Decimal(float(pos)), timeout);
-        
+        except Thorlabs.MotionControl.GenericMotorCLI.DeviceMovingException:
+            print("Ignored, Already moving")
         except:
             print("Unable to move to position\n")
             raise
@@ -329,6 +333,8 @@ class z_controller(stage_controller):
             # longer than 1000ms (1s).
             self._kCubeDCServoMotor.Stop(1000);
         
+        except Thorlabs.MotionControl.GenericMotorCLI.MoveTimeoutException:
+            pass#that is what stop does
         except:
             print("Unable to stop\n")
             raise

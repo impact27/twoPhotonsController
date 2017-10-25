@@ -123,6 +123,7 @@ class application_delegate(QtCore.QObject):
     def ESTOP(self):
         self.mouvment_delegate.ESTOP()
         self.coordinates_delegate.thread.terminate()
+        self.write_delegate.ESTOP()
         
     def draw_device(self, xori, yori, gpath, Nx, Ny, dx, dy):
         
