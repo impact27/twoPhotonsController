@@ -105,7 +105,7 @@ class coordinates_delegate(QtCore.QObject):
         ret = np.zeros((len(self._positions), 3))
         for i,pos in enumerate(self._positions):
             Xm1 = pos['Xm']
-            Xm2 = self.md.motor.XstoXm(pos['Xs'])
+            Xm2 = self._md.motor.XstoXm(pos['Xs'])
             ret[i] = (Xm1-Xm2)
         np.savetxt(fn, ret)
         
@@ -118,9 +118,10 @@ class coordinates_delegate(QtCore.QObject):
         return False
     
     def _newPos(self, graphs):
-        assert self._md.is_onTarget(), "Stage is moving!"
+        if not self._md.is_onTarget():
+            raise RuntimeError("Stage is moving!")
         #Save XYZ as new value
-        self._current_pos['Xs'] = self.motor.get_position(raw = True)
+        self._current_pos['Xs'] = self.motor.get_position(raw=True)
         self._current_pos['im'] = self.camera.get_image()
         self._current_pos['graphs'] = graphs
         self._update()

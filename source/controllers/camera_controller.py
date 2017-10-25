@@ -42,7 +42,7 @@ class camera_controller():
         return [1.9e-5,.1]
         
     def get_image(self):
-        return self.cam.grab()
+        return self.cam.grab()[::-1, ::-1]
         
     def set_shutter(self,time):
         amin, amax = self.shutter_range()

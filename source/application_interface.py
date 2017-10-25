@@ -242,8 +242,8 @@ class coordinates_tab(QtWidgets.QWidget):
         
         if not check.exists() or not check.isFile():
             fn=QtWidgets.QFileDialog.getOpenFileName(
-                    self,'Position File',QtCore.QDir.homePath())
-            self.path_field.setText(fn[0])
+                    self,'Position File',QtCore.QDir.homePath())[0]
+            self.path_field.setText(fn)
             
         self.cd.load_list(fn)
         
@@ -657,6 +657,11 @@ class control_tab(QtWidgets.QWidget):
         application_delegate.newPosRange.connect(partial(setMotorPos, 
                                                          motor_selectors))
         
+        application_delegate.mouvment_delegate.motor.move_signal.connect(
+                self.set_target_motor)
+        application_delegate.mouvment_delegate.piezzo.move_signal.connect(
+                self.set_target_piezzo)
+        
         #======================================================================
         #         Save variables
         #======================================================================
@@ -668,6 +673,18 @@ class control_tab(QtWidgets.QWidget):
         self.cam_autoshutter = cam_autoshutter
         self.steps = steps
     
+    def set_target_motor(self, target_pos, speed):
+        for sel, pos in zip([*(self.motor_selectors),  self.vel_motor_selector],
+                            [*target_pos, speed]):
+            if np.isfinite(pos):
+                sel.setValue(pos)
+            
+    def set_target_piezzo(self, target_pos, speed):
+        for sel, pos in zip([*(self.cube_selectors),  self.vel_cube_selector],
+                            [*target_pos, speed]):
+            if np.isfinite(pos):
+                sel.setValue(pos)
+        
     def setCamShutter(self, on):
         if on:
             txt = "Auto: On"

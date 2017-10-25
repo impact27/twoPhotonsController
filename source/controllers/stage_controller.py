@@ -274,9 +274,12 @@ class z_controller(stage_controller):
     
     def set_velocity(self, V):
         V = V / 1000
-        velocity_parameters = self._kCubeDCServoMotor.GetVelocityParams()
-        velocity_parameters.MaxVelocity = Decimal(float(V))
-        self._kCubeDCServoMotor.SetVelocityParams(velocity_parameters)
+        try:
+            velocity_parameters = self._kCubeDCServoMotor.GetVelocityParams()
+            velocity_parameters.MaxVelocity = Decimal(float(V))
+            self._kCubeDCServoMotor.SetVelocityParams(velocity_parameters)
+        except Thorlabs.MotionControl.DeviceManagerCLI.DeviceException as exc:
+            print("Can't set velocity {}".format(V))
 
     def connect(self, serialNumber=kserial):
         

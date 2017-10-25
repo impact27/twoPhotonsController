@@ -34,7 +34,7 @@ class write_delegate(QtCore.QObject):
             gcommands = f.read()
         intensityRange = self.parent.laser_delegate.get_range()
         posRange=np.asarray([
-                self.parent.mouvment_delegate.get_cube_PosRange(0),
+                self.parent.mouvment_delegate.cube.get_PosRange(0),
                 self.parent.mouvment_delegate.get_cube_PosRange(1),
                 self.parent.mouvment_delegate.get_cube_PosRange(2)
                 ])

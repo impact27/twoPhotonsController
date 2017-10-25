@@ -39,7 +39,10 @@ else:
 
 
 
-class controller():
+class controller(QtCore.QObject):
+    
+    move_signal = QtCore.pyqtSignal(list, float)
+    
     def __init__(self, speed, parent):
         super().__init__()
         self._speed = speed
@@ -48,8 +51,6 @@ class controller():
         self.zcoeff = np.zeros(3)
         self._ndim = 3
       
-    
-   
     def get_position(self, raw=False):
         X = self._XSPOS()
         if not raw:
@@ -63,7 +64,7 @@ class controller():
         
         Any value of Xm set to nan will not be moved
         """
-        
+        self.move_signal.emit(list(Xm), speed)
         Xm = np.asarray(Xm)
         #Check lock
         if not self.parent._checklock(checkid):
