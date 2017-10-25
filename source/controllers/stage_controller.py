@@ -375,8 +375,7 @@ class Zthread(QtCore.QThread):
         
         if not kCubeDCServoMotor.Status.IsHomed:
             kCubeDCServoMotor.Home(0)
-    
-        kCubeDCServoMotor.MoveTo(Decimal(6),0)
+        
         self.callback(kCubeDCServoMotor)
 
 #==============================================================================
