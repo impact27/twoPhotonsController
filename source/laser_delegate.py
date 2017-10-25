@@ -25,49 +25,46 @@ if sys.platform == "darwin":
     from controllers.laser_controller_placeholder import laser_controller
 else:
     from controllers.laser_controller import laser_controller
-    
 
 
 class laser_delegate(QtCore.QObject):
-    
+
     switched = QtCore.pyqtSignal(bool)
     newIntensity = QtCore.pyqtSignal(float)
-    
+
     def __init__(self):
         super().__init__()
         self.controller = laser_controller()
         self.I = self.controller.get_intensity()
         self.state = self.controller.get_state()
-        
+
     def reconnect(self):
         self.controller.reconnect()
 
     def get_range(self):
         return self.controller.get_range()
-    
+
     def set_intensity(self, V):
         if V != self.I:
             self.newIntensity.emit(V)
             self.controller.set_intensity(V)
             self.I = self.controller.get_intensity()
-            
-        if V>0:
+
+        if V > 0:
             self.switch(True)
         else:
             self.switch(False)
-        
+
     def get_intensity(self):
         if not self.state:
             return 0
         return self.controller.get_intensity()
-    
+
     def switch(self, state):
         if state != self.state:
             self.state = state
             self.controller.switch(state)
             self.switched.emit(state)
-            
+
     def get_state(self):
         return self.state
-            
-        

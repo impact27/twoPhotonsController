@@ -23,40 +23,41 @@ import random
 import numpy as np
 import re
 
+
 class camera_controller():
     def __init__(self):
         self.shutter = .01
-    
+
     def reconnect(self):
         print('Connected Camera')
-        
+
     def get_image(self):
-        return np.random.rand(50,50)*256
-        fns='Misc/Images/50_50/*.bmp'
-        reg='Misc/Images\/50_50\/(\d+)\.bmp'
-        fns=glob(fns)
+        return np.random.rand(50, 50) * 256
+        fns = 'Misc/Images/50_50/*.bmp'
+        reg = 'Misc/Images\/50_50\/(\d+)\.bmp'
+        fns = glob(fns)
         if fns != []:
-            fns=np.array(fns)
-            X=np.array([int(re.search(reg,fn)[1]) for fn in fns])
-            fns=fns[np.argsort(X)]
-            X=X[np.argsort(X)]
-            
+            fns = np.array(fns)
+            X = np.array([int(re.search(reg, fn)[1]) for fn in fns])
+            fns = fns[np.argsort(X)]
+            X = X[np.argsort(X)]
+
             if z is not None:
-                idx= np.argmin((z-X)**2)
-                fn=fns[idx]
+                idx = np.argmin((z - X)**2)
+                fn = fns[idx]
             else:
-                fn=random.choice(fns)
-            im=imread(fn)[:,:,0]
+                fn = random.choice(fns)
+            im = imread(fn)[:, :, 0]
             return im
         else:
             print(fns)
-            return np.random.rand(50,50)*256
-    
+            return np.random.rand(50, 50) * 256
+
     def shutter_range(self):
-        return [1.9e-5,.1]
-        
-    def set_shutter(self,time):
+        return [1.9e-5, .1]
+
+    def set_shutter(self, time):
         self.shutter = time
-        
+
     def get_shutter(self):
         return self.shutter

@@ -20,48 +20,51 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import numpy as np
 import serial
 
+
 class laser_controller():
-    
+
     def __init__(self):
         self.ser = None
         self.reconnect()
-        
+
     def reconnect(self):
         del self.ser
         self.ser = serial.Serial('COM3', timeout=1)
         self.sendCommand('*IDN?')
-        res=self.ser.readline().decode()
+        res = self.ser.readline().decode()
         print(res)
-        
+
     def sendCommand(self, cmd):
         self.ser.write('{}\n'.format(cmd).encode())
-        
+
     def __del__(self):
         self.ser.close()
 
     def get_range(self):
-        return np.array([0,10])
-    
+        return np.array([0, 10])
+
     def set_intensity(self, V):
         amin, amax = self.get_range()
-        if V<amin: V=amin
-        if V>amax: V=amax
+        if V < amin:
+            V = amin
+        if V > amax:
+            V = amax
         self.sendCommand('V {:.2f}'.format(V))
-        
+
     def get_intensity(self):
         self.sendCommand('V?')
-        res=self.ser.readline().decode()[:-2]
+        res = self.ser.readline().decode()[:-2]
         return float(res[2:])
-    
+
     def switch(self, on):
         if on:
             self.sendCommand('ON')
         else:
             self.sendCommand('OFF')
-            
+
     def get_state(self):
         self.sendCommand('OUT?')
-        res=self.ser.readline().decode()[:-2]
+        res = self.ser.readline().decode()[:-2]
         if res == 'OUT ON':
             return True
         elif res == 'OUT OFF':
@@ -69,9 +72,9 @@ class laser_controller():
         else:
             print(res)
             return None
-        
-    
-    
+
+
+
 #%%
 if __name__ == '__main__':
     pass

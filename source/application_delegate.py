@@ -29,6 +29,7 @@ from laser_delegate import laser_delegate
 from camera_delegate import camera_delegate
 import tifffile
 
+
 class application_delegate(QtCore.QObject):
     error = QtCore.pyqtSignal(str)
     liveSwitched = QtCore.pyqtSignal(bool)
@@ -40,45 +41,45 @@ class application_delegate(QtCore.QObject):
     newPosition = QtCore.pyqtSignal()
     newPosRange = QtCore.pyqtSignal(np.ndarray)
     update_motor = QtCore.pyqtSignal()
-    
-    def __init__(self,imageCanvas):
+
+    def __init__(self, imageCanvas):
         super().__init__()
-        #Create delegates for I/O
+        # Create delegates for I/O
         self.mouvment_delegate = mouvment_delegate(self)
         self.camera_delegate = camera_delegate()
         self.laser_delegate = laser_delegate()
-        
-        #Save plot canevas
-        self.imageCanvas=imageCanvas
-        
-        #Create delegates for actions
+
+        # Save plot canevas
+        self.imageCanvas = imageCanvas
+
+        # Create delegates for actions
         self.coordinates_delegate = coordinates_delegate(self)
         self.write_delegate = write_delegate(self)
-        
-        #Create timers
+
+        # Create timers
         self.live_timer = QtCore.QTimer()
         self.live_timer.timeout.connect(self.showCameraFrame)
-        
+
         self.draw_timer = QtCore.QTimer()
         self.draw_timer.timeout.connect(self.drawPos)
-        
+
         self.status_timer = QtCore.QTimer()
         self.status_timer.timeout.connect(self.updateStatus)
-        
-        self.lastpos=[np.nan, np.nan]
-        self.lastFracIntensity=np.nan
+
+        self.lastpos = [np.nan, np.nan]
+        self.lastFracIntensity = np.nan
         self.newFrame.connect(self.showCameraFrame)
-        
-        self.imwait=False
-        
+
+        self.imwait = False
+
         self.status_timer.start(1000)
-        
+
         self.coordinatesCorrected.connect(self.setRanges)
-    
+
     def updateStatus(self):
         self.newMotorState.emit(self.mouvment_delegate.motor.state())
         self.newCubeState.emit(self.mouvment_delegate.piezzo.state())
-        
+
     def switch_live(self, on):
         if on:
             self.switch_draw(False)
@@ -86,96 +87,88 @@ class application_delegate(QtCore.QObject):
         else:
             self.live_timer.stop()
         self.liveSwitched.emit(on)
-            
-        
+
     def switch_draw(self, on):
         if on:
             self.switch_live(False)
             self.draw_timer.start(100)
         else:
             self.draw_timer.stop()
-            self.lastpos=[np.nan, np.nan]
-            self.lastFracIntensity=np.nan
+            self.lastpos = [np.nan, np.nan]
+            self.lastFracIntensity = np.nan
         self.drawSwitched.emit(on)
 
-        
     def drawPos(self):
-        newpos=self.mouvment_delegate.position
-        laserI=self.laser_delegate.get_intensity()
-        lRange=self.laser_delegate.get_range()
-        f=(laserI-lRange[0])/(lRange[1]-lRange[0])
-        color=cmap(np.min((f,self.lastFracIntensity)))
-        
+        newpos = self.mouvment_delegate.position
+        laserI = self.laser_delegate.get_intensity()
+        lRange = self.laser_delegate.get_range()
+        f = (laserI - lRange[0]) / (lRange[1] - lRange[0])
+        color = cmap(np.min((f, self.lastFracIntensity)))
+
         self.imageCanvas.plot([self.lastpos[0], newpos[0]],
-                              [self.lastpos[1], newpos[1]], 
-                              axis='equal',c=color)
-        self.lastpos=newpos
-        self.lastFracIntensity=f
-    
-    
+                              [self.lastpos[1], newpos[1]],
+                              axis='equal', c=color)
+        self.lastpos = newpos
+        self.lastFracIntensity = f
+
     def setRanges(self, coeffs, zcoeffs):
         self.newPosRange.emit(self.mouvment_delegate.motor.positionRange)
         self.update_motor.emit()
-    
+
     def clearFig(self):
         self.imageCanvas.clear()
-        
+
     def ESTOP(self):
         self.mouvment_delegate.ESTOP()
         self.coordinates_delegate.thread.terminate()
         self.write_delegate.ESTOP()
-        
+
     def draw_device(self, xori, yori, gpath, Nx, Ny, dx, dy):
-        
+
         greader = gcode_draw()
         greader.readFile(gpath)
-        
+
         gwritten = greader.getDrawing()
-        
-        if Nx==1:
-            dx=1
-        if Ny==1:
-            dy=1
-        for x in np.arange(xori, xori+Nx*dx, dx):
-            for y in np.arange(yori, yori+Ny*dy, dy):
-                self.imageCanvas.plot(gwritten[:,0]+x,gwritten[:,1]+y,
+
+        if Nx == 1:
+            dx = 1
+        if Ny == 1:
+            dy = 1
+        for x in np.arange(xori, xori + Nx * dx, dx):
+            for y in np.arange(yori, yori + Ny * dy, dy):
+                self.imageCanvas.plot(gwritten[:, 0] + x, gwritten[:, 1] + y,
                                       axis='equal')
-        
+
     def write_device(self, xori, yori, gpath, Nx, Ny, dx, dy):
-        self.write_delegate.write( gpath, xori, yori, Nx, Ny, dx, dy)
-        
-    
-        
+        self.write_delegate.write(gpath, xori, yori, Nx, Ny, dx, dy)
+
     def get_image(self, rm_bg=False):
         im = self.camera_delegate.get_image()
         if not self.imwait:
             self.imwait = True
             self.newFrame.emit(im)
         return im
-    
+
 #    @profile
-    def showCameraFrame(self, frame = None):
+    def showCameraFrame(self, frame=None):
         self.imwait = False
         if frame is None:
-            frame=self.camera_delegate.get_image()
-        
+            frame = self.camera_delegate.get_image()
+
         self.imageCanvas.frameshow(frame)
-       
+
 # =============================================================================
 #     Plot stuffs
 # =============================================================================
-    def save_im(self):   
-        fn=QtWidgets.QFileDialog.getSaveFileName(
-            self.imageCanvas,'TIFF file',QtCore.QDir.homePath(),
+    def save_im(self):
+        fn = QtWidgets.QFileDialog.getSaveFileName(
+            self.imageCanvas, 'TIFF file', QtCore.QDir.homePath(),
             "Images (*.tif)")
         im = self.imageCanvas.get_im()
-        tifffile.imsave(fn[0], np.asarray(im,dtype='float32')) 
-        
-    def save_fig(self):   
-        fn=QtWidgets.QFileDialog.getSaveFileName(
-            self.imageCanvas,'PDF File',QtCore.QDir.homePath(),
+        tifffile.imsave(fn[0], np.asarray(im, dtype='float32'))
+
+    def save_fig(self):
+        fn = QtWidgets.QFileDialog.getSaveFileName(
+            self.imageCanvas, 'PDF File', QtCore.QDir.homePath(),
             "Images (*.pdf)")
         self.imageCanvas.figure.savefig(fn[0])
-        
-        
-        

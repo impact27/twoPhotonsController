@@ -24,35 +24,36 @@ from PyQt5 import QtCore
 from gcode import gcode_reader, gcode_checker
 from serial.serialutil import SerialTimeoutException
 
+
 class write_delegate(QtCore.QObject):
     def __init__(self, parent):
-        self.parent=parent
+        self.parent = parent
         self.thread = write_thread(self.parent)
         self.thread.finished.connect(self.endwrite)
-        
+
     def write(self, gfilename, xori, yori, Nx, Ny, dx, dy):
-        with open(gfilename,'r') as f:
+        with open(gfilename, 'r') as f:
             gcommands = f.read()
         intensityRange = self.parent.laser_delegate.get_range()
-        posRange=np.asarray([
-                self.parent.mouvment_delegate.piezzo.get_positionRange(0),
-                self.parent.mouvment_delegate.piezzo.get_positionRange(1),
-                self.parent.mouvment_delegate.piezzo.get_positionRange(2)
-                ])
+        posRange = np.asarray([
+            self.parent.mouvment_delegate.piezzo.get_positionRange(0),
+            self.parent.mouvment_delegate.piezzo.get_positionRange(1),
+            self.parent.mouvment_delegate.piezzo.get_positionRange(2)
+        ])
         speedRange = self.parent.mouvment_delegate.piezzo.get_velocityRange(0)
-        
+
         checker = gcode_checker(intensityRange, posRange, speedRange)
-            
+
         if not checker.gcode_inrange(gcommands):
             self.parent.error.emit("GCode values out of range")
             return
-        
+
         self.thread.set_args(gcommands, xori, yori, Nx, Ny, dx, dy)
         self.thread.start()
-        
+
     def endwrite(self):
         self.parent.newPosition.emit()
-        
+
     def ESTOP(self):
         self.thread.terminate()
         self.parent.mouvment_delegate.unlock()
@@ -68,60 +69,60 @@ class write_thread(QtCore.QThread):
         self.lockid = None
         self.gcommands = None
         self.parent = parent
-     
+
     def set_args(self, gcommands, xori, yori, Nx, Ny, dx, dy):
         self.args = (xori, yori, Nx, Ny, dx, dy)
         self.gcommands = gcommands
-        
+
     def run(self):
         try:
             self.lockid = self.md.lock()
-            
+
             if self.lockid is None:
                 self.error = "Unable to lock the mouvment"
                 return
-            
+
             xori, yori, Nx, Ny, dx, dy = self.args
-            
-            if Nx==1:
-                dx=1
-            if Ny==1:
-                dy=1
-             
+
+            if Nx == 1:
+                dx = 1
+            if Ny == 1:
+                dy = 1
+
             z = self.md.motor.position[2]
-            for par,y in enumerate(np.arange(yori, yori+Ny*dy, dy)):
-                #Want to draw s
-                parity=2*((par+1)%2)-1
-                for x in np.arange(xori, xori+Nx*dx, dx)[::parity]:
-                    self.md.motor.goto_position([np.nan, np.nan, z-1000], 
-                        wait=True, checkid=self.lockid)
-                    self.md.motor.goto_position([x, y, z-1000],
-                        wait=True, checkid=self.lockid)
+            for par, y in enumerate(np.arange(yori, yori + Ny * dy, dy)):
+                # Want to draw s
+                parity = 2 * ((par + 1) % 2) - 1
+                for x in np.arange(xori, xori + Nx * dx, dx)[::parity]:
+                    self.md.motor.goto_position([np.nan, np.nan, z - 1000],
+                                                wait=True, checkid=self.lockid)
+                    self.md.motor.goto_position([x, y, z - 1000],
+                                                wait=True, checkid=self.lockid)
                     self.md.motor.goto_position([x, y, z],
-                            wait=True, checkid=self.lockid)
-                    
+                                                wait=True, checkid=self.lockid)
+
                     self.writeGCode()
-                    
-            
+
         except SerialTimeoutException:
             self.parent.error('Timeout')
-        except:
+        except BaseException:
             print("Unknown exception during write")
             print(sys.exc_info()[0])
             raise
-            
+
         self.md.unlock()
-                
+
     def writeGCode(self,):
-#        self.parent.camera_delegate.extShutter(False)
-        defaultCubeSpeed=self.md.piezzo.get_velocity()
-        writer = gwriter(self.md,self.ld,self.lockid)
+        #        self.parent.camera_delegate.extShutter(False)
+        defaultCubeSpeed = self.md.piezzo.get_velocity()
+        writer = gwriter(self.md, self.ld, self.lockid)
         writer.readGcommands(self.gcommands)
-        self.md.piezzo.set_velocity(defaultCubeSpeed, checkid = self.lockid)
+        self.md.piezzo.set_velocity(defaultCubeSpeed, checkid=self.lockid)
         self.parent.camera_delegate.extShutter(True)
-        
+
+
 class gwriter(gcode_reader):
-    
+
     def __init__(self, md, ld, lockid):
         super().__init__()
         self.md = md
@@ -129,23 +130,22 @@ class gwriter(gcode_reader):
         self.ld.set_intensity(0)
         self.lockid = lockid
         self.Xmlast = np.zeros(3)
-        
+
     def __del__(self):
         self.ld.set_intensity(0)
         self.ld.switch(False)
-        
-    def setIntensity(self,E):
+
+    def setIntensity(self, E):
         self.ld.set_intensity(E)
-    
-    def moveTo(self,X,Y,Z):
+
+    def moveTo(self, X, Y, Z):
         Xmto = np.asarray([X, Y, Z])
         Xmto[np.isnan(Xmto)] = self.Xmlast[np.isnan(Xmto)]
         self.md.piezzo.goto_position(Xmto, wait=True, checkid=self.lockid)
-        self.Xmlast=Xmto
-    
-    def setSpeed(self,F):
+        self.Xmlast = Xmto
+
+    def setSpeed(self, F):
         self.md.piezzo.set_velocity(F, checkid=self.lockid)
-        
+
     def stop(self):
         self.ld.switch(False)
-        

@@ -43,14 +43,14 @@ This module was tested using the camera model: PixeLINK GigE PL-B781G.
 """
 from __future__ import print_function
 
-__created__   = "12/02/2014"
-__author__    = "Hans Smit"
-__email__     = "hsmit@rssd.esa.int"
+__created__ = "12/02/2014"
+__author__ = "Hans Smit"
+__email__ = "hsmit@rssd.esa.int"
 __copyright__ = "Copyright 2014, SRE-F, ESA"
-__license__   = "GNU GPL"
-__version__   = "1.0.1"
+__license__ = "GNU GPL"
+__version__ = "1.0.1"
 
-#TODO: need to dynamically search for this
+# TODO: need to dynamically search for this
 DLL_PATH = r'c:\windows\system32\pxlapi40.dll'
 HAS_NUMPY = False
 
@@ -77,12 +77,16 @@ except ImportError:
     class Camera(object):
         def __init__(self, *args, **kwargs):
             """ constructor """
+
         def get_property_value(self, key):
             """ to be overridden by sub class. """
+
         def set_property_value(self, key, val):
             """ to be overridden by sub class. """
+
         def _get_frame(self):
             """ to be overridden by sub class. """
+
         def grab(self):
             return self._get_frame()
 
@@ -93,70 +97,72 @@ class PxLapi(object):
     The PxLapi class is a thin wrapper around the dynamic library (.dll, .so)
     that exposes the PixeLINK API. This uses ctypes to adapt from C to Python.
     """
-    START_STREAM   = 0
-    PAUSE_STREAM   = 1
-    STOP_STREAM    = 2
+    START_STREAM = 0
+    PAUSE_STREAM = 1
+    STOP_STREAM = 2
 
-    ## Feature IDs list for future Python driver functionality
-    #define FEATURE_BRIGHTNESS              0
-    #define FEATURE_PIXELINK_RESERVED_1     1
-    #define FEATURE_SHARPNESS               2
-    #define FEATURE_COLOR_TEMP              3
-    #define FEATURE_HUE                     4
-    #define FEATURE_SATURATION              5
-    #define FEATURE_GAMMA                   6
-    FEATURE_SHUTTER                = 7
-    FEATURE_GAIN                   = 8
-    #define FEATURE_IRIS                    9
-    #define FEATURE_FOCUS                   10
-    #define FEATURE_SENSOR_TEMPERATURE      11
-    #define FEATURE_TRIGGER                 12
-    #define FEATURE_ZOOM                    13
-    #define FEATURE_PAN                     14
-    #define FEATURE_TILT                    15
-    #define FEATURE_OPT_FILTER              16
-    #define FEATURE_GPIO                    17
-    #define FEATURE_FRAME_RATE              18
-    FEATURE_ROI                    = 19
-    #define FEATURE_FLIP                    20
-    #define FEATURE_PIXEL_ADDRESSING        21
-    #define FEATURE_PIXEL_FORMAT            22
-    #define FEATURE_EXTENDED_SHUTTER        23
-    #define FEATURE_AUTO_ROI                24
-    #define FEATURE_LOOKUP_TABLE            25
-    #define FEATURE_MEMORY_CHANNEL          26
-    #define FEATURE_WHITE_SHADING           27          /* Seen in Capture OEM as White Balance */
-    #define FEATURE_ROTATE                  28
-    #define FEATURE_IMAGER_CLK_DIVISOR      29          /* DEPRECATED - New applications should not use. */
-    #define FEATURE_TRIGGER_WITH_CONTROLLED_LIGHT   30  /* Allows trigger to be used more deterministically where  lighting cannot be controlled.                         */
-    #define FEATURE_MAX_PIXEL_SIZE          31          /* The number of bits used to represent 16-bit data (10 or 12) */
-    #define FEATURE_BODY_TEMPERATURE		32
-    #define FEATURE_MAX_PACKET_SIZE  		33
-    #define FEATURES_TOTAL                  34
+    # Feature IDs list for future Python driver functionality
+    # define FEATURE_BRIGHTNESS              0
+    # define FEATURE_PIXELINK_RESERVED_1     1
+    # define FEATURE_SHARPNESS               2
+    # define FEATURE_COLOR_TEMP              3
+    # define FEATURE_HUE                     4
+    # define FEATURE_SATURATION              5
+    # define FEATURE_GAMMA                   6
+    FEATURE_SHUTTER = 7
+    FEATURE_GAIN = 8
+    # define FEATURE_IRIS                    9
+    # define FEATURE_FOCUS                   10
+    # define FEATURE_SENSOR_TEMPERATURE      11
+    # define FEATURE_TRIGGER                 12
+    # define FEATURE_ZOOM                    13
+    # define FEATURE_PAN                     14
+    # define FEATURE_TILT                    15
+    # define FEATURE_OPT_FILTER              16
+    # define FEATURE_GPIO                    17
+    # define FEATURE_FRAME_RATE              18
+    FEATURE_ROI = 19
+    # define FEATURE_FLIP                    20
+    # define FEATURE_PIXEL_ADDRESSING        21
+    # define FEATURE_PIXEL_FORMAT            22
+    # define FEATURE_EXTENDED_SHUTTER        23
+    # define FEATURE_AUTO_ROI                24
+    # define FEATURE_LOOKUP_TABLE            25
+    # define FEATURE_MEMORY_CHANNEL          26
+    # define FEATURE_WHITE_SHADING           27          /* Seen in Capture OEM as White Balance */
+    # define FEATURE_ROTATE                  28
+    # define FEATURE_IMAGER_CLK_DIVISOR      29          /* DEPRECATED - New applications should not use. */
+    # define FEATURE_TRIGGER_WITH_CONTROLLED_LIGHT   30  /* Allows trigger to be used more deterministically where  lighting cannot be controlled.                         */
+    # define FEATURE_MAX_PIXEL_SIZE          31          /* The number of bits used to represent 16-bit data (10 or 12) */
+    # define FEATURE_BODY_TEMPERATURE		32
+    # define FEATURE_MAX_PACKET_SIZE  		33
+    # define FEATURES_TOTAL                  34
 
-    ## Feature aliases for backward compatibility
-    #define FEATURE_DECIMATION              FEATURE_PIXEL_ADDRESSING   /* Really, decimation is just one type of pixel addressing          */
-    #define FEATURE_EXPOSURE                FEATURE_SHUTTER            /* IIDC'c EXPOSURE is equivalent to feature SHUTTER                 */
-    #define FEATURE_WHITE_BAL               FEATURE_COLOR_TEMP         /* IIDC's white balance is usually referred to as color temperature */
-    #define FEATURE_TEMPERATURE             FEATURE_SENSOR_TEMPERATURE /* Now more specific, as the temperature is from the sensor */
+    # Feature aliases for backward compatibility
+    # define FEATURE_DECIMATION              FEATURE_PIXEL_ADDRESSING   /* Really, decimation is just one type of pixel addressing          */
+    # define FEATURE_EXPOSURE                FEATURE_SHUTTER            /* IIDC'c EXPOSURE is equivalent to feature SHUTTER                 */
+    # define FEATURE_WHITE_BAL               FEATURE_COLOR_TEMP         /* IIDC's white balance is usually referred to as color temperature */
+    # define FEATURE_TEMPERATURE             FEATURE_SENSOR_TEMPERATURE /* Now
+    # more specific, as the temperature is from the sensor */
 
-    ## For PxLGetCameraFeatures
-    #define FEATURE_ALL 0xFFFFFFFF
+    # For PxLGetCameraFeatures
+    # define FEATURE_ALL 0xFFFFFFFF
 
-    ## Feature Flags
-    #define FEATURE_FLAG_PRESENCE       0x00000001  /* The feature is supported on this camera. */
-    #define FEATURE_FLAG_MANUAL         0x00000002
-    #define FEATURE_FLAG_AUTO           0x00000004
-    #define FEATURE_FLAG_ONEPUSH        0x00000008
-    #define FEATURE_FLAG_OFF            0x00000010
-    #define FEATURE_FLAG_DESC_SUPPORTED 0x00000020
-    #define FEATURE_FLAG_READ_ONLY      0x00000040
-    #define FEATURE_FLAG_SETTABLE_WHILE_STREAMING 0x00000080
-    #define FEATURE_FLAG_PERSISTABLE    0x00000100  /* The feature will be saved with PxLSaveSettings */
-    #define FEATURE_FLAG_EMULATION      0x00000200  /* The feature is implemented in the API, not the camera */
-    #define FEATURE_FLAG_VOLATILE       0x00000400  /* The features (settable) value or limits, may change as the result of changing some other feature.  See help file for details on feature interaction */
-    ## Exactly one of these 'mode' bits should be set with each feature set operation
-    #define FEATURE_FLAG_MODE_BITS (FEATURE_FLAG_MANUAL | FEATURE_FLAG_AUTO | FEATURE_FLAG_ONEPUSH | FEATURE_FLAG_OFF)
+    # Feature Flags
+    # define FEATURE_FLAG_PRESENCE       0x00000001  /* The feature is supported on this camera. */
+    # define FEATURE_FLAG_MANUAL         0x00000002
+    # define FEATURE_FLAG_AUTO           0x00000004
+    # define FEATURE_FLAG_ONEPUSH        0x00000008
+    # define FEATURE_FLAG_OFF            0x00000010
+    # define FEATURE_FLAG_DESC_SUPPORTED 0x00000020
+    # define FEATURE_FLAG_READ_ONLY      0x00000040
+    # define FEATURE_FLAG_SETTABLE_WHILE_STREAMING 0x00000080
+    # define FEATURE_FLAG_PERSISTABLE    0x00000100  /* The feature will be saved with PxLSaveSettings */
+    # define FEATURE_FLAG_EMULATION      0x00000200  /* The feature is implemented in the API, not the camera */
+    # define FEATURE_FLAG_VOLATILE       0x00000400  /* The features (settable) value or limits, may change as the result of changing some other feature.  See help file for details on feature interaction */
+    # Exactly one of these 'mode' bits should be set with each feature set operation
+    # define FEATURE_FLAG_MODE_BITS (FEATURE_FLAG_MANUAL | FEATURE_FLAG_AUTO |
+    # FEATURE_FLAG_ONEPUSH | FEATURE_FLAG_OFF)
 
     # =========================================================================
     class FRAME_DESC(C.Structure):
@@ -237,21 +243,22 @@ class PxLapi(object):
             ("strReturnCode", C.c_char * 32),
             ("strReport", C.c_char * 256),
         ]
+
         def __str__(self):
             msg = ''
-            msg += ' errorCode: 0x%08x %s,' % (int(self.uReturnCode), self.strReturnCode)
+            msg += ' errorCode: 0x%08x %s,' % (
+                int(self.uReturnCode), self.strReturnCode)
             msg += ' errorDesc: %s,' % self.strReport
             msg += ' function: %s' % self.strFunctionName
             return msg
 
-
     # -------------------------------------------------------------------------
-    def __init__(self, useReturnCodes=False, libPath = DLL_PATH):
+    def __init__(self, useReturnCodes=False, libPath=DLL_PATH):
         self.__lib = C.windll.LoadLibrary(libPath)
         self.__libPath = libPath
         self._useReturnCodes = useReturnCodes
         self._frameDesc = self.FRAME_DESC()
-        #self._lib = self.__lib# for debugging
+        # self._lib = self.__lib# for debugging
 
     # -------------------------------------------------------------------------
     @property
@@ -277,7 +284,7 @@ class PxLapi(object):
             if self._useReturnCodes:
                 return result
 
-            toReturn = None # default to methos returns nothing
+            toReturn = None  # default to methos returns nothing
             if isinstance(result, tuple) or isinstance(result, list):
                 if len(result) > 1:
                     toReturn = result[1]
@@ -338,10 +345,10 @@ class PxLapi(object):
         if rc < 0:
             return (rc, [])
 
-        serialNumbers = (C.c_long*numCameras.value)()
-        rc = self.__lib.PxLGetNumberCameras(C.byref(serialNumbers), C.byref(numCameras))
+        serialNumbers = (C.c_long * numCameras.value)()
+        rc = self.__lib.PxLGetNumberCameras(
+            C.byref(serialNumbers), C.byref(numCameras))
         return (rc, [int(v) for v in serialNumbers])
-
 
     # -------------------------------------------------------------------------
     @wrap_return_code
@@ -350,7 +357,9 @@ class PxLapi(object):
         called before any other driver functions.
         """
         hCamera = W.HANDLE(0)
-        rc = self.__lib.PxLInitialize(C.c_uint32(serialNumber), C.POINTER(W.HANDLE)(hCamera))
+        rc = self.__lib.PxLInitialize(
+            C.c_uint32(serialNumber), C.POINTER(
+                W.HANDLE)(hCamera))
         if (rc >= 0):
             return (rc, hCamera)
         return (rc, 0)
@@ -397,22 +406,28 @@ class PxLapi(object):
             data_p = data.ctypes.data_as(c_void_p)
         else:
             # make the ctypes string buffer act like a numpy.array
-            data = C.create_string_buffer('\0', (h*w))
+            data = C.create_string_buffer('\0', (h * w))
             setattr(data, 'shape', (h, w))
-            setattr(data, 'tostring', lambda : data.raw)
+            setattr(data, 'tostring', lambda: data.raw)
             data_p = C.byref(data)
 
-        rc = self.__lib.PxLGetNextFrame(hCamera, w * h, data_p, C.byref(self._frameDesc))
+        rc = self.__lib.PxLGetNextFrame(
+            hCamera, w * h, data_p, C.byref(self._frameDesc))
         return (rc, data)
 
     # -------------------------------------------------------------------------
     @wrap_return_code
     def GetFeature(self, hCamera, feature, numParams=1):
         """ Retrieve a camera setting using the feature id definitions. """
-        value = (C.c_float*numParams)()
+        value = (C.c_float * numParams)()
         flags = C.c_ulong(0)
         paramLen = C.c_ulong(numParams)
-        rc = self.__lib.PxLGetFeature(hCamera, feature, C.byref(flags), C.byref(paramLen), C.byref(value))
+        rc = self.__lib.PxLGetFeature(
+            hCamera,
+            feature,
+            C.byref(flags),
+            C.byref(paramLen),
+            C.byref(value))
         if rc < 0:
             return (rc, 0)
         else:
@@ -421,7 +436,6 @@ class PxLapi(object):
             else:
                 return (rc, [float(v) for v in value])
 
-
     # -------------------------------------------------------------------------
     @wrap_return_code
     def SetFeature(self, hCamera, feature, value):
@@ -429,13 +443,13 @@ class PxLapi(object):
         flags = 0
         if isinstance(value, list) or isinstance(value, tuple):
             numParams = len(value)
-            val = (C.c_float*numParams)(*value)
+            val = (C.c_float * numParams)(*value)
         else:
             numParams = 1
             val = C.c_float(value)
-        rc = self.__lib.PxLSetFeature(hCamera, feature, flags, numParams, C.byref(val))
+        rc = self.__lib.PxLSetFeature(
+            hCamera, feature, flags, numParams, C.byref(val))
         return rc
-
 
 
 # =============================================================================
@@ -443,7 +457,8 @@ class PxLerror(Exception):
     """ PixeLINK API exception """
 
     # -------------------------------------------------------------------------
-    def __init__(self, api, errorCode, hCamera = None, extraInfo = '', report=None):
+    def __init__(self, api, errorCode, hCamera=None,
+                 extraInfo='', report=None):
         Exception.__init__(self, '')
 
         if report is None:
@@ -466,7 +481,8 @@ class PxLerror(Exception):
         msg = 'PixeLINK API error - '
         msg += self.extraInfo
         msg += ' hCamera: 0x%08x,' % camAddress
-        msg += ' errorCode: 0x%08x %s,' % (int(self.errorCode), self.strReturnCode)
+        msg += ' errorCode: 0x%08x %s,' % (int(self.errorCode),
+                                           self.strReturnCode)
         msg += ' errorDesc: %s,' % self.strReport
         msg += ' function: %s' % self.strFunctionName
         return msg
@@ -474,14 +490,13 @@ class PxLerror(Exception):
     __repr__ = __str__
 
 
-
-
 # =============================================================================
 class PixeLINK(Camera):
     """ High level interface to the PixeLINK camera. """
 
     # --------------------------------------------------------------------------
-    def __init__(self, logid="CAM", startStreaming=True, serialNumber=729002025):
+    def __init__(self, logid="CAM", startStreaming=True,
+                 serialNumber=729002025):
         super(PixeLINK, self).__init__(logid)
         self._mutex = threading.Lock()
         self._api = PxLapi()
@@ -527,7 +542,7 @@ class PixeLINK(Camera):
             if featureId == 0:
                 raise RuntimeWarning('Invalid key: %s' % key)
         else:
-            featureId = key # must be an PxLapi.FEATURE_* (int or long)
+            featureId = key  # must be an PxLapi.FEATURE_* (int or long)
 
         count = [1, 4][featureId == PxLapi.FEATURE_ROI]
 
@@ -545,7 +560,7 @@ class PixeLINK(Camera):
             if featureId == 0:
                 raise RuntimeWarning('Invalid key: %s' % key)
         else:
-            featureId = key # must be an PxLapi.FEATURE_* (int or long)
+            featureId = key  # must be an PxLapi.FEATURE_* (int or long)
 
         self._mutex.acquire()
         try:
@@ -613,7 +628,7 @@ class PixeLINK(Camera):
             self._api.SetStreamState(self._hCamera, PxLapi.STOP_STREAM)
             self._api.Uninitialize(self._hCamera)
             self._hCamera = None
-            self._api = None # no further calls are allowed to this class
+            self._api = None  # no further calls are allowed to this class
         finally:
             self._mutex.release()
 
@@ -632,6 +647,8 @@ def Save(fname, data):
         SaveAsFits(fname, data)
 
 # =============================================================================
+
+
 def SaveAsBMP(fname, data):
     import struct
 
@@ -639,32 +656,32 @@ def SaveAsBMP(fname, data):
     rawBytes = data.tostring()
     info = {'width': w, 'height': h, 'colordepth': 8}
 
-    #Here is a minimal dictionary with header values.
-    #Of importance is the offset, headerlength, width,
-    #height and colordepth.
-    #Edit the width and height to your liking.
-    #These header values are described in the bmp format spec.
-    #You can find it on the internet. This is for a Windows
-    #Version 3 DIB header.
+    # Here is a minimal dictionary with header values.
+    # Of importance is the offset, headerlength, width,
+    # height and colordepth.
+    # Edit the width and height to your liking.
+    # These header values are described in the bmp format spec.
+    # You can find it on the internet. This is for a Windows
+    # Version 3 DIB header.
 
     headerEntries = (
         ('<B', 66, 'mn1'),
         ('<B', 77, 'mn2'),
-        ('<L', 0,  'filesize'),
-        ('<H', 0,  'undef1'),
-        ('<H', 0,  'undef2'),
+        ('<L', 0, 'filesize'),
+        ('<H', 0, 'undef1'),
+        ('<H', 0, 'undef2'),
         ('<L', 54, 'offset'),
         ('<L', 40, 'headerlength'),
-        ('<L', 0,  'width'),
-        ('<L', 0,  'height'),
-        ('<H', 0,  'colorplanes'),
+        ('<L', 0, 'width'),
+        ('<L', 0, 'height'),
+        ('<H', 0, 'colorplanes'),
         ('<H', 24, 'colordepth'),
-        ('<L', 0,  'compression'),
-        ('<L', 0,  'imagesize'),
-        ('<L', 0,  'res_hor'),
-        ('<L', 0,  'res_vert'),
-        ('<L', 0,  'palette'),
-        ('<L', 0,  'importantcolors'),
+        ('<L', 0, 'compression'),
+        ('<L', 0, 'imagesize'),
+        ('<L', 0, 'res_hor'),
+        ('<L', 0, 'res_vert'),
+        ('<L', 0, 'palette'),
+        ('<L', 0, 'importantcolors'),
     )
     header = ''
     for entry in headerEntries:
@@ -678,6 +695,8 @@ def SaveAsBMP(fname, data):
     outfile.close()
 
 # =============================================================================
+
+
 def SaveAsFits(fname, data, header=None, dtype=None):
 
     import pyfits
@@ -698,13 +717,15 @@ def SaveAsFits(fname, data, header=None, dtype=None):
     fits.writeto(fname)
 
 # =============================================================================
+
+
 def TestCameraAPI():
     print("Running tests on the Camera API...")
     api = PxLapi()
     hCamera = None
     try:
-#        serialNums =  api.GetNumberCameras()
-#        print(serialNums)
+        #        serialNums =  api.GetNumberCameras()
+        #        print(serialNums)
 
         hCamera = api.Initialize(729002025)
 
@@ -731,7 +752,7 @@ def TestCameraAPI():
         try:
             for i in range(1):
                 data = api.GetNextFrame(hCamera, w, h)
-                print("grabbed frame #%02d" %i, data.shape)
+                print("grabbed frame #%02d" % i, data.shape)
         except PxLerror as ex:
             print(ex)
         api.SetStreamState(hCamera, PxLapi.STOP_STREAM)
@@ -743,6 +764,8 @@ def TestCameraAPI():
         api.Uninitialize(hCamera)
 
 # =============================================================================
+
+
 def TestCameraClass():
     print("Running tests on the Camera class...")
     cam = PixeLINK(serialNumber=729002025)
@@ -778,7 +801,7 @@ def TestCameraClass():
     print("data.shape", data.shape)
     cam.streaming = False
 
-    #reset features to original values
+    # reset features to original values
     cam.roi = roi0
     cam.shutter = shutter0
     cam.close()
@@ -786,11 +809,13 @@ def TestCameraClass():
 #    Save('test.bmp', data)
 
 # =============================================================================
+
+
 def RunTests():
     TestCameraAPI()
     TestCameraClass()
 
+
 # =============================================================================
 if __name__ == "__main__":
     RunTests()
-

@@ -8,7 +8,7 @@ Created on Mon Aug 14 15:55:13 2017
 import serial
 import time
 
-#with serial.Serial('COM6') as arduino:
+# with serial.Serial('COM6') as arduino:
 #    arduino.write('ON\n'.encode())
 #    time.sleep(2)
 #    arduino.write('OFF\n'.encode())

@@ -22,11 +22,12 @@ from position_correctors import XYcorrector, Zcorrector
 from coordinates_solver import Zsolver, XYsolver
 from PyQt5 import QtCore, QtWidgets
 
+
 class coordinates_delegate(QtCore.QObject):
-    
+
     updatelist = QtCore.pyqtSignal(list)
-    
-    def __init__(self, application_delegate): 
+
+    def __init__(self, application_delegate):
         super().__init__()
         self._positions = []
         self._current_pos = None
@@ -37,75 +38,75 @@ class coordinates_delegate(QtCore.QObject):
         self.Zsolver = Zsolver()
         self.XYsolver = XYsolver()
 #        self.thread = positionThread(self, [1000, 1000, 0])
-     
+
     def add_position(self, Xm):
         self._positions.append(
-           {'Xm' : Xm,
-            'Xs' : None,
-            'im' : None,
-            'graphs' : None,
-            'showim' : False})
+            {'Xm': Xm,
+             'Xs': None,
+             'im': None,
+             'graphs': None,
+             'showim': False})
         self._load_next()
         self._update()
-    
+
     def load_list(self, fn):
         """Read file containing 3 x N float numbers"""
         positions = list(np.loadtxt(fn))
         for pos in positions:
             self.add_position(pos)
-        
-    def displayrow(self,row):
+
+    def displayrow(self, row):
         pos = self._positions[row]
         if pos['im'] is None:
             return
         if pos['showim']:
-            im=pos['im']
+            im = pos['im']
             self.parent.imageCanvas.imshow(im)
             pos['showim'] = False
-        else:        
-            X,Y,Y2=pos['graphs']
+        else:
+            X, Y, Y2 = pos['graphs']
             self.parent.clearFig()
-            self.parent.imageCanvas.plot(X[Y<4*np.min(Y)],Y[Y<4*np.min(Y)],'.')
-            self.parent.imageCanvas._axes.twinx().plot(X,Y2,'x',c='C1')
+            self.parent.imageCanvas.plot(
+                X[Y < 4 * np.min(Y)], Y[Y < 4 * np.min(Y)], '.')
+            self.parent.imageCanvas._axes.twinx().plot(X, Y2, 'x', c='C1')
             self.parent.imageCanvas.draw()
             pos['showim'] = True
-        
+
     @property
     def positions(self):
         return self._positions
-    
+
     def clear_positions(self):
-        self._positions=[]
+        self._positions = []
         self._current_pos = None
         self._update()
-        
-    def del_position(self,idx):
+
+    def del_position(self, idx):
         del self._positions[idx]
         self._update()
-        
+
     def processPos(self):
-        #Add that in a thread
-#        self.thread.start()   
-#    def endThread(self, graph):
-        #Save new position
+        # Add that in a thread
+        #        self.thread.start()
+        #    def endThread(self, graph):
+        # Save new position
         self._newPos(None)
-        #if still positions in the list & position is reachable:
+        # if still positions in the list & position is reachable:
         if self._load_next():
-        	#go to position
+                # go to position
             self.motor.goto_position(self._current_pos['Xm'])
-        
-            
+
     def save_errors(self):
         fn = QtWidgets.QFileDialog.getSaveFileName(
-                self.parent.imageCanvas,'TXT file',QtCore.QDir.homePath(),
-                "Text (*.txt)")[0]
+            self.parent.imageCanvas, 'TXT file', QtCore.QDir.homePath(),
+            "Text (*.txt)")[0]
         ret = np.zeros((len(self._positions), 3))
-        for i,pos in enumerate(self._positions):
+        for i, pos in enumerate(self._positions):
             Xm1 = pos['Xm']
             Xm2 = self._md.motor.XstoXm(pos['Xs'])
-            ret[i] = (Xm1-Xm2)
+            ret[i] = (Xm1 - Xm2)
         np.savetxt(fn, ret)
-        
+
     def _load_next(self):
         for pos in self._positions:
             if pos['Xs'] is None:
@@ -113,81 +114,77 @@ class coordinates_delegate(QtCore.QObject):
                 return True
         self._current_pos = None
         return False
-    
+
     def _newPos(self, graphs):
         if not self._md.is_onTarget():
             raise RuntimeError("Stage is moving!")
-        #Save XYZ as new value
+        # Save XYZ as new value
         self._current_pos['Xs'] = self.motor.get_position(raw=True)
         self._current_pos['im'] = self.camera.get_image()
         self._current_pos['graphs'] = graphs
         self._update()
-        
+
     def _updateXYZCorr(self):
-            
-        #get Xm and Xs
+
+        # get Xm and Xs
         Xms = np.asarray([p['Xm'] for p in self._positions])
         Xss = np.asarray([p['Xs'] for p in self._positions])
         valid = [p is not None for p in Xss]
         if np.any(valid):
             Xms = Xms[valid]
-            Xss= np.asarray(list(Xss[valid]))
-            #Get coeffs
+            Xss = np.asarray(list(Xss[valid]))
+            # Get coeffs
             zcoeffs = self.Zsolver.solve(Xss)
-            xycoeffs = self.XYsolver.solve(Xss[:,:2], Xms[:,:2])
+            xycoeffs = self.XYsolver.solve(Xss[:, :2], Xms[:, :2])
         else:
             zcoeffs = np.zeros(3)
             xycoeffs = np.zeros(4)
-        #Apply correction
+        # Apply correction
         self._md.set_corrections(xycoeffs, zcoeffs)
         self.parent.coordinatesCorrected.emit(xycoeffs, zcoeffs)
-        
+
     def _update(self):
-        #use saved info to correct coordinates
+        # use saved info to correct coordinates
         self._updateXYZCorr()
         self.updatelist.emit(self._positions)
-        
- 
-#class positionThread(QtCore.QThread):
-#    
-#    def __init__(self, delegate, bgOffset):
-#        super().__init__()
-#        self.delegate = delegate
-#        self.motor = delegate.motor
-#        self.camera = delegate.camera
-#        self._md = delegate._md
-#        self.XYcorrector = XYcorrector(self.motor, self.camera)
-#        self.Zcorrector = Zcorrector(self.motor, self.camera, 500, delegate.parent.imageCanvas)
-#        self._bgOffset = np.asarray(bgOffset)
-#     
-#    def set_bgOffset(self, bgOffset):
-#        bgOffset = np.asarray(bgOffset)
-#        self._bgOffset = bgOffset
-#        
-#        
-#    def run(self):
-#        self.lockid=self._md.lock()
-#        if self.lockid is None:
-#            self.error = "Unable to lock the mouvment"
-#            return
-#        
-#        #Turn off autoshutter
-#        self.camera.autoShutter(False)
-#        #go to bg position
-#        self.motor.move_by(self._bgOffset, wait=True, checkid=self.lockid)
-#        #focus using laser
-#        graphs = self.Zcorrector.focus(checkid=self.lockid)
-#        #take bg
-#        self.camera.set_bg()
-#        #return to image position
-#        self.motor.move_by(-self._bgOffset, wait=True, checkid=self.lockid)
-#        #correct XY if reference image exists, otherwise set reference image
-#        self.XYcorrector.align(checkid=self.lockid)
-#        
-#        self._md.unlock()
-#        
-#        self.delegate.endThread(graphs)
-        
 
-        
-    
+
+class positionThread(QtCore.QThread):
+
+    def __init__(self, delegate, bgOffset):
+        super().__init__()
+        self.delegate = delegate
+        self.motor = delegate.motor
+        self.camera = delegate.camera
+        self._md = delegate._md
+        self.XYcorrector = XYcorrector(self.motor, self.camera)
+        self.Zcorrector = Zcorrector(
+            self.motor, self.camera, 500, delegate.parent.imageCanvas)
+        self._bgOffset = np.asarray(bgOffset)
+
+    def set_bgOffset(self, bgOffset):
+        bgOffset = np.asarray(bgOffset)
+        self._bgOffset = bgOffset
+
+    def run(self):
+        self.lockid = self._md.lock()
+        if self.lockid is None:
+            self.error = "Unable to lock the mouvment"
+            return
+
+        # Turn off autoshutter
+        self.camera.autoShutter(False)
+        # go to bg position
+        self.motor.move_by(self._bgOffset, wait=True, checkid=self.lockid)
+        # focus using laser
+        graphs = self.Zcorrector.focus(checkid=self.lockid)
+        # take bg
+        self.camera.set_bg()
+        # return to image position
+        self.motor.move_by(-self._bgOffset, wait=True, checkid=self.lockid)
+        # correct XY if reference image exists, otherwise set reference image
+        self.XYcorrector.align(checkid=self.lockid)
+
+        self._md.unlock()
+
+        self.delegate.endThread(graphs)

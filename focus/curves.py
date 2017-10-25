@@ -11,7 +11,7 @@ from matplotlib.pyplot import figure, plot, imshow
 import matplotlib.pyplot as plt
 
 #%%
-fns='data/*.npy'
+fns = 'data/*.npy'
 for fn in glob(fns):
     figure()
-    plot(*np.load(fn),'x')
+    plot(*np.load(fn), 'x')

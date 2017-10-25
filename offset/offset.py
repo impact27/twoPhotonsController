@@ -16,34 +16,33 @@ from scipy.signal import correlate2d
 import numpy as np
 from numpy.fft import fft2, fftshift
 
-fns= ['data/cross.tif',
-      'data/cross0.tif',
-      'data/cross10x.tif',
-      'data/cross10y.tif']
+fns = ['data/cross.tif',
+       'data/cross0.tif',
+       'data/cross10x.tif',
+       'data/cross10y.tif']
 
-for i in range(1,4):
+for i in range(1, 4):
 
     im = imread('data/cross.tif')
     im2 = imread(fns[i])
     bg = imread('data/crossbg.tif')
-    
-    
-    im=1.*im-bg
-    im2=1.*im2-bg
-    
-    im=cv2.GaussianBlur(im,(11,11),0)
-    im2=cv2.GaussianBlur(im2,(11,11),0)
-    
-    dy, dx = ir.find_shift_cc(im,im2)
+
+    im = 1. * im - bg
+    im2 = 1. * im2 - bg
+
+    im = cv2.GaussianBlur(im, (11, 11), 0)
+    im2 = cv2.GaussianBlur(im2, (11, 11), 0)
+
+    dy, dx = ir.find_shift_cc(im, im2)
     print(dy, dx)
-    
-    extent= (0, im.shape[1], 0, im.shape[0])
-    
+
+    extent = (0, im.shape[1], 0, im.shape[0])
+
     figure()
-    imshow(im,extent=extent)
-    
-    extent= (dx, im.shape[1]+dx, -dy, im.shape[0]-dy)
-    imshow(im2,alpha=.5,extent=extent)
+    imshow(im, extent=extent)
+
+    extent = (dx, im.shape[1] + dx, -dy, im.shape[0] - dy)
+    imshow(im2, alpha=.5, extent=extent)
 
 
 #%%
