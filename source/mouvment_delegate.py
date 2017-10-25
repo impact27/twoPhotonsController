@@ -128,6 +128,8 @@ class controller(QtCore.QObject):
         Xms = np.apply_along_axis(self.XstoXm, 1, Xss)
         ret[:,0] = np.min(Xms,0)
         ret[:,1] = np.max(Xms,0)
+        if axis is not None:
+            return ret[axis]
         return ret
 
     positionRange = property(get_positionRange)

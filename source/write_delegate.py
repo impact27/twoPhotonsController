@@ -34,11 +34,11 @@ class write_delegate(QtCore.QObject):
             gcommands = f.read()
         intensityRange = self.parent.laser_delegate.get_range()
         posRange=np.asarray([
-                self.parent.mouvment_delegate.cube.get_PosRange(0),
-                self.parent.mouvment_delegate.get_cube_PosRange(1),
-                self.parent.mouvment_delegate.get_cube_PosRange(2)
+                self.parent.mouvment_delegate.piezzo.get_positionRange(0),
+                self.parent.mouvment_delegate.piezzo.get_positionRange(1),
+                self.parent.mouvment_delegate.piezzo.get_positionRange(2)
                 ])
-        speedRange = self.parent.mouvment_delegate.get_cube_VelRange(0)
+        speedRange = self.parent.mouvment_delegate.piezzo.get_velocityRange(0)
         
         checker = gcode_checker(intensityRange, posRange, speedRange)
             
@@ -76,8 +76,6 @@ class write_thread(QtCore.QThread):
                 self.error = "Unable to lock the mouvment"
                 return
             
-            XYStageLast = None
-            
             xori, yori, Nx, Ny, dx, dy = self.args
             
             if Nx==1:
@@ -90,11 +88,10 @@ class write_thread(QtCore.QThread):
                 parity=2*((par+1)%2)-1
                 for x in np.arange(xori, xori+Nx*dx, dx)[::parity]:
                     
-                    Xorigin=np.asarray([x, y])
-                    XYStageLast=self.md.goto_XY_position(
-                         Xorigin, XsFrom=XYStageLast, 
+                    Xorigin=np.asarray([x, y, 0])
+                    self.md.motor.goto_position(Xorigin, 
                          wait=True, checkid=self.lockid)
-                    self.writeGCode(XYStageLast)
+                    self.writeGCode()
                     
             
         except SerialTimeoutException:
@@ -102,23 +99,21 @@ class write_thread(QtCore.QThread):
             
         self.md.unlock()
                 
-    def writeGCode(self, XYStageLast):
-        defaultCubeSpeed=self.md.get_cube_velocity()
-        writer = gwriter(self.md,self.ld,self.lockid, XYStageLast)
+    def writeGCode(self,):
+        defaultCubeSpeed=self.md.piezzo.get_velocity()
+        writer = gwriter(self.md,self.ld,self.lockid)
         writer.readGcommands(self.gcommands)
-        self.md.set_cube_velocity(defaultCubeSpeed, checkid = self.lockid)
+        self.md.piezzo.set_velocity(defaultCubeSpeed, checkid = self.lockid)
         
 class gwriter(gcode_reader):
     
-    def __init__(self, md, ld, lockid, XYStageLast):
+    def __init__(self, md, ld, lockid):
         super().__init__()
         self.md = md
         self.ld = ld
         self.ld.set_intensity(0)
         self.lockid = lockid
         self.Xmlast = np.zeros(3)
-        self.Xslast = None
-        self.XYStageLast = XYStageLast
         
     def __del__(self):
         self.ld.set_intensity(0)
@@ -130,14 +125,11 @@ class gwriter(gcode_reader):
     def moveTo(self,X,Y,Z):
         Xmto = np.asarray([X, Y, Z])
         Xmto[np.isnan(Xmto)] = self.Xmlast[np.isnan(Xmto)]
-        self.Xslast = self.md.goto_cube_position(
-                                Xmto, XsFrom=self.Xslast,
-                                XStageOrigin=self.XYStageLast,
-                                wait=True, checkid=self.lockid)
+        self.md.piezzo.goto_position(Xmto, wait=True, checkid=self.lockid)
         self.Xmlast=Xmto
     
     def setSpeed(self,F):
-        self.md.set_cube_velocity(F, checkid=self.lockid)
+        self.md.piezzo.set_velocity(F, checkid=self.lockid)
         
     def stop(self):
         self.ld.switch(False)
