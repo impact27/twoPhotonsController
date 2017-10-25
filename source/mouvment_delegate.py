@@ -393,16 +393,19 @@ class mouvment_delegate(QtCore.QObject):
         self.zcoeff=coeffs
         self.motor.set_Z_correction(coeffs)
       
-    def save_corrections(self, fn='corrections.txt'):
+    def save_corrections(self):
+        fn = 'corrections.txt'
         with open(fn,'bw') as f:
-            np.savetxt(f, self.XYcorr)
-            np.savetxt(fn, self.zcoeff )
+            np.savetxt(f, self.XYcorr[np.newaxis])
+            np.savetxt(f, self.zcoeff[np.newaxis])
         
-    def load_corrections(self, fn='XY.txt'):
+    def load_corrections(self):
+        fn = 'corrections.txt'
         try:
             with open(fn,'r') as f:
-                self.set_XY_correction(np.fromstring(f.readline(), sep=" "))
-                self.set_Z_correction(np.fromstring(f.readline(), sep=" "))
+                XYcorr = np.fromstring(f.readline(), sep=" ")
+                Zcorr = np.fromstring(f.readline(), sep=" ")
+                self.set_corrections(XYcorr, Zcorr)
         except FileNotFoundError:
             self.parent.error.emit('No saved correction')
             
