@@ -270,14 +270,14 @@ class coordinates_tab(QtWidgets.QWidget):
         row=self.pos_list.rowCount()
         self.pos_list.insertRow(row)
         
-        Xmtext = "[{:.0f},\n {:.0f},\n {:.0f}]".format(*Xm)
+        Xmtext = "[{:.1f},\n {:.1f},\n {:.1f}]".format(*Xm)
         Xm_label=QtWidgets.QLabel(Xmtext)
         Xm_label.setAlignment(QtCore.Qt.AlignCenter)
         
         if Xs is None:
             Xstext = '?'
         else:
-            Xstext = "[{:.0f},\n {:.0f},\n {:.0f}]".format(*Xs)
+            Xstext = "[{:.1f},\n {:.1f},\n {:.1f}]".format(*Xs)
         Xs_label=QtWidgets.QLabel(Xstext)
         Xs_label.setAlignment(QtCore.Qt.AlignCenter)
         
