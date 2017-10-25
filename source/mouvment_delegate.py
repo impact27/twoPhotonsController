@@ -270,7 +270,7 @@ class piezzo(controller):
         self._offset = np.array([50, 50, 25])
         
     def motorMove(self, checkid=None):
-        self.goto_position([0,0,0], isRaw=True, checkid=checkid)
+        self.goto_position([0,0,0], checkid=checkid)
         self.zcoeff = np.zeros(3)
         
     def XstoXm(self, Xs):

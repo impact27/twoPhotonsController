@@ -88,7 +88,7 @@ class write_thread(QtCore.QThread):
                 parity=2*((par+1)%2)-1
                 for x in np.arange(xori, xori+Nx*dx, dx)[::parity]:
                     
-                    Xorigin=np.asarray([x, y, 0])
+                    Xorigin=np.asarray([x, y, np.nan])
                     self.md.motor.goto_position(Xorigin, 
                          wait=True, checkid=self.lockid)
                     self.writeGCode()
@@ -96,6 +96,8 @@ class write_thread(QtCore.QThread):
             
         except SerialTimeoutException:
             self.parent.error('Timeout')
+        except BaseException as e:
+            print(e)
             
         self.md.unlock()
                 
