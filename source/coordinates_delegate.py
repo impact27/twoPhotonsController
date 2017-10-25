@@ -18,7 +18,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 import numpy as np
-from position_correctors import XYcorrector, Zcorrector
+from position_correctors import XYcorrector
 from coordinates_solver import Zsolver, XYsolver
 from PyQt5 import QtCore, QtWidgets
 
@@ -37,15 +37,12 @@ class coordinates_delegate(QtCore.QObject):
         self.motor = application_delegate.mouvment_delegate.motor
         self.Zsolver = Zsolver()
         self.XYsolver = XYsolver()
-#        self.thread = positionThread(self, [1000, 1000, 0])
 
     def add_position(self, Xm):
         self._positions.append(
             {'Xm': Xm,
              'Xs': None,
-             'im': None,
-             'graphs': None,
-             'showim': False})
+             'im': None})
         self._load_next()
         self._update()
 
@@ -59,18 +56,7 @@ class coordinates_delegate(QtCore.QObject):
         pos = self._positions[row]
         if pos['im'] is None:
             return
-        if pos['showim']:
-            im = pos['im']
-            self.parent.imageCanvas.imshow(im)
-            pos['showim'] = False
-        else:
-            X, Y, Y2 = pos['graphs']
-            self.parent.clearFig()
-            self.parent.imageCanvas.plot(
-                X[Y < 4 * np.min(Y)], Y[Y < 4 * np.min(Y)], '.')
-            self.parent.imageCanvas._axes.twinx().plot(X, Y2, 'x', c='C1')
-            self.parent.imageCanvas.draw()
-            pos['showim'] = True
+        self.parent.imageCanvas.imshow(pos['im'])
 
     @property
     def positions(self):
@@ -86,11 +72,8 @@ class coordinates_delegate(QtCore.QObject):
         self._update()
 
     def processPos(self):
-        # Add that in a thread
-        #        self.thread.start()
-        #    def endThread(self, graph):
         # Save new position
-        self._newPos(None)
+        self._newPos()
         # if still positions in the list & position is reachable:
         if self._load_next():
                 # go to position
@@ -115,13 +98,12 @@ class coordinates_delegate(QtCore.QObject):
         self._current_pos = None
         return False
 
-    def _newPos(self, graphs):
+    def _newPos(self):
         if not self._md.is_onTarget():
             raise RuntimeError("Stage is moving!")
         # Save XYZ as new value
         self._current_pos['Xs'] = self.motor.get_position(raw=True)
         self._current_pos['im'] = self.camera.get_image()
-        self._current_pos['graphs'] = graphs
         self._update()
 
     def _updateXYZCorr(self):
@@ -149,42 +131,38 @@ class coordinates_delegate(QtCore.QObject):
         self.updatelist.emit(self._positions)
 
 
-class positionThread(QtCore.QThread):
-
-    def __init__(self, delegate, bgOffset):
-        super().__init__()
-        self.delegate = delegate
-        self.motor = delegate.motor
-        self.camera = delegate.camera
-        self._md = delegate._md
-        self.XYcorrector = XYcorrector(self.motor, self.camera)
-        self.Zcorrector = Zcorrector(
-            self.motor, self.camera, 500, delegate.parent.imageCanvas)
-        self._bgOffset = np.asarray(bgOffset)
-
-    def set_bgOffset(self, bgOffset):
-        bgOffset = np.asarray(bgOffset)
-        self._bgOffset = bgOffset
-
-    def run(self):
-        self.lockid = self._md.lock()
-        if self.lockid is None:
-            self.error = "Unable to lock the mouvment"
-            return
-
-        # Turn off autoshutter
-        self.camera.autoShutter(False)
-        # go to bg position
-        self.motor.move_by(self._bgOffset, wait=True, checkid=self.lockid)
-        # focus using laser
-        graphs = self.Zcorrector.focus(checkid=self.lockid)
-        # take bg
-        self.camera.set_bg()
-        # return to image position
-        self.motor.move_by(-self._bgOffset, wait=True, checkid=self.lockid)
-        # correct XY if reference image exists, otherwise set reference image
-        self.XYcorrector.align(checkid=self.lockid)
-
-        self._md.unlock()
-
-        self.delegate.endThread(graphs)
+#class positionThread(QtCore.QThread):
+#
+#    def __init__(self, delegate, bgOffset):
+#        super().__init__()
+#        self.delegate = delegate
+#        self.motor = delegate.motor
+#        self.camera = delegate.camera
+#        self._md = delegate._md
+#        self.XYcorrector = XYcorrector(self.motor, self.camera)
+#        self.Zcorrector = Zcorrector(
+#            self.motor, self.camera, 500, delegate.parent.imageCanvas)
+#        self._bgOffset = np.asarray(bgOffset)
+#
+#    def run(self):
+#        self.lockid = self._md.lock()
+#        if self.lockid is None:
+#            self.error = "Unable to lock the mouvment"
+#            return
+#
+#        # Turn off autoshutter
+#        self.camera.autoShutter(False)
+#        # go to bg position
+#        self.motor.move_by(self._bgOffset, wait=True, checkid=self.lockid)
+#        # focus using laser
+#        graphs = self.Zcorrector.focus(checkid=self.lockid)
+#        # take bg
+#        self.camera.set_bg()
+#        # return to image position
+#        self.motor.move_by(-self._bgOffset, wait=True, checkid=self.lockid)
+#        # correct XY if reference image exists, otherwise set reference image
+#        self.XYcorrector.align(checkid=self.lockid)
+#
+#        self._md.unlock()
+#
+#        self.delegate.endThread(graphs)

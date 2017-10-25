@@ -115,13 +115,9 @@ class application_delegate(QtCore.QObject):
         self.newPosRange.emit(self.mouvment_delegate.motor.positionRange)
         self.update_motor.emit()
 
-    def clearFig(self):
-        self.imageCanvas.clear()
-
     def ESTOP(self):
-        self.mouvment_delegate.ESTOP()
-        self.coordinates_delegate.thread.terminate()
         self.write_delegate.ESTOP()
+        self.mouvment_delegate.ESTOP()
 
     def draw_device(self, xori, yori, gpath, Nx, Ny, dx, dy):
 
