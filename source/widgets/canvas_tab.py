@@ -37,12 +37,12 @@ class Canvas_widget(QtWidgets.QWidget):
         range_layout.addWidget(full_button, 1, 2)
         
         full_button.clicked.connect(lambda: 
-            application_delegate.imageCanvas.imshow())
+            application_delegate.imageCanvas.set_range())
         
         def changeRange():
             vmin = float(min_input.text())
             vmax = float(max_input.text())
-            application_delegate.imageCanvas.imshow(vmin=vmin, vmax=vmax)
+            application_delegate.imageCanvas.set_range(vmin, vmax)
             
         min_input.editingFinished.connect(changeRange)
         max_input.editingFinished.connect(changeRange)

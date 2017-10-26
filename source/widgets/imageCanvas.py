@@ -49,18 +49,23 @@ class ImageCanvas(MyMplCanvas):
         self._click_pos = np.array([[np.nan, np.nan], [np.nan, np.nan]])
         self._crosshandle = None
         self._pixelSize = 1
-
+        self._vmin = 0
+        self._vmax = 255
+        
     def set_pixel_size(self, pxsize):
         factor = pxsize/self._pixelSize
         self._click_pos *= factor
         self._pixelSize = pxsize
         if self._imhandle is not None:
             self.imshow()
-            self.update_click()
             
-        
-    def imshow(self, im=None, vmin=0, vmax=255):
+    def set_range(self, vmin=0, vmax=255):
         self.newrange.emit(vmin, vmax)
+        self._vmin = vmin
+        self._vmax = vmax
+        self.imshow()
+    
+    def imshow(self, im=None):
         if im is None:
             im = self._lastim
             if im is None:
@@ -69,18 +74,21 @@ class ImageCanvas(MyMplCanvas):
         self._lastim = im
         self.figure.clear()
         self._axes = self.figure.add_subplot(111)
+        
         extent = (0, im.shape[1]*self._pixelSize,
                   0, im.shape[0]*self._pixelSize)
-        self._imhandle = self._axes.imshow(im, vmin=vmin, vmax=vmax, extent=extent)
+        self._imhandle = self._axes.imshow(im, vmin=self._vmin, 
+                                           vmax=self._vmax, extent=extent)
         self._axes.axis('image')
         self.figure.colorbar(self._imhandle)
         self.draw()
+        self.update_click()
 
     def auto_range(self):
         im = self.get_im()
         vmin = np.percentile(im,1)
         vmax = np.percentile(im,99)
-        self.imshow(vmin=vmin, vmax=vmax)
+        self.set_range(vmin=vmin, vmax=vmax)
 #    @profile
     def frameshow(self, im):
         self._lastim = im
