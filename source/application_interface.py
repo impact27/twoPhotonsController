@@ -26,6 +26,7 @@ from widgets.write_tab import Write_tab
 from widgets.controls_tab import Controls_tab
 from widgets.bottom import Bottom_widget
 from widgets.focus_tab import Focus_tab
+from widgets.canvas_tab import Canvas_widget
 
 class ApplicationWindow(QtWidgets.QMainWindow):
     def __init__(self):
@@ -83,6 +84,7 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         #======================================================================
         vertical = QtWidgets.QVBoxLayout()
         vertical.addWidget(imCanvas, 1)
+        vertical.addWidget(Canvas_widget(self.application_delegate))
         vertical.addWidget(Bottom_widget(self.application_delegate))
 
         horizontal = QtWidgets.QHBoxLayout(self.main_widget)
