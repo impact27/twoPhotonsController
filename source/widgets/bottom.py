@@ -5,6 +5,7 @@ Created on Wed Oct 25 16:58:40 2017
 @author: quentinpeter
 """
 from PyQt5 import QtWidgets
+import numpy as np
 
 class Bottom_widget(QtWidgets.QWidget):
 
@@ -13,7 +14,14 @@ class Bottom_widget(QtWidgets.QWidget):
         #======================================================================
         #       Create Widgets
         #======================================================================
+        min_label = QtWidgets.QLabel("Min:")
+        min_input = QtWidgets.QLineEdit('0')
+        max_label = QtWidgets.QLabel("Max:")
+        max_input = QtWidgets.QLineEdit('255')
+        auto_button = QtWidgets.QPushButton("auto")
+        full_button = QtWidgets.QPushButton("full")
 
+    
         ESTOP_button = QtWidgets.QPushButton("EMERGENCY STOP")
         ESTOP_button.setStyleSheet("background-color: red")
         ESTOP_button.setSizePolicy(QtWidgets.QSizePolicy.Expanding,
@@ -35,20 +43,50 @@ class Bottom_widget(QtWidgets.QWidget):
         #======================================================================
         #     Layout
         #======================================================================
+        range_layout = QtWidgets.QHBoxLayout()
+        range_layout.addWidget(min_label)
+        range_layout.addWidget(min_input)
+        range_layout.addWidget(max_label)
+        range_layout.addWidget(max_input)
+        range_layout.addWidget(auto_button)
+        range_layout.addWidget(full_button)
 
-        main_layout = QtWidgets.QGridLayout(self)
-        main_layout.addWidget(live_button, 0, 0)
-        main_layout.addWidget(draw_button, 0, 1)
-        main_layout.addWidget(clear_button, 1, 0)
-        main_layout.addWidget(bg_button, 1, 1)
-        main_layout.addWidget(ESTOP_button, 0, 3, 2, 3)
-        main_layout.addWidget(save_im_button, 0, 2)
-        main_layout.addWidget(save_fig_button, 1, 2)
+        buttons_layout = QtWidgets.QGridLayout()
+        buttons_layout.addWidget(live_button, 0, 0)
+        buttons_layout.addWidget(draw_button, 0, 1)
+        buttons_layout.addWidget(clear_button, 1, 0)
+        buttons_layout.addWidget(bg_button, 1, 1)
+        buttons_layout.addWidget(ESTOP_button, 0, 3, 2, 3)
+        buttons_layout.addWidget(save_im_button, 0, 2)
+        buttons_layout.addWidget(save_fig_button, 1, 2)
 
+        main_layout = QtWidgets.QVBoxLayout(self)
+        main_layout.addLayout(range_layout)
+        main_layout.addLayout(buttons_layout)
+        
         self.setLayout(main_layout)
         #======================================================================
         #      Connections
         #======================================================================
+        full_button.clicked.connect(lambda: 
+            application_delegate.imageCanvas.imshow())
+        
+        def changeRange():
+            vmin = float(min_input.text())
+            vmax = float(max_input.text())
+            application_delegate.imageCanvas.imshow(vmin=vmin, vmax=vmax)
+            
+        min_input.editingFinished.connect(changeRange)
+        max_input.editingFinished.connect(changeRange)
+        
+        def autoRange():
+            im = application_delegate.imageCanvas.get_im()
+            vmin = np.percentile(im,1)
+            vmax = np.percentile(im,99)
+            application_delegate.imageCanvas.imshow(vmin=vmin, vmax=vmax)
+
+        auto_button.clicked.connect(autoRange)
+
 
         ESTOP_button.clicked.connect(application_delegate.ESTOP)
         clear_button.clicked.connect(application_delegate.imageCanvas.clear)

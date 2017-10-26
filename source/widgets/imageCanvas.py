@@ -45,11 +45,16 @@ class ImageCanvas(MyMplCanvas):
         self._click_pos = (0, 0)
         self._crosshandle = None
 
-    def imshow(self, im, vmax=None):
+    def imshow(self, im=None, vmin=0, vmax=255):
+        if im is None:
+            im = self._lastim
+            if im is None:
+                print("No image!")
+                return
         self._lastim = im
         self.figure.clear()
         self._axes = self.figure.add_subplot(111)
-        self._imhandle = self._axes.imshow(im, vmax=vmax)
+        self._imhandle = self._axes.imshow(im, vmin=vmin, vmax=vmax)
         self._axes.axis('image')
         self.figure.colorbar(self._imhandle)
         self.draw()
@@ -66,7 +71,7 @@ class ImageCanvas(MyMplCanvas):
                 self._axes.draw_artist(self._crosshandle[0])
             self.blit(self._axes.bbox)
         else:
-            self.imshow(im[::2, ::2], vmax=255)
+            self.imshow(im[::2, ::2])
 
     def clear(self):
         self._imhandle = None
