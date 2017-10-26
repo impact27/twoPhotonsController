@@ -85,7 +85,7 @@ class ImageCanvas(MyMplCanvas):
     def frameshow(self, im):
         self._lastim = im
         if self._imhandle is not None:
-            im = cv2.resize(im, tuple(np.array(im.shape)//2), 
+            im = cv2.resize(im, (im.shape[1]//2, im.shape[0]//2), 
                             interpolation=cv2.INTER_AREA)
             self._imhandle.set_data(im)
 #            if self._autoc:
