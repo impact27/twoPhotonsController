@@ -129,6 +129,13 @@ class coordinates_delegate(QtCore.QObject):
         # use saved info to correct coordinates
         self._updateXYZCorr()
         self.updatelist.emit(self._positions)
+        
+    def offset_origin(self, offset):
+        xycoeffs, zcoeffs = self._md.get_corrections()
+        xycoeffs[2:] += offset
+        self._md.set_corrections(xycoeffs, zcoeffs)
+        self.parent.coordinatesCorrected.emit(xycoeffs, zcoeffs)
+        
 
 
 #class positionThread(QtCore.QThread):

@@ -60,6 +60,7 @@ class Canvas_widget(QtWidgets.QWidget):
         dist_display = QtWidgets.QLabel("")
         pxsize_label = QtWidgets.QLabel("Pixel Size:")
         pxsize_input = QtWidgets.QLineEdit('1')
+        crosses_clear_button = QtWidgets.QPushButton("Clear")
         
         range_layout.addWidget(cross0_label, 0, 3)
         range_layout.addWidget(cross0_pos, 0, 4)
@@ -69,6 +70,7 @@ class Canvas_widget(QtWidgets.QWidget):
         range_layout.addWidget(dist_display, 0, 6)
         range_layout.addWidget(pxsize_label, 1, 5)
         range_layout.addWidget(pxsize_input, 1, 6)
+        range_layout.addWidget(crosses_clear_button, 0, 7)
         
         self.setLayout(range_layout)
         
@@ -78,7 +80,8 @@ class Canvas_widget(QtWidgets.QWidget):
         
         pxsize_input.editingFinished.connect(changePX)
         application_delegate.imageCanvas.newclick.connect(self.showPos)
-        
+        crosses_clear_button.clicked.connect(lambda: 
+            application_delegate.imageCanvas.clearCrosses())
         self.cross0_pos = cross0_pos
         self.cross1_pos = cross1_pos
         self.dist_display = dist_display

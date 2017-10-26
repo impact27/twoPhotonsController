@@ -56,6 +56,10 @@ class Coordinates_tab(QtWidgets.QWidget):
         correction_load = QtWidgets.QPushButton('Load')
 
         save_errors = QtWidgets.QPushButton('Save Errors')
+        
+        offset_label = QtWidgets.QLabel("New Origin:")
+        offset_input = QtWidgets.QLineEdit("0, 0")
+        offset_button = QtWidgets.QPushButton("Move Origin")
         #======================================================================
         #     Layout
         #======================================================================
@@ -85,10 +89,16 @@ class Coordinates_tab(QtWidgets.QWidget):
         load_layout = QtWidgets.QHBoxLayout()
         load_layout.addWidget(correction_save)
         load_layout.addWidget(correction_load)
+        
+        offset_layout = QtWidgets.QHBoxLayout()
+        offset_layout.addWidget(offset_label)
+        offset_layout.addWidget(offset_input)
 
         correction_layout = QtWidgets.QVBoxLayout()
         correction_layout.addWidget(correction_label)
         correction_layout.addWidget(correction_reset)
+        correction_layout.addLayout(offset_layout)
+        correction_layout.addWidget(offset_button)
         correction_layout.addLayout(load_layout)
 
         hbuttons = QtWidgets.QHBoxLayout()
@@ -132,6 +142,9 @@ class Coordinates_tab(QtWidgets.QWidget):
         correction_load.clicked.connect(md.load_corrections)
 
         save_errors.clicked.connect(cd.save_errors)
+        
+        offset_button.clicked.connect(lambda: 
+            cd.offset_origin(np.fromstring(offset_input.text(), sep=',')))
 
         #======================================================================
         #         Save variables

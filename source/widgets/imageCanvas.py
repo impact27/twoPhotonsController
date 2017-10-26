@@ -52,6 +52,10 @@ class ImageCanvas(MyMplCanvas):
         self._vmin = 0
         self._vmax = 255
         
+    def clearCrosses(self):
+        self._click_pos = np.array([[np.nan, np.nan], [np.nan, np.nan]])
+        self.update_click()
+        
     def set_pixel_size(self, pxsize):
         factor = pxsize/self._pixelSize
         self._click_pos *= factor
