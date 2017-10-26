@@ -16,9 +16,8 @@ class Focus_delegate(QtCore.QObject):
         self._positions = []
         self.md = app_delegate.mouvment_delegate
         self.canvas = app_delegate.imageCanvas
-        self._zcorrector = Zcorrector(self.md.motor,
-                                      app_delegate.camera_delegate,
-                                      self.canvas)
+        self.thread = zThread(self.md, app_delegate.camera_delegate,
+                              self.canvas, self.endThread)
         
     def delete_pos(self, idx):
         del self._positions[idx]
@@ -28,8 +27,10 @@ class Focus_delegate(QtCore.QObject):
         self.canvas.plotZCorr(*self._positions[idx]["graphs"])
     
     def focus(self, pos_range):
-        graphs = self._zcorrector.focus(pos_range, checkid=self.md.lock())
-        self.md.unlock()
+        self.thread.set_pos_range(pos_range)
+        self.thread.start()
+        
+    def endThread(self, graphs):
         self._positions.append({
                 "Xs": self.md.motor.get_position(raw=True),
                 "graphs": graphs})
@@ -54,8 +55,32 @@ class Focus_delegate(QtCore.QObject):
         for pos in self._positions:
             ret.append(self.md.motor.XstoXm(pos["Xs"]))
         self.updatelist.emit(ret)
+        
+    def ESTOP(self):
+        self.thread.terminate()
 
 
+class zThread(QtCore.QThread):
+
+    def __init__(self, md, camera, canvas, endThread):
+        super().__init__()
+        self._zcorrector = Zcorrector(md.motor, camera, canvas)
+        self.endThread = endThread
+        self.pos_range = 0
+        self._md = md
+
+    def set_pos_range(self, pos_range):
+        self.pos_range = pos_range
+        
+    def run(self):
+        lockid = self._md.lock()
+        if lockid is None:
+            self.error = "Unable to lock the mouvment"
+            return
+        graphs = self._zcorrector.focus(self.pos_range, checkid=lockid)
+        self._md.unlock()
+
+        self.endThread(graphs)
 
 class Zcorrector():
 

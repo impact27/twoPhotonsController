@@ -5,7 +5,6 @@ Created on Wed Oct 25 16:51:32 2017
 @author: quentinpeter
 """
 from PyQt5 import QtCore, QtWidgets
-from focus_delegate import Focus_delegate
 
 class Layout_wrapper(QtWidgets.QWidget):
     def __init__(self, layout, *args, **kwargs):
@@ -21,7 +20,7 @@ class Focus_tab(QtWidgets.QWidget):
     def __init__(self, application_delegate, *args, **kwargs):
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
         
-        self.fd = Focus_delegate(application_delegate)
+        self.fd = application_delegate.focus_delegate
 
         #======================================================================
         #       Create Widgets

@@ -28,6 +28,7 @@ cmap = matplotlib.cm.get_cmap('plasma')
 from laser_delegate import laser_delegate
 from camera_delegate import camera_delegate
 import tifffile
+from focus_delegate import Focus_delegate
 
 
 class application_delegate(QtCore.QObject):
@@ -44,13 +45,14 @@ class application_delegate(QtCore.QObject):
 
     def __init__(self, imageCanvas):
         super().__init__()
+        # Save plot canevas
+        self.imageCanvas = imageCanvas
+        
         # Create delegates for I/O
         self.mouvment_delegate = mouvment_delegate(self)
         self.camera_delegate = camera_delegate()
         self.laser_delegate = laser_delegate()
-
-        # Save plot canevas
-        self.imageCanvas = imageCanvas
+        self.focus_delegate = Focus_delegate(self)
 
         # Create delegates for actions
         self.coordinates_delegate = coordinates_delegate(self)
@@ -116,6 +118,7 @@ class application_delegate(QtCore.QObject):
         self.update_motor.emit()
 
     def ESTOP(self):
+        self.focus_delegate.ESTOP()
         self.write_delegate.ESTOP()
         self.mouvment_delegate.ESTOP()
 
