@@ -69,8 +69,8 @@ class ImageCanvas(MyMplCanvas):
         self._lastim = im
         self.figure.clear()
         self._axes = self.figure.add_subplot(111)
-        extent = (0, im.shape[0]*self._pixelSize,
-                  0, im.shape[1]*self._pixelSize)
+        extent = (0, im.shape[1]*self._pixelSize,
+                  0, im.shape[0]*self._pixelSize)
         self._imhandle = self._axes.imshow(im, vmin=vmin, vmax=vmax, extent=extent)
         self._axes.axis('image')
         self.figure.colorbar(self._imhandle)
@@ -137,8 +137,8 @@ class ImageCanvas(MyMplCanvas):
         self._crosshandle = self._axes.plot(self._click_pos[:,1], 
                                             self._click_pos[:,0], 'r-x')
         self.frameshow(self._lastim)
-        
-        dist = np.sqrt(np.dot(self._click_pos[0], self._click_pos[1]))
+        vec = self._click_pos[0]-self._click_pos[1]
+        dist = np.sqrt(np.dot(vec, vec))
         
         self.newclick.emit(self._click_pos, dist)
 
