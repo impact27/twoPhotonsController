@@ -121,7 +121,7 @@ class Zcorrector():
         self.camera.shutter = self._camshutter
 #         self.laser.close_shutter()
 
-    def focus(self, ZRange, Npass=3, checkid=None):
+    def focus(self, ZRange, Npass=2, checkid=None):
         """ Go to the best focal point for the laser
         """
         self.lockid = checkid
