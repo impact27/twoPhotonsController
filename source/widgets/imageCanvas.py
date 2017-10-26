@@ -119,7 +119,7 @@ class ImageCanvas(MyMplCanvas):
     def onImageClick(self, event):
         """A CLICK!!!!!!!!"""
         # Are we displaying an image?
-        if self._imhandle is None:
+        if self._imhandle is None or event.ydata is None or event.xdata is None:
             return
         
         #What button was that?
