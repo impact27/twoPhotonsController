@@ -53,11 +53,11 @@ class camera_controller():
             print(fns)
             return np.random.rand(50, 50) * 256
 
-    def shutter_range(self):
+    def exposure_time_range(self):
         return [1.9e-5, .1]
 
-    def set_shutter(self, time):
+    def set_exposure_time(self, time):
         self.shutter = time
 
-    def get_shutter(self):
+    def get_exposure_time(self):
         return self.shutter

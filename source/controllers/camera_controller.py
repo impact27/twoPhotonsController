@@ -38,14 +38,14 @@ class camera_controller():
         del self.cam
         self.cam = PixeLINK()
 
-    def shutter_range(self):
+    def exposure_time_range(self):
         return [1.9e-5, .1]
 
     def get_image(self):
         return self.cam.grab()[::-1, ::-1]
 
-    def set_shutter(self, time):
-        amin, amax = self.shutter_range()
+    def set_exposure_time(self, time):
+        amin, amax = self.exposure_time_range()
         if time < amin:
             time = amin
         elif time > amax:
@@ -55,7 +55,7 @@ class camera_controller():
         except BaseException as e:
             print(f"Unable to set shutter time {time}")
 
-    def get_shutter(self):
+    def get_exposure_time(self):
         return self.cam.shutter
 
     def ext_shutter(self, Open):

@@ -87,8 +87,8 @@ class Controls_tab(QtWidgets.QWidget):
         cam_label = QtWidgets.QLabel('Camera')
         cam_label.setStyleSheet("font: bold large")
         cam_reconnect = QtWidgets.QPushButton('Reconnect')
-        cam_range = cd.shutter_range()
-        cam_init = cd.get_shutter()
+        cam_range = cd.exposure_time_range()
+        cam_init = cd.get_exposure_time()
         cam_exposure_label = QtWidgets.QLabel('Exp. [s]:')
         cam_exposure_selector = doubleSelector(cam_range, cam_init, isLog=True)
         cam_autoshutter = QtWidgets.QPushButton('Auto')
@@ -215,9 +215,9 @@ class Controls_tab(QtWidgets.QWidget):
 
         cam_reconnect.clicked.connect(cd.reconnect)
 
-        cam_exposure_selector.newValue.connect(cd.set_shutter)
+        cam_exposure_selector.newValue.connect(cd.set_exposure_time)
 
-        cd.shutterState.connect(self.setCamShutter)
+        cd.state_auto_exposure_time.connect(self.setCamShutter)
 
         def switchLaserText(on):
             if on:
@@ -230,7 +230,7 @@ class Controls_tab(QtWidgets.QWidget):
         ld.newIntensity.connect(laser_setV.setValue)
         ld.switched.connect(laser_switch.setChecked)
 
-        cd.newShutter.connect(cam_exposure_selector.setValue)
+        cd.new_exposure_time.connect(cam_exposure_selector.setValue)
 
         application_delegate.newMotorState.connect(motor_status.setOn)
         application_delegate.newCubeState.connect(cube_status.setOn)
@@ -246,7 +246,7 @@ class Controls_tab(QtWidgets.QWidget):
 
         application_delegate.newPosition.connect(self.updatePos)
 
-        cam_autoshutter.toggled.connect(cd.autoShutter)
+        cam_autoshutter.toggled.connect(cd.auto_exposure_time)
         cam_extshutter.toggled.connect(cd.extShutter)
 
         def setMotorPos(motor_selectors, ranges):

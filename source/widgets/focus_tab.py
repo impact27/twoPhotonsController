@@ -25,11 +25,16 @@ class Focus_tab(QtWidgets.QWidget):
         #======================================================================
         #       Create Widgets
         #======================================================================
-        Range_label = QtWidgets.QLabel("Range:")
-        Range_input = QtWidgets.QLineEdit('500')
+        back_label = QtWidgets.QLabel("Range start:")
+        back_input = QtWidgets.QLineEdit('-20')
+        
+        forth_label = QtWidgets.QLabel("Range end:")
+        forth_input = QtWidgets.QLineEdit('100')
+        
+        forth_label = QtWidgets.QLabel("Range step:")
+        step_input = QtWidgets.QLineEdit('1')
 
         focus_button = QtWidgets.QPushButton("Focus")
-
 
         pos_list = QtWidgets.QTableWidget()
         pos_list.setColumnCount(2)
@@ -45,16 +50,20 @@ class Focus_tab(QtWidgets.QWidget):
         #     Layout
         #======================================================================
 
-        Range_hbox = QtWidgets.QHBoxLayout()
-        Range_hbox.addWidget(Range_label)
-        Range_hbox.addWidget(Range_input)
+        focus_grid = QtWidgets.QGridLayout()
+        focus_grid.addWidget(back_label, 0, 0)
+        focus_grid.addWidget(back_input, 0, 1)
+        focus_grid.addWidget(forth_label, 1, 0)
+        focus_grid.addWidget(forth_input, 1, 1)
+        focus_grid.addWidget(forth_label, 2, 0)
+        focus_grid.addWidget(step_input, 2, 1)
 
         bottom_layout = QtWidgets.QHBoxLayout()
         bottom_layout.addWidget(save_button)
         bottom_layout.addWidget(clear_list_button)
 
         main_layout = QtWidgets.QVBoxLayout()
-        main_layout.addLayout(Range_hbox)
+        main_layout.addLayout(focus_grid)
         main_layout.addWidget(focus_button)
         main_layout.addWidget(pos_list)
         main_layout.addLayout(bottom_layout)
@@ -71,7 +80,9 @@ class Focus_tab(QtWidgets.QWidget):
         pos_list.verticalHeader().sectionClicked.connect(self.rowClicked)
 
         focus_button.clicked.connect(lambda: self.fd.focus(
-            float(Range_input.text())))
+            float(back_input.text()),
+            float(forth_input.text()),
+            float(step_input.text())))
 
         clear_list_button.clicked.connect(self.fd.clear)
         save_button.clicked.connect(self.fd.save)

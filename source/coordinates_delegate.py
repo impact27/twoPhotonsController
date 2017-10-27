@@ -158,7 +158,7 @@ class coordinates_delegate(QtCore.QObject):
 #            return
 #
 #        # Turn off autoshutter
-#        self.camera.autoShutter(False)
+#        self.camera.auto_exposure_time(False)
 #        # go to bg position
 #        self.motor.move_by(self._bgOffset, wait=True, checkid=self.lockid)
 #        # focus using laser

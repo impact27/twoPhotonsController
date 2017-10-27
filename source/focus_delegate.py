@@ -26,8 +26,8 @@ class Focus_delegate(QtCore.QObject):
     def display_pos(self, idx):
         self.canvas.plotZCorr(*self._positions[idx]["graphs"])
     
-    def focus(self, pos_range):
-        self.thread.set_pos_range(pos_range)
+    def focus(self, back, forth, step):
+        self.thread.set_pos_range(back, forth, step)
         self.thread.start()
         
     def endThread(self, graphs):
@@ -66,18 +66,23 @@ class zThread(QtCore.QThread):
         super().__init__()
         self._zcorrector = Zcorrector(md.motor, camera, canvas)
         self.endThread = endThread
-        self.pos_range = 0
+        self._back = 0
+        self._forth = 0
+        self._step = 0
         self._md = md
 
-    def set_pos_range(self, pos_range):
-        self.pos_range = pos_range
+    def set_pos_range(self, back, forth, step):
+        self._back = back
+        self._forth = forth
+        self._step = step
         
     def run(self):
         lockid = self._md.lock()
         if lockid is None:
             self.error = "Unable to lock the mouvment"
             return
-        graphs = self._zcorrector.focus(self.pos_range, checkid=lockid)
+        graphs = self._zcorrector.focus(self._back, self._forth, self._step,
+                                        checkid=lockid)
         self._md.unlock()
 
         self.endThread(graphs)
@@ -112,16 +117,16 @@ class Zcorrector():
         return imrange
 
     def startlaser(self):
-        self.camera.autoShutter(False)
+        self.camera.auto_exposure_time(False)
         self._camshutter = self.camera.shutter
-        self.camera.set_shutter(self.camera.shutter_range()[0])
+        self.camera.set_exposure_time(self.camera.exposure_time_range()[0])
 #         self.laser.open_shutter()
 
     def endlaser(self):
         self.camera.shutter = self._camshutter
 #         self.laser.close_shutter()
 
-    def focus(self, ZRange, Npass=2, checkid=None):
+    def focus(self, back, forth, step, checkid=None):
         """ Go to the best focal point for the laser
         """
         self.lockid = checkid
@@ -137,37 +142,39 @@ class Zcorrector():
         self.startlaser()
 
         Z = self.motor.position[2]
-        zrange = [Z - ZRange / 2, Z + ZRange / 2]
-        Zs = []
-        Is = []
-        Ss = []
-        for i in range(Npass):
-            zPos = np.linspace(*zrange, 21)
+        zrange = [Z + back, Z + forth]
+        zPos = np.arange(*zrange, step)
+
+        for i in range(2):
+            
             imrange = self.get_image_range(zPos, max_condition)
 
             intensity = np.max(imrange, (1, 2))
             argbest = np.argmax(intensity)
 
-            if argbest == 0:
-                zrange = [zPos[argbest], zPos[argbest + 1]]
-            elif argbest == len(intensity) - 1:
-                zrange = [zPos[argbest - 1], zPos[argbest]]
-            else:
-                zrange = [zPos[argbest - 1], zPos[argbest + 1]]
-
-            if i > 0:
-                size = get_spot_sizes(imrange)
-                Zs.extend(zPos)
-                Is.extend(intensity)
-                Ss.extend(size)
-                try:
-                    self.ic.plotZCorr(zPos, intensity, size)
-                except BaseException as error:
-                    print("Can't Plot!!!", error.args[0])
-
-        self.motor.goto_position([np.nan, np.nan, zPos[argbest]],
-                                 wait=True, checkid=self.lockid)
-
+            if i == 0:
+                if argbest == 0:
+                    zPos = np.linspace(zPos[0], zPos[1], 11)
+                elif argbest == len(intensity) - 1:
+                    zPos = np.linspace(zPos[-2], zPos[-1], 11)
+                else:
+                    zPos = np.linspace(zPos[argbest-1], zPos[argbest+1], 21)
+                
         self.endlaser()
+
+        close = np.abs(zPos-zPos[argbest]) < step/2
+        fit = np.polyfit(zPos[close], intensity[close], 2)
+        zBest = -fit[1]/(2*fit[0])
+        
+        size = get_spot_sizes(imrange)
+        
+        ret = np.asarray([zPos, intensity, size]), fit
+        self.ic.plotZCorr(*ret)
+        
+        self.motor.goto_position([np.nan, np.nan, zBest],
+                                 wait=True, checkid=self.lockid)
+        
+        
+
         # save result and position
-        return np.asarray([Zs, Ss, Is])
+        return ret

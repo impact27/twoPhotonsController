@@ -15,8 +15,8 @@ else:
 
 class camera_delegate(QtCore.QObject):
 
-    newShutter = QtCore.pyqtSignal(float)
-    shutterState = QtCore.pyqtSignal(bool)
+    new_exposure_time = QtCore.pyqtSignal(float)
+    state_auto_exposure_time = QtCore.pyqtSignal(bool)
     ext_shutterState = QtCore.pyqtSignal(bool)
 
     def __init__(self):
@@ -32,41 +32,41 @@ class camera_delegate(QtCore.QObject):
     def get_image(self, rmbg=True):
         im = self.controller.get_image()
         if self.isAuto:
-            self.correctShutter(im)
+            self.correct_exposure_time(im)
         if rmbg:
             im = im * 1. - self._bg
         return im
 
-    def shutter_range(self):
-        return self.controller.shutter_range()
+    def exposure_time_range(self):
+        return self.controller.exposure_time_range()
 
-    def set_shutter(self, time):
-        self.newShutter.emit(time)
-        self.controller.set_shutter(time)
+    def set_exposure_time(self, time):
+        self.new_exposure_time.emit(time)
+        self.controller.set_exposure_time(time)
 
-    def get_shutter(self):
-        return self.controller.get_shutter()
+    def get_exposure_time(self):
+        return self.controller.get_exposure_time()
 
-    shutter = property(get_shutter, set_shutter)
+    exposure_time = property(get_exposure_time, set_exposure_time)
 
-    def autoShutter(self, on):
-        self.shutterState.emit(on)
+    def auto_exposure_time(self, on):
+        self.state_auto_exposure_time.emit(on)
         self.isAuto = on
 
     def extShutter(self, on):
         self.ext_shutterState.emit(on)
         self.controller.ext_shutter(on)
 
-    def correctShutter(self, im):
+    def correct_exposure_time(self, im):
         amax = np.max(im)
-        time = self.controller.get_shutter()
+        time = self.controller.get_exposure_time()
         if amax < 200:  # 4/5 of the intensity
             time = time * 256 / amax
-            self.set_shutter(time)
+            self.set_exposure_time(time)
         elif amax > 254:
             overprct = np.sum(im > 254) / np.prod(np.shape(im))
             if overprct > .1:  # 10% image overexposed
-                self.set_shutter(time / 2)
+                self.set_exposure_time(time / 2)
 
     def reset_bg(self):
         self._bg = 0

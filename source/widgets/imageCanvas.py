@@ -9,6 +9,7 @@ import numpy as np
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 import cv2
+import sys
 #==============================================================================
 # Plot canevas
 #==============================================================================
@@ -155,9 +156,16 @@ class ImageCanvas(MyMplCanvas):
         self.newclick.emit(self._click_pos, dist)
 
             
-    def plotZCorr(self, X, Y, Y2):
-        self.clear()
-        self.plot(
-            X[Y < 4 * np.min(Y)], Y[Y < 4 * np.min(Y)], '.')
-        self.plot(X, Y2, 'x', twinx=True, c='C1')
-        self.draw()
+    def plotZCorr(self, data, fit):
+        try:
+            Z, I, size = data
+            self.clear()
+            self.plot(Z, I, 'x')
+            fitI = np.poly1d(fit)(Z)
+            self.plot(Z[fitI>0], fitI[fitI>0], 'x')
+            goodsize = size < 4 * np.min(size)
+            self.plot(Z[goodsize], size[goodsize], '.C2', twinx=True)
+            self.draw()
+        except:
+            print("Can't Plot!!!",sys.exc_info()[0])
+                
