@@ -26,7 +26,7 @@ import re
 
 class camera_controller():
     def __init__(self):
-        self.shutter = .01
+        self.exposure_time = .01
 
     def reconnect(self):
         print('Connected Camera')
@@ -57,7 +57,7 @@ class camera_controller():
         return [1.9e-5, .1]
 
     def set_exposure_time(self, time):
-        self.shutter = time
+        self.exposure_time = time
 
     def get_exposure_time(self):
-        return self.shutter
+        return self.exposure_time

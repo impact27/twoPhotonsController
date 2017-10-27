@@ -21,7 +21,6 @@ import numpy as np
 from PyQt5 import QtCore, QtWidgets
 from coordinates_delegate import coordinates_delegate
 from mouvment_delegate import mouvment_delegate
-from gcode import gcode_draw
 from write_delegate import write_delegate
 import matplotlib
 cmap = matplotlib.cm.get_cmap('plasma')
@@ -121,25 +120,6 @@ class application_delegate(QtCore.QObject):
         self.focus_delegate.ESTOP()
         self.write_delegate.ESTOP()
         self.mouvment_delegate.ESTOP()
-
-    def draw_device(self, xori, yori, gpath, Nx, Ny, dx, dy):
-
-        greader = gcode_draw()
-        greader.readFile(gpath)
-
-        gwritten = greader.getDrawing()
-
-        if Nx == 1:
-            dx = 1
-        if Ny == 1:
-            dy = 1
-        for x in np.arange(xori, xori + Nx * dx, dx):
-            for y in np.arange(yori, yori + Ny * dy, dy):
-                self.imageCanvas.plot(gwritten[:, 0] + x, gwritten[:, 1] + y,
-                                      axis='equal')
-
-    def write_device(self, xori, yori, gpath, Nx, Ny, dx, dy):
-        self.write_delegate.write(gpath, xori, yori, Nx, Ny, dx, dy)
 
     def get_image(self, rm_bg=False):
         im = self.camera_delegate.get_image()

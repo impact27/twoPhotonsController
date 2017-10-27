@@ -31,7 +31,7 @@ class Focus_tab(QtWidgets.QWidget):
         forth_label = QtWidgets.QLabel("Range end:")
         forth_input = QtWidgets.QLineEdit('100')
         
-        forth_label = QtWidgets.QLabel("Range step:")
+        step_label = QtWidgets.QLabel("Range step:")
         step_input = QtWidgets.QLineEdit('1')
 
         focus_button = QtWidgets.QPushButton("Focus")
@@ -55,7 +55,7 @@ class Focus_tab(QtWidgets.QWidget):
         focus_grid.addWidget(back_input, 0, 1)
         focus_grid.addWidget(forth_label, 1, 0)
         focus_grid.addWidget(forth_input, 1, 1)
-        focus_grid.addWidget(forth_label, 2, 0)
+        focus_grid.addWidget(step_label, 2, 0)
         focus_grid.addWidget(step_input, 2, 1)
 
         bottom_layout = QtWidgets.QHBoxLayout()

@@ -21,17 +21,19 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import numpy as np
 import sys
 from PyQt5 import QtCore
-from gcode import gcode_reader, gcode_checker
+from gcode import gcode_reader, gcode_checker, gcode_draw
 from serial.serialutil import SerialTimeoutException
+from focus_delegate import Zcorrector
 
 
 class write_delegate(QtCore.QObject):
     def __init__(self, parent):
+        super().__init__()
         self.parent = parent
         self.thread = write_thread(self.parent)
         self.thread.finished.connect(self.endwrite)
 
-    def write(self, gfilename, xori, yori, Nx, Ny, dx, dy):
+    def write(self, gfilename, settings):
         with open(gfilename, 'r') as f:
             gcommands = f.read()
         intensityRange = self.parent.laser_delegate.get_range()
@@ -48,7 +50,7 @@ class write_delegate(QtCore.QObject):
             self.parent.error.emit("GCode values out of range")
             return
 
-        self.thread.set_args(gcommands, xori, yori, Nx, Ny, dx, dy)
+        self.thread.set_args(gcommands, settings)
         self.thread.start()
 
     def endwrite(self):
@@ -57,6 +59,26 @@ class write_delegate(QtCore.QObject):
     def ESTOP(self):
         self.thread.terminate()
         self.parent.mouvment_delegate.unlock()
+        
+    def draw(self, gpath, settings):
+
+        greader = gcode_draw()
+        greader.readFile(gpath)
+
+        gwritten = greader.getDrawing()
+        
+        xori, yori = settings['XY origin']
+        Nx, Ny = settings['[X, Y] number of steps']
+        dx, dy = settings['[X, Y] steps size']
+        
+        if Nx == 1:
+            dx = 1
+        if Ny == 1:
+            dy = 1
+        for x in np.arange(xori, xori + Nx * dx, dx):
+            for y in np.arange(yori, yori + Ny * dy, dy):
+                self.parent.imageCanvas.plot(
+                        gwritten[:, 0] + x, gwritten[:, 1] + y, axis='equal')
 
 
 class write_thread(QtCore.QThread):
@@ -69,20 +91,33 @@ class write_thread(QtCore.QThread):
         self.lockid = None
         self.gcommands = None
         self.parent = parent
+        self._zcorrector = Zcorrector(self.md.motor, parent.camera_delegate, 
+                                      self.ld)
+        self.addGraph = parent.focus_delegate.addGraph
+        
 
-    def set_args(self, gcommands, xori, yori, Nx, Ny, dx, dy):
-        self.args = (xori, yori, Nx, Ny, dx, dy)
+    def set_args(self, gcommands, settings):
+        self.settings = settings
         self.gcommands = gcommands
 
     def run(self):
         try:
             self.lockid = self.md.lock()
+            def goto(X):
+                self.md.motor.goto_position(X, wait=True, checkid=self.lockid)
 
             if self.lockid is None:
                 self.error = "Unable to lock the mouvment"
                 return
-
-            xori, yori, Nx, Ny, dx, dy = self.args
+            
+            xori, yori = self.settings['XY origin']
+            Nx, Ny = self.settings['[X, Y] number of steps']
+            dx, dy = self.settings['[X, Y] steps size']
+            focus_offset = self.settings['focus offset']
+            focus_range = self.settings['focus range']
+            focus_step = self.settings['focus step']
+            move_dist = self.settings['movment retraction']
+            
 
             if Nx == 1:
                 dx = 1
@@ -94,13 +129,25 @@ class write_thread(QtCore.QThread):
                 # Want to draw s
                 parity = 2 * ((par + 1) % 2) - 1
                 for x in np.arange(xori, xori + Nx * dx, dx)[::parity]:
-                    self.md.motor.goto_position([np.nan, np.nan, z - 1000],
-                                                wait=True, checkid=self.lockid)
-                    self.md.motor.goto_position([x, y, z - 1000],
-                                                wait=True, checkid=self.lockid)
-                    self.md.motor.goto_position([x, y, z],
-                                                wait=True, checkid=self.lockid)
-
+                    # Retract
+                    goto([np.nan,
+                          np.nan,
+                          z - move_dist])
+                    # Move to pos
+                    goto([x + focus_offset[0], 
+                          y + focus_offset[1], 
+                          z - move_dist])
+                    # approach
+                    goto([x + focus_offset[0], 
+                          y + focus_offset[1], 
+                          z - focus_range / 2])
+                    # Focus
+                    graph = self._zcorrector.focus(0, focus_range, focus_step,
+                                                   checkid=self.lockid)
+                    self.addGraph(graph)
+                    # Move to pos
+                    goto([x, y, np.nan])
+                    # Write
                     self.writeGCode()
 
         except SerialTimeoutException:
@@ -115,7 +162,7 @@ class write_thread(QtCore.QThread):
     def writeGCode(self,):
         #        self.parent.camera_delegate.extShutter(False)
         defaultCubeSpeed = self.md.piezzo.get_velocity()
-        writer = gwriter(self.md, self.ld, self.lockid)
+        writer = gwriter(self.md.piezzo, self.ld, self.lockid)
         writer.readGcommands(self.gcommands)
         self.md.piezzo.set_velocity(defaultCubeSpeed, checkid=self.lockid)
         self.parent.camera_delegate.extShutter(True)
@@ -123,9 +170,9 @@ class write_thread(QtCore.QThread):
 
 class gwriter(gcode_reader):
 
-    def __init__(self, md, ld, lockid):
+    def __init__(self, motor, ld, lockid):
         super().__init__()
-        self.md = md
+        self.motor = motor
         self.ld = ld
         self.ld.set_intensity(0)
         self.lockid = lockid
@@ -141,11 +188,11 @@ class gwriter(gcode_reader):
     def moveTo(self, X, Y, Z):
         Xmto = np.asarray([X, Y, Z])
         Xmto[np.isnan(Xmto)] = self.Xmlast[np.isnan(Xmto)]
-        self.md.piezzo.goto_position(Xmto, wait=True, checkid=self.lockid)
+        self.motor.goto_position(Xmto, wait=True, checkid=self.lockid)
         self.Xmlast = Xmto
 
     def setSpeed(self, F):
-        self.md.piezzo.set_velocity(F, checkid=self.lockid)
+        self.motor.set_velocity(F, checkid=self.lockid)
 
     def stop(self):
         self.ld.switch(False)

@@ -17,7 +17,8 @@ class Focus_delegate(QtCore.QObject):
         self.md = app_delegate.mouvment_delegate
         self.canvas = app_delegate.imageCanvas
         self.thread = zThread(self.md, app_delegate.camera_delegate,
-                              self.canvas, self.endThread)
+                              app_delegate.laser_delegate,
+                              self.canvas, self.addGraph)
         
     def delete_pos(self, idx):
         del self._positions[idx]
@@ -30,7 +31,7 @@ class Focus_delegate(QtCore.QObject):
         self.thread.set_pos_range(back, forth, step)
         self.thread.start()
         
-    def endThread(self, graphs):
+    def addGraph(self, graphs):
         self._positions.append({
                 "Xs": self.md.motor.get_position(raw=True),
                 "graphs": graphs})
@@ -62,10 +63,10 @@ class Focus_delegate(QtCore.QObject):
 
 class zThread(QtCore.QThread):
 
-    def __init__(self, md, camera, canvas, endThread):
+    def __init__(self, md, camera, laser, canvas, addGraph):
         super().__init__()
-        self._zcorrector = Zcorrector(md.motor, camera, canvas)
-        self.endThread = endThread
+        self._zcorrector = Zcorrector(md.motor, camera, laser, canvas)
+        self.addGraph = addGraph
         self._back = 0
         self._forth = 0
         self._step = 0
@@ -85,11 +86,11 @@ class zThread(QtCore.QThread):
                                         checkid=lockid)
         self._md.unlock()
 
-        self.endThread(graphs)
+        self.addGraph(graphs)
 
 class Zcorrector():
 
-    def __init__(self, motor, camera, imageCanvas):
+    def __init__(self, motor, camera, laser, imageCanvas=None):
         super().__init__()
         self.motor = motor
         self.camera = camera
@@ -118,12 +119,12 @@ class Zcorrector():
 
     def startlaser(self):
         self.camera.auto_exposure_time(False)
-        self._camshutter = self.camera.shutter
+        self._cam_exposure_time = self.camera.exposure_time
         self.camera.set_exposure_time(self.camera.exposure_time_range()[0])
 #         self.laser.open_shutter()
 
     def endlaser(self):
-        self.camera.shutter = self._camshutter
+        self.camera.exposure_time = self._cam_exposure_time
 #         self.laser.close_shutter()
 
     def focus(self, back, forth, step, checkid=None):
@@ -169,7 +170,9 @@ class Zcorrector():
         size = get_spot_sizes(imrange)
         
         ret = np.asarray([zPos, intensity, size]), fit
-        self.ic.plotZCorr(*ret)
+        
+        if self.ic is not None:
+            self.ic.plotZCorr(*ret)
         
         self.motor.goto_position([np.nan, np.nan, zBest],
                                  wait=True, checkid=self.lockid)

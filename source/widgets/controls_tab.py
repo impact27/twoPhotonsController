@@ -91,9 +91,9 @@ class Controls_tab(QtWidgets.QWidget):
         cam_init = cd.get_exposure_time()
         cam_exposure_label = QtWidgets.QLabel('Exp. [s]:')
         cam_exposure_selector = doubleSelector(cam_range, cam_init, isLog=True)
-        cam_autoshutter = QtWidgets.QPushButton('Auto')
+        cam_autoexposure_time = QtWidgets.QPushButton('Auto')
         cam_extshutter = QtWidgets.QPushButton('Shutter')
-        cam_autoshutter.setCheckable(True)
+        cam_autoexposure_time.setCheckable(True)
         cam_extshutter.setCheckable(True)
         #======================================================================
         #     Layout
@@ -156,7 +156,7 @@ class Controls_tab(QtWidgets.QWidget):
         cam_layout.addWidget(cam_exposure_selector)
 
         cam_Button_layout = QtWidgets.QHBoxLayout()
-        cam_Button_layout.addWidget(cam_autoshutter)
+        cam_Button_layout.addWidget(cam_autoexposure_time)
         cam_Button_layout.addWidget(cam_extshutter)
 
         main_layout = QtWidgets.QVBoxLayout()
@@ -246,7 +246,7 @@ class Controls_tab(QtWidgets.QWidget):
 
         application_delegate.newPosition.connect(self.updatePos)
 
-        cam_autoshutter.toggled.connect(cd.auto_exposure_time)
+        cam_autoexposure_time.toggled.connect(cd.auto_exposure_time)
         cam_extshutter.toggled.connect(cd.extShutter)
 
         def setMotorPos(motor_selectors, ranges):
@@ -269,7 +269,7 @@ class Controls_tab(QtWidgets.QWidget):
         self.motor_selectors = motor_selectors
         self.vel_cube_selector = vel_cube_selector
         self.cube_selectors = cube_selectors
-        self.cam_autoshutter = cam_autoshutter
+        self.cam_autoexposure_time = cam_autoexposure_time
         self.steps = steps
 
     def set_target_motor(self, target_pos, speed):
@@ -289,7 +289,7 @@ class Controls_tab(QtWidgets.QWidget):
             txt = "Auto: On"
         else:
             txt = "Auto: Off"
-        self.cam_autoshutter.setText(txt)
+        self.cam_autoexposure_time.setText(txt)
 
     def goto_motor(self):
         self.application_delegate.mouvment_delegate.motor.goto_position(
