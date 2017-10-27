@@ -56,7 +56,7 @@ class camera_controller():
             print(f"Unable to set shutter time {time}")
 
     def get_exposure_time(self):
-        return self.cam.exposure_time
+        return self.cam.shutter
 
     def ext_shutter(self, Open):
         if Open:
