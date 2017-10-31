@@ -127,7 +127,10 @@ class linear_controller(stage_controller):
     
     def stop(self):
         for l in self.lines:
-            l.HLT()
+            try:
+                l.HLT()
+            except:
+                pass
         
     def ESTOP(self):
         for l in self.lines:
@@ -207,7 +210,10 @@ class cube_controller(stage_controller):
             list(self.cube.qPOS([1, 2, 3]).values()), dtype=float))
 
     def stop(self):
-        self.cube.HLT()
+        try:
+            self.cube.HLT()
+        except:
+            pass
             
     def ESTOP(self):
         try:
@@ -355,10 +361,10 @@ class z_controller(stage_controller):
             # longer than 1000ms (1s).
             self._kCubeDCServoMotor.Stop(1000)
 
-        except Thorlabs.MotionControl.GenericMotorCLI.MoveTimeoutException:
-            pass  # that is what stop does
+#        except Thorlabs.MotionControl.GenericMotorCLI.MoveTimeoutException:
+#            pass  # that is what stop does
         except:
-            print("Unable to stop\n")
+            print("Unable to stop\n", sys.exc_info()[0])
             raise
 
     def is_homing(self):

@@ -251,12 +251,10 @@ class motor(controller):
             return self.Z_c.get_vel_range(0)
         return [np.nan, np.nan]
     
-    def stop(self, wait=False):
+    def stop(self, wait=False, checkid=None):
         self.XY_c.stop()
         self.Z_c.stop()
-        if wait:
-            self.wait_end_motion()
-
+        
     def ESTOP(self):
         self.XY_c.ESTOP()
         self.Z_c.ESTOP()
