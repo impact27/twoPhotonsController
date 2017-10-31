@@ -332,10 +332,10 @@ class z_controller(stage_controller):
             # Move the device to position 0. We specify 0 as the wait timeout
             # as we don't care how long it takes.
             self._kCubeDCServoMotor.MoveTo(Decimal(float(pos)), timeout)
-        except Thorlabs.MotionControl.GenericMotorCLI.DeviceMovingException:
+        except Thorlabs.MotionControl.DeviceManagerCLI.DeviceMovingException:
             print("Ignored, Already moving")
-        except BaseException:
-            print("Unable to move to position\n")
+        except:
+            print("Unable to move to position\n", sys.exc_info()[0])
             raise
 
     def stop(self):

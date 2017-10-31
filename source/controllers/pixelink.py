@@ -511,7 +511,7 @@ class PixeLINK(Camera):
         # incase the user forgot to call the close method.
         self.close()
 
-    # --------------------------------------------------------------------------
+    # -------------------------------------------------------------------------
     def _get_frame(self):
         self._mutex.acquire()
         try:

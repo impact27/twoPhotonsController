@@ -95,27 +95,31 @@ class Zcorrector():
         self.motor = motor
         self.camera = camera
         self.error = None
-        self._empty_im = np.zeros_like(self.camera.get_image())
         self.lockid = None
         self.ic = imageCanvas
 
-    def get_image_range(self, zPos, condition=None):
+#    @profile
+    def get_image_range(self, zPos):
         """get the images corresponding to the positions in zPos
 
         condition gives the stop value
         """
-        imrange = np.tile(self._empty_im, (len(zPos), 1, 1))
+        intensities = np.zeros(len(zPos))
+        sizes = np.zeros(len(zPos))
 
-        if condition is None:
-            def condition(a, b): return False
 
-        for im, z in zip(imrange, zPos):
+
+        for i, z in enumerate(zPos):
             self.motor.goto_position([np.nan, np.nan, z],
                                      wait=True, checkid=self.lockid)
-            im[:] = self.camera.get_image()
-            if condition(im, imrange):
-                return imrange
-        return imrange
+            im = self.camera.get_image()
+            mymax = np.amax(im)
+            size = np.sum(im>mymax/10)
+            intensities[i] = mymax
+            sizes[i] = size
+            if mymax < np.max(intensities)/2:
+                return intensities, sizes
+        return  intensities, size
 
     def startlaser(self):
         self.camera.auto_exposure_time(False)
@@ -131,15 +135,6 @@ class Zcorrector():
         """ Go to the best focal point for the laser
         """
         self.lockid = checkid
-
-        def get_spot_sizes(imrange):
-            return np.sum(imrange >=
-                          np.reshape(np.max(imrange, (1, 2)) / 10, (-1, 1, 1)),
-                          (1, 2))
-
-        def max_condition(im, ims):
-            return np.max(im) < np.max(ims) / 2
-
         self.startlaser()
 
         Z = self.motor.position[2]
@@ -148,10 +143,10 @@ class Zcorrector():
 
         for i in range(2):
             
-            imrange = self.get_image_range(zPos, max_condition)
-
-            intensity = np.max(imrange, (1, 2))
+            intensity, sizes = self.get_image_range(zPos)
             argbest = np.argmax(intensity)
+            if intensity[argbest] == 255:
+                argbest = np.argmin(sizes)
 
             if i == 0:
                 if argbest == 0:
@@ -162,14 +157,15 @@ class Zcorrector():
                     zPos = np.linspace(zPos[argbest-1], zPos[argbest+1], 21)
                 
         self.endlaser()
-
+        
+        Y = intensity
+        if intensity[argbest] == 255:
+            Y = sizes
         close = np.abs(zPos-zPos[argbest]) < step/2
-        fit = np.polyfit(zPos[close], intensity[close], 2)
+        fit = np.polyfit(zPos[close], Y[close], 2)
         zBest = -fit[1]/(2*fit[0])
         
-        size = get_spot_sizes(imrange)
-        
-        ret = np.asarray([zPos, intensity, size]), fit
+        ret = np.asarray([zPos, intensity, sizes]), fit
         
         if self.ic is not None:
             self.ic.plotZCorr(*ret)

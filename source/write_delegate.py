@@ -137,22 +137,24 @@ class write_thread(QtCore.QThread):
                     goto([x + focus_offset[0], 
                           y + focus_offset[1], 
                           z - move_dist])
-                    # approach
-                    goto([x + focus_offset[0], 
-                          y + focus_offset[1], 
-                          z - focus_range / 2])
-                    # Focus
-                    graph = self._zcorrector.focus(0, focus_range, focus_step,
-                                                   checkid=self.lockid)
-                    self.addGraph(graph)
+                    # TODO: remove comments
+#                    # approach
+#                    goto([x + focus_offset[0], 
+#                          y + focus_offset[1], 
+#                          z - focus_range / 2])
+#                    # Focus
+#                    graph = self._zcorrector.focus(0, focus_range, focus_step,
+#                                                   checkid=self.lockid)
+#                    self.addGraph(graph)
                     # Move to pos
-                    goto([x, y, np.nan])
+#                    goto([x, y, np.nan])
+                    goto([x, y, z])
                     # Write
                     self.writeGCode()
 
         except SerialTimeoutException:
             self.parent.error('Timeout')
-        except BaseException:
+        except:
             print("Unknown exception during write")
             print(sys.exc_info()[0])
             raise
@@ -160,7 +162,7 @@ class write_thread(QtCore.QThread):
         self.md.unlock()
 
     def writeGCode(self,):
-        #        self.parent.camera_delegate.extShutter(False)
+        self.parent.camera_delegate.extShutter(False)
         defaultCubeSpeed = self.md.piezzo.get_velocity()
         writer = gwriter(self.md.piezzo, self.ld, self.lockid)
         writer.readGcommands(self.gcommands)

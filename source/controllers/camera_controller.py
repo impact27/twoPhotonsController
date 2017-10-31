@@ -42,7 +42,9 @@ class camera_controller():
         return [1.9e-5, .1]
 
     def get_image(self):
-        return self.cam.grab()[::-1, ::-1]
+        im = self.cam.grab()
+        im = im[::-1, ::-1]
+        return im
 
     def set_exposure_time(self, time):
         amin, amax = self.exposure_time_range()
