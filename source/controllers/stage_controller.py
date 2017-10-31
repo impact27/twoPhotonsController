@@ -50,6 +50,9 @@ class stage_controller():
 
     def get_position(self):
         pass
+    
+    def stop(self):
+        pass
 
     def ESTOP(self):
         pass
@@ -120,12 +123,17 @@ class linear_controller(stage_controller):
     def get_position(self):
         return np.asarray([l.qPOS()['1'] for l in self.lines],
                           dtype=float) * 1000
-
+                           
+    
+    def stop(self):
+        for l in self.lines:
+            l.HLT()
+        
     def ESTOP(self):
         for l in self.lines:
             try:
                 l.HLT()
-            except BaseException:
+            except:
                 pass
 
     def is_onTarget(self):
@@ -198,10 +206,13 @@ class cube_controller(stage_controller):
         return (np.asarray(
             list(self.cube.qPOS([1, 2, 3]).values()), dtype=float))
 
+    def stop(self):
+        self.cube.HLT()
+            
     def ESTOP(self):
         try:
             self.cube.HLT()
-        except BaseException:
+        except:
             pass
 
     def is_onTarget(self):
@@ -259,7 +270,7 @@ class z_controller(stage_controller):
     def ESTOP(self):
         try:
             self.stop()
-        except BaseException:
+        except:
             pass
 
     def is_onTarget(self):
@@ -312,7 +323,7 @@ class z_controller(stage_controller):
             self._kCubeDCServoMotor.ShutDown()
 
             self._kCubeDCServoMotor = None
-        except BaseException:
+        except:
             print("Can't disconnect")
             raise
 
@@ -322,7 +333,7 @@ class z_controller(stage_controller):
             # long it takes to perform the home operation.
             self._kCubeDCServoMotor.Home(0)
 
-        except BaseException:
+        except:
             print("Unable to return device to home position\n")
             raise
 
@@ -346,7 +357,7 @@ class z_controller(stage_controller):
 
         except Thorlabs.MotionControl.GenericMotorCLI.MoveTimeoutException:
             pass  # that is what stop does
-        except BaseException:
+        except:
             print("Unable to stop\n")
             raise
 

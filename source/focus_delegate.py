@@ -27,9 +27,11 @@ class Focus_delegate(QtCore.QObject):
     def display_pos(self, idx):
         self.canvas.plotZCorr(*self._positions[idx]["graphs"])
     
-    def focus(self, back, forth, step):
-        self.thread.set_pos_range(back, forth, step)
-        self.thread.start()
+    def focus(self, back, forth, step, precise):
+        self.thread.set_pos_range(back, forth, step, precise)
+        self.thread.run()
+        # TODO: fix that
+#        self.thread.start()
         
     def addGraph(self, graphs):
         self._positions.append({
@@ -72,10 +74,11 @@ class zThread(QtCore.QThread):
         self._step = 0
         self._md = md
 
-    def set_pos_range(self, back, forth, step):
+    def set_pos_range(self, back, forth, step, precise):
         self._back = back
         self._forth = forth
         self._step = step
+        self._precise = precise
         
     def run(self):
         lockid = self._md.lock()
@@ -83,7 +86,7 @@ class zThread(QtCore.QThread):
             self.error = "Unable to lock the mouvment"
             return
         graphs = self._zcorrector.focus(self._back, self._forth, self._step,
-                                        checkid=lockid)
+                                        checkid=lockid, precise=self._precise)
         self._md.unlock()
 
         self.addGraph(graphs)
@@ -99,15 +102,14 @@ class Zcorrector():
         self.ic = imageCanvas
 
 #    @profile
-    def get_image_range(self, zPos):
+    def get_image_range(self, start, stop, step):
         """get the images corresponding to the positions in zPos
 
         condition gives the stop value
         """
+        zPos = np.arange(start, stop, step)
         intensities = np.zeros(len(zPos))
         sizes = np.zeros(len(zPos))
-
-
 
         for i, z in enumerate(zPos):
             self.motor.goto_position([np.nan, np.nan, z],
@@ -119,7 +121,7 @@ class Zcorrector():
             sizes[i] = size
             if mymax < np.max(intensities)/2:
                 return intensities, sizes
-        return  intensities, size
+        return zPos, intensities, size
 
     def startlaser(self):
         self.camera.auto_exposure_time(False)
@@ -131,36 +133,49 @@ class Zcorrector():
         self.camera.exposure_time = self._cam_exposure_time
 #         self.laser.close_shutter()
 
-    def focus(self, back, forth, step, checkid=None):
+    def focus(self, back, forth, step, checkid=None, precise=False):
         """ Go to the best focal point for the laser
         """
         self.lockid = checkid
         self.startlaser()
 
         Z = self.motor.position[2]
-        zrange = [Z + back, Z + forth]
-        zPos = np.arange(*zrange, step)
+        z_start = Z + back
+        z_stop = Z + forth
+        
+        current_step = step
 
         for i in range(2):
+            if precise:
+                zPos, intensity, sizes = self.get_image_range(
+                        z_start, z_stop, current_step)
+            else:
+                zPos, intensity, sizes = self.get_image_range_quick(
+                        z_start, z_stop, current_step)  
             
-            intensity, sizes = self.get_image_range(zPos)
             argbest = np.argmax(intensity)
+            
             if intensity[argbest] == 255:
                 argbest = np.argmin(sizes)
-
-            if i == 0:
-                if argbest == 0:
-                    zPos = np.linspace(zPos[0], zPos[1], 11)
-                elif argbest == len(intensity) - 1:
-                    zPos = np.linspace(zPos[-2], zPos[-1], 11)
-                else:
-                    zPos = np.linspace(zPos[argbest-1], zPos[argbest+1], 21)
+                
+            current_step /=10
+            
+            if argbest == 0:
+                z_start = zPos[0]
+            else:
+                z_start = zPos[argbest-1]
+                
+            if argbest == len(intensity) - 1:
+                z_stop = zPos[argbest]
+            else:
+                z_stop = zPos[argbest+1]
                 
         self.endlaser()
         
         Y = intensity
         if intensity[argbest] == 255:
             Y = sizes
+            
         close = np.abs(zPos-zPos[argbest]) < step/2
         fit = np.polyfit(zPos[close], Y[close], 2)
         zBest = -fit[1]/(2*fit[0])
@@ -177,3 +192,45 @@ class Zcorrector():
 
         # save result and position
         return ret
+    
+    def get_image_range_quick(self, start, stop, step):
+        
+        
+        #Move to start
+        self.motor.goto_position([np.nan, np.nan, start],
+                                     wait=True, checkid=self.lockid)
+        
+        z_array = [self.motor.position[2]]
+        intensities = []
+        sizes = []
+        
+        #Compute speed assuming 5fps
+        speed = step*5
+        
+        #Move to finish with small speed
+        self.motor.goto_position([np.nan, np.nan, stop], speed=speed,
+                                     wait=False, checkid=self.lockid)
+        #while not finished, record position and intensity
+        stop = False
+        while not stop:
+            im = self.camera.get_image()
+            mymax = np.amax(im)
+            size = np.sum(im>mymax/10)
+            intensities.append(mymax)
+            sizes.append(size)
+            z_array.append(self.motor.position[2])
+            #Stop if condition met
+            if mymax < np.max(intensities)/2:
+                self.motor.stop(True)
+                stop = True
+            if self.motor.is_onTarget():
+                stop =True
+        
+        z_array = np.asarray(z_array)
+        z_array = z_array[:-1] + np.diff(z_array)/2
+        
+        return z_array, np.asarray(intensities), np.asarray(sizes)
+        
+            
+        
+        

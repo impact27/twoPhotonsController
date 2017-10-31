@@ -35,6 +35,9 @@ class stage_controller():
 
     def get_position(self):
         pass
+    
+    def stop(self):
+        pass
 
     def ESTOP(self):
         pass
@@ -74,6 +77,9 @@ class fake_controller(stage_controller):
             return self.target.copy()
         return self.position + self.V * (time.time() - self.startTime)
 
+    def stop(self):
+        self.ESTOP()
+    
     def ESTOP(self):
         self.target = self.get_position()
         self.position = self.target

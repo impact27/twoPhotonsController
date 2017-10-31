@@ -78,8 +78,8 @@ class application_delegate(QtCore.QObject):
         self.coordinatesCorrected.connect(self.setRanges)
 
     def updateStatus(self):
-        self.newMotorState.emit(self.mouvment_delegate.motor.state())
-        self.newCubeState.emit(self.mouvment_delegate.piezzo.state())
+        self.newMotorState.emit(self.mouvment_delegate.motor.is_ready())
+        self.newCubeState.emit(self.mouvment_delegate.piezzo.is_ready())
 
     def switch_live(self, on):
         if on:

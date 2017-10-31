@@ -54,7 +54,7 @@ class camera_controller():
             time = amax
         try:
             self.cam.shutter = time
-        except BaseException as e:
+        except:
             print(f"Unable to set shutter time {time}")
 
     def get_exposure_time(self):

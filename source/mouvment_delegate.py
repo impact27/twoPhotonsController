@@ -108,11 +108,14 @@ class controller(QtCore.QObject):
         # Wait for movment to end
         if wait:
             time.sleep(Xtime)
-            while not self.is_onTarget():
-                time.sleep(.01)
+            self.wait_end_motion()
 
     position = property(get_position, goto_position)
 
+    def wait_end_motion(self):
+        while not self.is_onTarget():
+            time.sleep(.01)
+                
     def move_by(self, dX, wait=False, checkid=None):
         """Move by dX. This is an easy way but makes a lot of calls"""
         Xm = dX + self.position
@@ -157,14 +160,8 @@ class controller(QtCore.QObject):
     def set_Z_correction(self, coeffs):
         self.zcoeff = coeffs
 
-    def state(self):
-        pass
-
     def reconnect(self):
         pass
-
-    def _getZOrigin(self, XYstage):
-        return np.dot(self.zcoeff[:2], XYstage) + self.zcoeff[2]
 
     def XstoXm(self, Xs):
         pass
@@ -172,7 +169,16 @@ class controller(QtCore.QObject):
     def XmtoXs(self, Xm):
         pass
 
+    def is_ready(self):
+        pass
+    
     def is_onTarget(self):
+        pass
+    
+    def stop(self, wait=False):
+        pass
+    
+    def ESTOP(self):
         pass
 
     def _XSPOS(self):
@@ -186,9 +192,9 @@ class controller(QtCore.QObject):
 
     def _VRANGE(self, axis):
         pass
-
-    def ESTOP(self):
-        pass
+    
+    def _getZOrigin(self, XYstage):
+        return np.dot(self.zcoeff[:2], XYstage) + self.zcoeff[2]
 
 
 class motor(controller):
@@ -244,12 +250,18 @@ class motor(controller):
         elif axis == 2:
             return self.Z_c.get_vel_range(0)
         return [np.nan, np.nan]
+    
+    def stop(self, wait=False):
+        self.XY_c.stop()
+        self.Z_c.stop()
+        if wait:
+            self.wait_end_motion()
 
     def ESTOP(self):
         self.XY_c.ESTOP()
         self.Z_c.ESTOP()
 
-    def state(self):
+    def is_ready(self):
         return self.XY_c.is_ready() and self.Z_c.is_ready()
 
     def reconnect(self):
@@ -301,11 +313,14 @@ class piezzo(controller):
 
     def _VRANGE(self, axis):
         return self.XYZ_c.get_vel_range(axis)
+    
+    def stop(self):
+        self.XYZ_c.stop()
 
     def ESTOP(self):
         self.XYZ_c.ESTOP()
 
-    def state(self):
+    def is_ready(self):
         return self.XYZ_c.is_ready()
 
     def reconnect(self):
@@ -351,6 +366,10 @@ class mouvment_delegate(QtCore.QObject):
     def unlock(self):
         self.locked = False
         self.lockid = None
+        
+    def stop(self):
+        self.piezzo.stop()
+        self.motor.stop()
 
     def ESTOP(self):
         self.piezzo.ESTOP()
@@ -365,8 +384,8 @@ class mouvment_delegate(QtCore.QObject):
         return self.motor.position + self.piezzo.position
 
     @property
-    def state(self):
-        return self.motor.state and self.piezzo.state
+    def is_ready(self):
+        return self.motor.is_ready() and self.piezzo.is_ready()
 
     #==========================================================================
     #     Corrections
