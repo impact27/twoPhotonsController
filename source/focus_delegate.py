@@ -15,7 +15,7 @@ class Focus_delegate(QtCore.QObject):
         super().__init__()
         self._positions = []
         self.md = app_delegate.mouvment_delegate
-        self.canvas = app_delegate.imageCanvas
+        self.canvas = app_delegate.canvas_delegate._canvas
         self.thread = zThread(self.md, app_delegate.camera_delegate,
                               app_delegate.laser_delegate,
                               self.canvas, self.addGraph)
@@ -40,8 +40,8 @@ class Focus_delegate(QtCore.QObject):
     
     def save(self):
         fn = QtWidgets.QFileDialog.getSaveFileName(
-            self.canvas, 'TXT file', QtCore.QDir.homePath(),
-            "Text (*.txt)")[0]
+            QtWidgets.QApplication.topLevelWidgets()[0], 'TXT file', 
+            QtCore.QDir.homePath(), "Text (*.txt)")[0]
         with open(fn, 'bw') as f:
             for pos in self._positions:
                 f.write((str(pos["Xs"]) + '\n').encode())
@@ -92,15 +92,14 @@ class zThread(QtCore.QThread):
 
 class Zcorrector():
 
-    def __init__(self, motor, camera, laser, imageCanvas=None):
+    def __init__(self, motor, camera, laser, canvas=None):
         super().__init__()
         self.motor = motor
         self.camera = camera
         self.error = None
         self.lockid = None
-        self.ic = imageCanvas
+        self.canvas = canvas
 
-    @profile
     def get_image_range(self, start, stop, step):
         """get the images corresponding to the positions in zPos
 
@@ -133,7 +132,6 @@ class Zcorrector():
         self.camera.exposure_time = self._cam_exposure_time
 #         self.laser.close_shutter()
 
-    @profile
     def focus(self, back, forth, step, checkid=None, precise=False):
         """ Go to the best focal point for the laser
         """
@@ -184,8 +182,8 @@ class Zcorrector():
         
         ret = np.asarray([zPos, intensity, sizes]), fit
         
-        if self.ic is not None:
-            self.ic.plotZCorr(*ret)
+        if self.canvas is not None:
+            self.canvas.plotZCorr(*ret)
         
         self.motor.goto_position([np.nan, np.nan, zBest],
                                  wait=True, checkid=self.lockid)
@@ -195,7 +193,6 @@ class Zcorrector():
         # save result and position
         return ret
     
-    @profile
     def get_image_range_quick(self, start, stop, step):
         
         

@@ -18,7 +18,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 import numpy as np
-from position_correctors import XYcorrector
+#from position_correctors import XYcorrector
 from coordinates_solver import Zsolver, XYsolver
 from PyQt5 import QtCore, QtWidgets
 
@@ -56,7 +56,7 @@ class coordinates_delegate(QtCore.QObject):
         pos = self._positions[row]
         if pos['im'] is None:
             return
-        self.parent.imageCanvas.imshow(pos['im'])
+        self.parent.canvas_delegate.show_image(pos['im'])
 
     @property
     def positions(self):
@@ -81,8 +81,8 @@ class coordinates_delegate(QtCore.QObject):
 
     def save_errors(self):
         fn = QtWidgets.QFileDialog.getSaveFileName(
-            self.parent.imageCanvas, 'TXT file', QtCore.QDir.homePath(),
-            "Text (*.txt)")[0]
+            QtWidgets.QApplication.topLevelWidgets()[0], 'TXT file',
+            QtCore.QDir.homePath(), "Text (*.txt)")[0]
         ret = np.zeros((len(self._positions), 3))
         for i, pos in enumerate(self._positions):
             Xm1 = pos['Xm']
@@ -123,7 +123,6 @@ class coordinates_delegate(QtCore.QObject):
             xycoeffs = np.zeros(4)
         # Apply correction
         self._md.set_corrections(xycoeffs, zcoeffs)
-        self.parent.coordinatesCorrected.emit(xycoeffs, zcoeffs)
 
     def _update(self):
         # use saved info to correct coordinates
@@ -134,7 +133,6 @@ class coordinates_delegate(QtCore.QObject):
         xycoeffs, zcoeffs = self._md.get_corrections()
         xycoeffs[2:] += offset
         self._md.set_corrections(xycoeffs, zcoeffs)
-        self.parent.coordinatesCorrected.emit(xycoeffs, zcoeffs)
         
 
 

@@ -418,7 +418,7 @@ class Zthread(QtCore.QThread):
 
 
 def getPIListDevices():
-    gcs = GCSDevice('C-863.11')
+    gcs = GCSDevice(HW_conf.GCS_lin_controller_name)
     return gcs.EnumerateUSB()
 
 

@@ -54,7 +54,7 @@ class write_delegate(QtCore.QObject):
         self.thread.start()
 
     def endwrite(self):
-        self.parent.newPosition.emit()
+        self.parent.mouvment_delegate.updatePosition.emit()
 
     def ESTOP(self):
         self.thread.terminate()
@@ -77,7 +77,7 @@ class write_delegate(QtCore.QObject):
             dy = 1
         for x in np.arange(xori, xori + Nx * dx, dx):
             for y in np.arange(yori, yori + Ny * dy, dy):
-                self.parent.imageCanvas.plot(
+                self.parent.canvas_delegate._canvas.plot(
                         gwritten[:, 0] + x, gwritten[:, 1] + y, axis='equal')
 
 

@@ -13,3 +13,5 @@ GCS_cube_controller_name = 'E-727'
 GCS_cube_stage_name = 'P-611.3S'
 
 kinesis_cube_serial = '27502020'
+
+pixeLINK_SN = 729002025

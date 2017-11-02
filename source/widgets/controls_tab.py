@@ -4,7 +4,7 @@ Created on Wed Oct 25 16:55:28 2017
 
 @author: quentinpeter
 """
-from PyQt5 import QtWidgets, QtGui
+from PyQt5 import QtWidgets, QtGui, QtCore
 from functools import partial
 import numpy as np
 
@@ -232,9 +232,6 @@ class Controls_tab(QtWidgets.QWidget):
 
         cd.new_exposure_time.connect(cam_exposure_selector.setValue)
 
-        application_delegate.newMotorState.connect(motor_status.setOn)
-        application_delegate.newCubeState.connect(cube_status.setOn)
-
         for i in range(3):
             pluses[i].clicked.connect(partial(self.step, i, 1))
             minuses[i].clicked.connect(partial(self.step, i, -1))
@@ -242,23 +239,22 @@ class Controls_tab(QtWidgets.QWidget):
         getcurr_cube_button.clicked.connect(self.updateCube)
         getcurr_motor_button.clicked.connect(self.update_motor)
 
-        application_delegate.update_motor.connect(self.update_motor)
-
-        application_delegate.newPosition.connect(self.updatePos)
+        md.updatePosition.connect(
+                self.updatePos)
 
         cam_autoexposure_time.toggled.connect(cd.auto_exposure_time)
         cam_extshutter.toggled.connect(cd.extShutter)
 
-        def setMotorPos(motor_selectors, ranges):
+        def setMotorRange(a, b):
+            ranges = md.motor.positionRange
             for s, r in zip(motor_selectors, ranges):
                 s.setRange(*r, 3)
-
-        application_delegate.newPosRange.connect(partial(setMotorPos,
-                                                         motor_selectors))
-
-        application_delegate.mouvment_delegate.motor.move_signal.connect(
+            self.update_motor()
+        
+        md.coordinatesCorrected.connect(setMotorRange)
+        md.motor.move_signal.connect(
             self.set_target_motor)
-        application_delegate.mouvment_delegate.piezzo.move_signal.connect(
+        md.piezzo.move_signal.connect(
             self.set_target_piezzo)
 
         #======================================================================
@@ -271,6 +267,15 @@ class Controls_tab(QtWidgets.QWidget):
         self.cube_selectors = cube_selectors
         self.cam_autoexposure_time = cam_autoexposure_time
         self.steps = steps
+        
+        # Update status
+        def updateStatus():
+            motor_status.setOn(md.motor.is_ready())
+            cube_status.setOn(md.piezzo.is_ready())
+            
+        self.status_timer = QtCore.QTimer()
+        self.status_timer.timeout.connect(updateStatus)
+        self.status_timer.start(1000)
 
     def set_target_motor(self, target_pos, speed):
         for sel, pos in zip([*(self.motor_selectors), self.vel_motor_selector],

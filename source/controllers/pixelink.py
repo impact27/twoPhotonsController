@@ -59,6 +59,7 @@ import threading
 import ctypes as C
 import ctypes.wintypes as W
 from functools import wraps
+from .HW_conf import pixeLINK_SN
 
 try:
     # try and import numpy, if it is not installed on the user's computer
@@ -496,7 +497,7 @@ class PixeLINK(Camera):
 
     # --------------------------------------------------------------------------
     def __init__(self, logid="CAM", startStreaming=True,
-                 serialNumber=729002025):
+                 serialNumber=0):
         super(PixeLINK, self).__init__(logid)
         self._mutex = threading.Lock()
         self._api = PxLapi()
@@ -727,7 +728,7 @@ def TestCameraAPI():
         #        serialNums =  api.GetNumberCameras()
         #        print(serialNums)
 
-        hCamera = api.Initialize(729002025)
+        hCamera = api.Initialize(pixeLINK_SN)
 
         # test integration time setting
         print("shutter", api.GetFeature(hCamera, PxLapi.FEATURE_SHUTTER))
@@ -768,7 +769,7 @@ def TestCameraAPI():
 
 def TestCameraClass():
     print("Running tests on the Camera class...")
-    cam = PixeLINK(serialNumber=729002025)
+    cam = PixeLINK(serialNumber=pixeLINK_SN)
     shutter0 = cam.shutter
     print("shutter0", shutter0)
     roi0 = cam.roi

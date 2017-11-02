@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from PyQt5 import QtCore, QtWidgets
 from application_delegate import application_delegate
 
-from widgets.imageCanvas import ImageCanvas
+from widgets.canvas import Canvas
 from widgets.coordinates_tab import Coordinates_tab
 from widgets.write_tab import Write_tab
 from widgets.controls_tab import Controls_tab
@@ -52,7 +52,7 @@ class ApplicationWindow(QtWidgets.QMainWindow):
 #        self.statusBar().showMessage("Hello", 2000)
 
         # Create canevas
-        imCanvas = ImageCanvas()
+        imCanvas = Canvas()
 
         # create appication delegate
         self.application_delegate = application_delegate(imCanvas)

@@ -329,6 +329,8 @@ class piezzo(controller):
 
 
 class mouvment_delegate(QtCore.QObject):
+    coordinatesCorrected = QtCore.pyqtSignal(np.ndarray, np.ndarray)
+    updatePosition = QtCore.pyqtSignal()
 
     def __init__(self, parent):
         super().__init__()
@@ -432,7 +434,7 @@ class mouvment_delegate(QtCore.QObject):
     def set_corrections(self, XYcorr, Zcorr):
         self._set_XY_correction(XYcorr)
         self._set_Z_correction(Zcorr)
-        self.parent.coordinatesCorrected.emit(XYcorr, Zcorr)
+        self.coordinatesCorrected.emit(XYcorr, Zcorr)
 
     def get_corrections(self):
         return self.XYcorr, self.zcoeff
