@@ -20,8 +20,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import numpy as np
 from .pixelink import PixeLINK
 import serial
+from .HW_conf import camera_shutter_COM
 
-ext_shutter_com = 'COM6'
 
 
 class camera_controller():
