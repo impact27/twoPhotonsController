@@ -162,7 +162,7 @@ class ImageCanvas(MyMplCanvas):
             self.clear()
             self.plot(Z, I, 'x')
             fitI = np.poly1d(fit)(Z)
-            self.plot(Z[fitI>0], fitI[fitI>0], '-')
+#            self.plot(Z[fitI>0], fitI[fitI>0], '-')
             goodsize = size < 4 * np.min(size)
             self.plot(Z[goodsize], size[goodsize], '.C2', twinx=True)
             self.draw()

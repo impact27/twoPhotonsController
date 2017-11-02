@@ -30,7 +30,6 @@ class Focus_delegate(QtCore.QObject):
     def focus(self, back, forth, step, precise):
         self.thread.set_pos_range(back, forth, step, precise)
         self.thread.run()
-        # TODO: fix that
 #        self.thread.start()
         
     def addGraph(self, graphs):
@@ -101,7 +100,7 @@ class Zcorrector():
         self.lockid = None
         self.ic = imageCanvas
 
-#    @profile
+    @profile
     def get_image_range(self, start, stop, step):
         """get the images corresponding to the positions in zPos
 
@@ -120,8 +119,9 @@ class Zcorrector():
             intensities[i] = mymax
             sizes[i] = size
             if mymax < np.max(intensities)/2:
-                return intensities, sizes
-        return zPos, intensities, size
+                return zPos, intensities, sizes
+             
+        return zPos, intensities, sizes
 
     def startlaser(self):
         self.camera.auto_exposure_time(False)
@@ -133,6 +133,7 @@ class Zcorrector():
         self.camera.exposure_time = self._cam_exposure_time
 #         self.laser.close_shutter()
 
+    @profile
     def focus(self, back, forth, step, checkid=None, precise=False):
         """ Go to the best focal point for the laser
         """
@@ -156,7 +157,8 @@ class Zcorrector():
             argbest = np.argmax(intensity)
             
             if intensity[argbest] == 255:
-                argbest = np.argmin(sizes)
+                argbest = (np.argwhere(intensity == 255)
+                    [np.argmin(sizes[intensity == 255])][0])
                 
             current_step /=10
             
@@ -193,6 +195,7 @@ class Zcorrector():
         # save result and position
         return ret
     
+    @profile
     def get_image_range_quick(self, start, stop, step):
         
         
@@ -221,7 +224,7 @@ class Zcorrector():
             z_array.append(self.motor.position[2])
             #Stop if condition met
             if mymax < np.max(intensities)/2:
-                self.motor.stop(True)
+                self.motor.stop(True, checkid=self.lockid)
                 stop = True
             if self.motor.is_onTarget():
                 stop =True
