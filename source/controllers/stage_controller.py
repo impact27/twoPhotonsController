@@ -24,7 +24,7 @@ from PyQt5 import QtCore
 from functools import partial
 import clr
 
-import .HW_conf
+from . import HW_conf
 
 import sys
 from System import Decimal
@@ -307,7 +307,7 @@ class z_controller(stage_controller):
         except Thorlabs.MotionControl.DeviceManagerCLI.DeviceException as exc:
             print("Can't set velocity {}".format(V))
 
-    def connect(self, serialNumber=kserial):
+    def connect(self, serialNumber=HW_conf.kinesis_cube_serial):
 
         if self._kCubeDCServoMotor is not None:
             print("Cube already connected")

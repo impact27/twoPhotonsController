@@ -14,6 +14,7 @@ class Focus_delegate(QtCore.QObject):
     def __init__(self, app_delegate):
         super().__init__()
         self._positions = []
+        self.app_delegate = app_delegate
         self.md = app_delegate.mouvment_delegate
         self.canvas = app_delegate.canvas_delegate._canvas
         self.thread = zThread(self.md, app_delegate.camera_delegate,
@@ -25,12 +26,13 @@ class Focus_delegate(QtCore.QObject):
         self._update()
     
     def display_pos(self, idx):
+        self.app_delegate.canvas_delegate.switch_live(False)
+        self.app_delegate.canvas_delegate.switch_draw(False)
         self.canvas.plotZCorr(*self._positions[idx]["graphs"])
     
     def focus(self, back, forth, step, precise=True):
         self.thread.set_pos_range(back, forth, step, precise)
-        self.thread.run()
-#        self.thread.start()
+        self.thread.start()
         
     def addGraph(self, graphs):
         self._positions.append({
@@ -112,6 +114,7 @@ class Zcorrector():
         for i, z in enumerate(zPos):
             self.motor.goto_position([np.nan, np.nan, z],
                                      wait=True, checkid=self.lockid)
+            self.camera.get_image()
             im = self.camera.get_image()
             mymax = np.amax(im)
             size = np.sum(im>mymax/10)
@@ -143,14 +146,18 @@ class Zcorrector():
         z_stop = Z + forth
         
         current_step = step
+        
+        list_zpos = []
+        list_int = []
+        list_sizes = []
 
         for i in range(2):
-            if precise:
-                zPos, intensity, sizes = self.get_image_range(
+#            if precise:
+            zPos, intensity, sizes = self.get_image_range(
                         z_start, z_stop, current_step)
-            else:
-                zPos, intensity, sizes = self.get_image_range_quick(
-                        z_start, z_stop, current_step)  
+#            else:
+#                zPos, intensity, sizes = self.get_image_range_quick(
+#                        z_start, z_stop, current_step)  
             
             argbest = np.argmax(intensity)
             
@@ -169,6 +176,10 @@ class Zcorrector():
                 z_stop = zPos[argbest]
             else:
                 z_stop = zPos[argbest+1]
+            
+            list_zpos.append(zPos)
+            list_int.append(intensity)
+            list_sizes.append(sizes)
                 
         self.endlaser()
         
@@ -180,7 +191,7 @@ class Zcorrector():
         fit = np.polyfit(zPos[close], Y[close], 2)
         zBest = -fit[1]/(2*fit[0])
         
-        ret = np.asarray([zPos, intensity, sizes]), fit
+        ret = np.asarray([list_zpos, list_int, list_sizes]), fit
         
         if self.canvas is not None:
             self.canvas.plotZCorr(*ret)

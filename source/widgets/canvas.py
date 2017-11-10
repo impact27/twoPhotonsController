@@ -141,13 +141,15 @@ class Canvas(MyMplCanvas):
         
     def plotZCorr(self, data, fit):
         try:
-            Z, I, size = data
+            list_Z, list_I, list_size = data
             self.clear()
-            self.plot(Z, I, 'x')
+            for Z, I, size in zip(list_Z, list_I, list_size):
+                self.plot(Z, I, 'x')
+                goodsize = size < 4 * np.min(size)
+                self.plot(Z[goodsize], size[goodsize], '.C2', twinx=True)
+                
             fitI = np.poly1d(fit)(Z)
 #            self.plot(Z[fitI>0], fitI[fitI>0], '-')
-            goodsize = size < 4 * np.min(size)
-            self.plot(Z[goodsize], size[goodsize], '.C2', twinx=True)
             self.draw()
         except:
             print("Can't Plot!!!",sys.exc_info()[0])
