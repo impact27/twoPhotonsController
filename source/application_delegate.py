@@ -25,6 +25,7 @@ from laser_delegate import laser_delegate
 from camera_delegate import camera_delegate
 from focus_delegate import Focus_delegate
 from canvas_delegate import Canvas_delegate
+from script_delegate import Script_delegate
 
 
 class application_delegate(QtCore.QObject):
@@ -39,6 +40,7 @@ class application_delegate(QtCore.QObject):
         self.camera_delegate = camera_delegate()
         self.laser_delegate = laser_delegate()
         self.focus_delegate = Focus_delegate(self)
+        self.script_delegate = Script_delegate(self)
 
         # Create delegates for actions
         self.coordinates_delegate = coordinates_delegate(self)

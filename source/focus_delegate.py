@@ -27,7 +27,7 @@ class Focus_delegate(QtCore.QObject):
     def display_pos(self, idx):
         self.canvas.plotZCorr(*self._positions[idx]["graphs"])
     
-    def focus(self, back, forth, step, precise):
+    def focus(self, back, forth, step, precise=True):
         self.thread.set_pos_range(back, forth, step, precise)
         self.thread.run()
 #        self.thread.start()
@@ -132,7 +132,7 @@ class Zcorrector():
         self.camera.exposure_time = self._cam_exposure_time
 #         self.laser.close_shutter()
 
-    def focus(self, back, forth, step, checkid=None, precise=False):
+    def focus(self, back, forth, step, checkid=None, precise=True):
         """ Go to the best focal point for the laser
         """
         self.lockid = checkid

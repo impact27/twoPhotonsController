@@ -26,6 +26,7 @@ from widgets.write_tab import Write_tab
 from widgets.controls_tab import Controls_tab
 from widgets.bottom import Bottom_widget
 from widgets.focus_tab import Focus_tab
+from widgets.script_tab import Script_tab
 from widgets.canvas_tab import Canvas_widget
 
 class ApplicationWindow(QtWidgets.QMainWindow):
@@ -75,6 +76,8 @@ class ApplicationWindow(QtWidgets.QMainWindow):
                            'Write')
         tabs_widget.addTab(Focus_tab(self.application_delegate),
                            'Focus')
+        tabs_widget.addTab(Script_tab(self.application_delegate),
+                           'Script')
 
         tabs_widget.setMaximumWidth(300)
 
