@@ -23,6 +23,9 @@ import numpy as np
 from PyQt5 import QtCore
 from functools import partial
 import clr
+
+import .HW_conf
+
 import sys
 from System import Decimal
 # constants
@@ -76,17 +79,13 @@ class stage_controller():
 # Linear stages controller
 #==============================================================================
 
-
-XStageName = 'PI C-863 Mercury SN 0165500278'
-YStageName = 'PI C-863 Mercury SN 0165500227'
-
-
 class linear_controller(stage_controller):
     def __init__(self):
         super().__init__()
         self.lines = [None, None]
         self.threads = [linethread(sn, partial(self.set_stage, i))
-                        for i, sn in enumerate([XStageName, YStageName])]
+                        for i, sn in enumerate([HW_conf.XStageName,
+                                                HW_conf.YStageName])]
         self.reconnect()
 
     def set_stage(self, axis, stage):
@@ -161,9 +160,9 @@ class linethread(QtCore.QThread):
         self.callback = callback
 
     def run(self):
-        stage = GCSDevice('C-863.11')
+        stage = GCSDevice(HW_conf.GCS_lin_controller_name)
         stage.ConnectUSB(self.StageName)
-        if stage.qCST()['1'] != 'M-404.2DG':
+        if stage.qCST()['1'] != HW_conf.GCS_lin_stage_name:
             print(stage.qCST()['1'])
             raise RuntimeError("Incorrect stage connected")
         print('Connected', stage.qIDN())
@@ -178,14 +177,14 @@ class linethread(QtCore.QThread):
 #==============================================================================
 
 
-cubeName = 'PI E-727 Controller SN 0116021530'
+
 
 
 class cube_controller(stage_controller):
     def __init__(self):
         super().__init__()
         self.cube = None
-        self.thread = cubethread(cubeName, self.set_stage)
+        self.thread = cubethread(HW_conf.cubeName, self.set_stage)
         self.reconnect()
 
     def set_stage(self, stage):
@@ -243,9 +242,9 @@ class cubethread(QtCore.QThread):
         self.callback = callback
 
     def run(self):
-        stage = GCSDevice('E-727')
+        stage = GCSDevice(HW_conf.GCS_cube_controller_name)
         stage.ConnectUSB(self.StageName)
-        if stage.qCST()['1'] != 'P-611.3S':
+        if stage.qCST()['1'] != HW_conf.GCS_cube_stage_name:
             print(stage.qCST()['1'])
             raise RuntimeError("Incorrect stage connected")
         print('Connected', stage.qIDN())
@@ -253,12 +252,8 @@ class cubethread(QtCore.QThread):
         stage.ATZ([1, 2, 3], [0, 0, 0])
         self.callback(stage)
 
-
-kserial = '27502020'
-
-
 class z_controller(stage_controller):
-    def __init__(self, serial=kserial):
+    def __init__(self, serial=HW_conf.kinesis_cube_serial):
         super().__init__()
         self._kCubeDCServoMotor = None
         self.thread = Zthread(serial, self.set_stage)
@@ -423,7 +418,7 @@ class Zthread(QtCore.QThread):
 
 
 def getPIListDevices():
-    gcs = GCSDevice('C-863.11')
+    gcs = GCSDevice(HW_conf.GCS_lin_controller_name)
     return gcs.EnumerateUSB()
 
 

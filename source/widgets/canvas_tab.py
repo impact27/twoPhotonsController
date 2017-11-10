@@ -37,18 +37,18 @@ class Canvas_widget(QtWidgets.QWidget):
         range_layout.addWidget(full_button, 1, 2)
         
         full_button.clicked.connect(lambda: 
-            application_delegate.imageCanvas.set_range())
+            application_delegate.canvas_delegate.set_range())
         
         def changeRange():
             vmin = float(min_input.text())
             vmax = float(max_input.text())
-            application_delegate.imageCanvas.set_range(vmin, vmax)
+            application_delegate.canvas_delegate.set_range(vmin, vmax)
             
         min_input.editingFinished.connect(changeRange)
         max_input.editingFinished.connect(changeRange)
 
-        auto_button.clicked.connect(application_delegate.imageCanvas.auto_range)
-        application_delegate.imageCanvas.newrange.connect(self.setrange)
+        auto_button.clicked.connect(application_delegate.canvas_delegate.auto_range)
+        application_delegate.canvas_delegate.newrange.connect(self.setrange)
         self.min_input = min_input
         self.max_input = max_input
         
@@ -76,12 +76,12 @@ class Canvas_widget(QtWidgets.QWidget):
         
         def changePX():
             pxsize = float(pxsize_input.text())
-            application_delegate.imageCanvas.set_pixel_size(pxsize)
+            application_delegate.canvas_delegate.set_pixel_size(pxsize)
         
         pxsize_input.editingFinished.connect(changePX)
-        application_delegate.imageCanvas.newclick.connect(self.showPos)
+        application_delegate.canvas_delegate._canvas.newclick.connect(self.showPos)
         crosses_clear_button.clicked.connect(lambda: 
-            application_delegate.imageCanvas.clearCrosses())
+            application_delegate.canvas_delegate._canvas.clear_click())
         self.cross0_pos = cross0_pos
         self.cross1_pos = cross1_pos
         self.dist_display = dist_display
@@ -91,7 +91,9 @@ class Canvas_widget(QtWidgets.QWidget):
         self.min_input.setText("{:.2f}".format(vmin))
         self.max_input.setText("{:.2f}".format(vmax))
         
-    def showPos(self, pos, dist):
+    def showPos(self, pos):
+        vec = pos[0] - pos[1]
+        dist = np.sqrt(np.dot(vec, vec))
         if np.all(np.isfinite(pos[0])):
             text = "{:.2f}, {:.2f}".format(*pos[0])
         else:

@@ -20,15 +20,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import numpy as np
 from .pixelink import PixeLINK
 import serial
+from .HW_conf import camera_shutter_COM, pixeLINK_SN
 
-ext_shutter_com = 'COM6'
 
 
 class camera_controller():
     def __init__(self):
         self.cam = None
         self.reconnect()
-        self._ext_shutter = serial.Serial(ext_shutter_com)
+        self._ext_shutter = serial.Serial(camera_shutter_COM)
         self._ext_shutter.write('OFF\n'.encode())
 
     def __del__(self):
@@ -36,7 +36,7 @@ class camera_controller():
 
     def reconnect(self):
         del self.cam
-        self.cam = PixeLINK()
+        self.cam = PixeLINK(serialNumber=pixeLINK_SN)
 
     def exposure_time_range(self):
         return [1.9e-5, .1]

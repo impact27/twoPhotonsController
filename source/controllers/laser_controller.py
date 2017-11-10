@@ -20,6 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import numpy as np
 import serial
 
+from .HW_conf import laser_power_COM
 
 class laser_controller():
 
@@ -29,7 +30,7 @@ class laser_controller():
 
     def reconnect(self):
         del self.ser
-        self.ser = serial.Serial('COM3', timeout=1)
+        self.ser = serial.Serial(laser_power_COM, timeout=1)
         self.sendCommand('*IDN?')
         res = self.ser.readline().decode()
         print(res)

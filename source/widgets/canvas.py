@@ -8,8 +8,9 @@ from PyQt5 import QtCore, QtWidgets
 import numpy as np
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
-import cv2
 import sys
+import matplotlib
+cmap = matplotlib.cm.get_cmap('plasma')
 #==============================================================================
 # Plot canevas
 #==============================================================================
@@ -36,86 +37,57 @@ class MyMplCanvas(FigureCanvas):
         pass
 
 
-class ImageCanvas(MyMplCanvas):
+class Canvas(MyMplCanvas):
     
-    newrange = QtCore.pyqtSignal(float, float)
-    newclick = QtCore.pyqtSignal(np.ndarray, float)
+    newclick = QtCore.pyqtSignal(np.ndarray)
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.clear()
         self._lastim = np.zeros((2, 2))
-        self._autoc = False
         self.figure.canvas.mpl_connect('button_press_event', self.onImageClick)
         self._click_pos = np.array([[np.nan, np.nan], [np.nan, np.nan]])
         self._crosshandle = None
-        self._pixelSize = 1
-        self._vmin = 0
-        self._vmax = 255
         
-    def clearCrosses(self):
-        self._click_pos = np.array([[np.nan, np.nan], [np.nan, np.nan]])
-        self.update_click()
-        
-    def set_pixel_size(self, pxsize):
-        factor = pxsize/self._pixelSize
-        self._click_pos *= factor
-        self._pixelSize = pxsize
-        if self._imhandle is not None:
-            self.imshow()
-            
-    def set_range(self, vmin=0, vmax=255):
-        self.newrange.emit(vmin, vmax)
-        self._vmin = vmin
-        self._vmax = vmax
-        self.imshow()
-    
-    def imshow(self, im=None):
-        if im is None:
-            im = self._lastim
-            if im is None:
-                print("No image!")
-                return
-        self._lastim = im
-        self.figure.clear()
-        self._axes = self.figure.add_subplot(111)
-        
-        extent = (0, im.shape[1]*self._pixelSize,
-                  0, im.shape[0]*self._pixelSize)
-        self._imhandle = self._axes.imshow(im, vmin=self._vmin, 
-                                           vmax=self._vmax, extent=extent)
-        self._axes.axis('image')
-        self.figure.colorbar(self._imhandle)
-        self.draw()
-        self.update_click()
-
-    def auto_range(self):
-        im = self.get_im()
-        vmin = np.percentile(im,1)
-        vmax = np.percentile(im,99)
-        self.set_range(vmin=vmin, vmax=vmax)
-#    @profile
-    def frameshow(self, im):
-        self._lastim = im
-        if self._imhandle is not None:
-            im = cv2.resize(im, (im.shape[1]//2, im.shape[0]//2), 
-                            interpolation=cv2.INTER_AREA)
-            self._imhandle.set_data(im)
-#            if self._autoc:
-#                self._imhandle.set_clim(im.min(), im.max())
-            self._axes.draw_artist(self._imhandle)
-            if self._crosshandle is not None:
-                self._axes.draw_artist(self._crosshandle[0])
-            self.blit(self._axes.bbox)
-        else:
-            self.imshow(im)
-
     def clear(self):
         self._imhandle = None
         self.figure.clear()
         self._axes = self.figure.add_subplot(111)
         self.draw()
-
+        
+    def get_last_im(self):
+        return self._lastim
+    
+    def imshow(self, im, *args, **kwargs):
+        self._lastim = im
+        self.figure.clear()
+        self._axes = self.figure.add_subplot(111)
+        
+        self._imhandle = self._axes.imshow(im, *args, **kwargs)
+        
+        self._axes.axis('image')
+        self.figure.colorbar(self._imhandle)
+        
+        if not np.all(np.isnan(self._click_pos)):
+            self._crosshandle = self._axes.plot(
+                    self._click_pos[:,1], self._click_pos[:,0], 'r-x')
+        
+        self.draw()
+        
+    def update_image(self, im, *args, **kwargs):
+        self._lastim = im
+        if self._imhandle is not None:
+            
+            self._imhandle.set_data(im)
+            self._axes.draw_artist(self._imhandle)
+            
+            if self._crosshandle is not None:
+                self._axes.draw_artist(self._crosshandle[0])
+            
+            self.blit(self._axes.bbox)
+        else:
+            self.imshow(im, *args, **kwargs)
+    
     def plot(self, X, Y, fmt='-', axis='normal', twinx=False, **kwargs):
         if self._imhandle is not None:
             self.clear()
@@ -125,10 +97,7 @@ class ImageCanvas(MyMplCanvas):
         ax.plot(X, Y, fmt, **kwargs)
         self._axes.axis(axis)
         self.draw()
-
-    def get_im(self):
-        return self._lastim
-
+    
     def onImageClick(self, event):
         """A CLICK!!!!!!!!"""
         # Are we displaying an image?
@@ -144,18 +113,32 @@ class ImageCanvas(MyMplCanvas):
             return
         
         self._click_pos[idx, :] = [float(event.ydata), float(event.xdata)]
-        self.update_click()
         
-    def update_click(self):
-        self._crosshandle = self._axes.plot(self._click_pos[:,1], 
-                                            self._click_pos[:,0], 'r-x')
-        self.frameshow(self._lastim)
-        vec = self._click_pos[0]-self._click_pos[1]
-        dist = np.sqrt(np.dot(vec, vec))
+        self._crosshandle = self._axes.plot(
+                    self._click_pos[:,1], self._click_pos[:,0], 'r-x')
+        self.update_image(self.get_last_im())
+        self.newclick.emit(self._click_pos)
         
-        self.newclick.emit(self._click_pos, dist)
-
+        
+    
+    def clear_click(self):
+        self.set_click_pos(np.array([[np.nan, np.nan], [np.nan, np.nan]]))
+        self._crosshandle = None
+        if self._imhandle is not None:
+            self.update_image(self.get_last_im())
+    
+    @property
+    def click_pos(self):
+        return self._click_pos
+    
+    def set_click_pos(self, pos):
+        self._click_pos = pos
+        self.newclick.emit(self._click_pos)
             
+    def is_showing_image(self):
+        return self._imhandle is not None
+    # TODO: give to focus    
+        
     def plotZCorr(self, data, fit):
         try:
             Z, I, size = data
@@ -169,3 +152,9 @@ class ImageCanvas(MyMplCanvas):
         except:
             print("Can't Plot!!!",sys.exc_info()[0])
                 
+    
+    
+    
+        
+    
+    

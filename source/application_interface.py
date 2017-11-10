@@ -20,12 +20,13 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from PyQt5 import QtCore, QtWidgets
 from application_delegate import application_delegate
 
-from widgets.imageCanvas import ImageCanvas
+from widgets.canvas import Canvas
 from widgets.coordinates_tab import Coordinates_tab
 from widgets.write_tab import Write_tab
 from widgets.controls_tab import Controls_tab
 from widgets.bottom import Bottom_widget
 from widgets.focus_tab import Focus_tab
+from widgets.script_tab import Script_tab
 from widgets.canvas_tab import Canvas_widget
 
 class ApplicationWindow(QtWidgets.QMainWindow):
@@ -52,7 +53,7 @@ class ApplicationWindow(QtWidgets.QMainWindow):
 #        self.statusBar().showMessage("Hello", 2000)
 
         # Create canevas
-        imCanvas = ImageCanvas()
+        imCanvas = Canvas()
 
         # create appication delegate
         self.application_delegate = application_delegate(imCanvas)
@@ -75,6 +76,8 @@ class ApplicationWindow(QtWidgets.QMainWindow):
                            'Write')
         tabs_widget.addTab(Focus_tab(self.application_delegate),
                            'Focus')
+        tabs_widget.addTab(Script_tab(self.application_delegate),
+                           'Script')
 
         tabs_widget.setMaximumWidth(300)
 

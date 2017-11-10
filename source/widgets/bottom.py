@@ -47,9 +47,9 @@ class Bottom_widget(QtWidgets.QWidget):
         buttons_layout.addWidget(save_fig_button, 1, 2)
         
         ESTOP_button.clicked.connect(application_delegate.ESTOP)
-        clear_button.clicked.connect(application_delegate.imageCanvas.clear)
-        save_im_button.clicked.connect(application_delegate.save_im)
-        save_fig_button.clicked.connect(application_delegate.save_fig)
+        clear_button.clicked.connect(application_delegate.canvas_delegate.clear)
+        save_im_button.clicked.connect(application_delegate.canvas_delegate.save_im)
+        save_fig_button.clicked.connect(application_delegate.canvas_delegate.save_fig)
 
         def switchBGButton(on):
             if on:
@@ -76,11 +76,11 @@ class Bottom_widget(QtWidgets.QWidget):
         self.live_button = live_button
         self.draw_button = draw_button
 
-        live_button.clicked.connect(application_delegate.switch_live)
-        draw_button.clicked.connect(application_delegate.switch_draw)
+        live_button.clicked.connect(application_delegate.canvas_delegate.switch_live)
+        draw_button.clicked.connect(application_delegate.canvas_delegate.switch_draw)
 
-        application_delegate.liveSwitched.connect(self.switch_live)
-        application_delegate.drawSwitched.connect(self.switch_draw)
+        application_delegate.canvas_delegate.liveSwitched.connect(self.switch_live)
+        application_delegate.canvas_delegate.drawSwitched.connect(self.switch_draw)
 
     def switch_live(self, on):
         if on:

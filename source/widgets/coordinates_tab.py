@@ -133,7 +133,7 @@ class Coordinates_tab(QtWidgets.QWidget):
         self.displayrow.connect(cd.displayrow)
         cd.updatelist.connect(self.updateList)
 
-        application_delegate.coordinatesCorrected.connect(
+        application_delegate.mouvment_delegate.coordinatesCorrected.connect(
             self.updateCorrection)
         correction_reset.clicked.connect(cd.clear_positions)
 
