@@ -100,7 +100,6 @@ class Zcorrector():
         self.lockid = None
         self.ic = imageCanvas
 
-    @profile
     def get_image_range(self, start, stop, step):
         """get the images corresponding to the positions in zPos
 
@@ -133,7 +132,6 @@ class Zcorrector():
         self.camera.exposure_time = self._cam_exposure_time
 #         self.laser.close_shutter()
 
-    @profile
     def focus(self, back, forth, step, checkid=None, precise=False):
         """ Go to the best focal point for the laser
         """
@@ -194,8 +192,7 @@ class Zcorrector():
 
         # save result and position
         return ret
-    
-    @profile
+
     def get_image_range_quick(self, start, stop, step):
         
         
