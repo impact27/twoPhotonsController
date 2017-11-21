@@ -144,6 +144,6 @@ class coordinates_delegate(QtCore.QObject):
     def offset_origin(self, newXm):
         corrections = self._md.corrections
         oldXm = self._md.position
-        corrections['offset'] += newXm - oldXm
+        corrections['offset'] += oldXm - newXm
         self._md.corrections = corrections
         

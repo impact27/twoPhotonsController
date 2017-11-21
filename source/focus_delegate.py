@@ -17,7 +17,7 @@ class Focus_delegate(QtCore.QObject):
         self.app_delegate = app_delegate
         self.md = app_delegate.mouvment_delegate
         self.canvas = app_delegate.canvas_delegate._canvas
-        self.thread = zThread(app_delegate.camera_delegate,
+        self.thread = zThread(self.md, app_delegate.camera_delegate,
                               app_delegate.laser_delegate,
                               self.canvas, self.addGraph)
         
@@ -52,7 +52,8 @@ class Focus_delegate(QtCore.QObject):
         else:
             stage = self.md.motor
         self.thread.set_args(back, forth, step, Nloops, stage, checkid)
-        self.thread.start()
+        self.thread.run()
+#        self.thread.start()
         
         if wait:
             self.thread.wait()
@@ -89,11 +90,12 @@ class Focus_delegate(QtCore.QObject):
 
 class zThread(QtCore.QThread):
 
-    def __init__(self, camera, laser, canvas, addGraph):
+    def __init__(self, mouvment_delegate, camera, laser, canvas, addGraph):
         super().__init__()
         self.addGraph = addGraph
         self._zcorrector = Zcorrector(None, camera, canvas=canvas)
         self._focus_args = None
+        self._md = mouvment_delegate
         
     def set_args(self, back, forth, step, Nloops, stage, checkid):
         self._zcorrector.stage = stage
@@ -221,10 +223,10 @@ class Zcorrector():
         self.stage.goto_position([np.nan, np.nan, zBest],
                                  wait=True, checkid=self.lockid)
         
-        self.stage.corrections["offset"][2] -= zBest
+        corrections = self.stage.corrections
+        corrections["offset"][2] += zBest
+        self.stage.corrections = corrections
         
-        
-
         # save result and position
         return ret
 

@@ -118,7 +118,7 @@ class mouvment_delegate(QtCore.QObject):
         return self.motor.corrections
     
     @corrections.setter
-    def set_corrections(self, corrections):
+    def corrections(self, corrections):
         self.motor.corrections = corrections
         self.piezzo.corrections['rotation angle'] = corrections['rotation angle']
     
@@ -254,7 +254,7 @@ class controller(QtCore.QObject):
         return self._corrections
     
     @corrections.setter
-    def set_corrections(self, corrections):
+    def corrections(self, corrections):
         self._corrections = corrections
         self.coordinatesCorrected.emit(corrections)
     

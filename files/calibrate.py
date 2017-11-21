@@ -23,7 +23,8 @@ for xpos, power in enumerate(powers):
         line_length = 30 + speed / np.max(speeds) * 50
         lines.append("motor Y{:.2f}".format(ypos*motor_step + motor_origin [1]))
         lines.append("piezzo X50 Y50")
-        lines.append("focus -20 20 1")
+        lines.append("focus motor -20 20 1")
+        lines.append("focus piezzo -2 2 1")
         
         for n, z_offset in enumerate(z_offsets):
             lines.append("piezzo X-50 Y{:.2f} Z{:.2f}".format(
