@@ -100,6 +100,10 @@ class ApplicationWindow(QtWidgets.QMainWindow):
 
         self.activateWindow()
         self.setFocus()
+        
+        progname = 'Two Photons Controller'
+        self.setWindowTitle("%s" % progname)
+        self.show()
 
     def fileQuit(self):
         self.close()

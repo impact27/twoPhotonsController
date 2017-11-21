@@ -49,7 +49,7 @@ class Coordinates_tab(QtWidgets.QWidget):
         correction_label = QtWidgets.QLabel('')
         self.correction_label = correction_label
         self.updateCorrection(
-            *application_delegate.mouvment_delegate.get_corrections())
+            application_delegate.mouvment_delegate.corrections)
 
         correction_reset = QtWidgets.QPushButton('Reset')
         correction_save = QtWidgets.QPushButton('Save')
@@ -57,8 +57,8 @@ class Coordinates_tab(QtWidgets.QWidget):
 
         save_errors = QtWidgets.QPushButton('Save Errors')
         
-        offset_label = QtWidgets.QLabel("New Origin:")
-        offset_input = QtWidgets.QLineEdit("0, 0")
+        offset_label = QtWidgets.QLabel("Offset Position:")
+        offset_input = QtWidgets.QLineEdit("0, 0, 0")
         offset_button = QtWidgets.QPushButton("Move Origin")
         #======================================================================
         #     Layout
@@ -209,8 +209,16 @@ class Coordinates_tab(QtWidgets.QWidget):
         self.pos_list.setCellWidget(row, 1, Xs_label)
         self.pos_list.setCellWidget(row, 2, Delete)
 
-    def updateCorrection(self, XYcoeff, Zcoeffs):
-        text = ('{:.3e}X + {:.3e}Y\n+ {:.3f}μm\n'.format(*Zcoeffs)
-                + 'Φ:\t{:.5g}π\nθ:\t{:.5g}π\nXo:\t[{:.3f}, {:.3f}]μm'.format(
-                    XYcoeff[0] / np.pi, XYcoeff[1] / np.pi, *XYcoeff[2:]))
+    def updateCorrection(self, corrections):
+        text = ("Offset: {}\nSlope: {:.3g}X + {:.3g}Y\nRotation angle: {:.5g}π"
+                "\nStage diff angle: {:.5g}π".format(
+                        corrections['offset'],
+                        *corrections['slope'],
+                        corrections["rotation angle"] / np.pi,
+                        corrections["stage diff angle"] / np.pi
+                        ))
+        
+#        text = ('{:.3e}X + {:.3e}Y\n+ {:.3f}μm\n'.format(*Zcoeffs)
+#                + 'Φ:\t{:.5g}π\nθ:\t{:.5g}π\nXo:\t[{:.3f}, {:.3f}]μm'.format(
+#                    XYcoeff[0] / np.pi, XYcoeff[1] / np.pi, *XYcoeff[2:]))
         self.correction_label.setText(text)

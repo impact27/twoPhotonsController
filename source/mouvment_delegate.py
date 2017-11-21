@@ -27,6 +27,7 @@ import numpy as np
 from PyQt5 import QtCore
 import sys
 import time
+import json
 
 if sys.platform == "darwin":
     from controllers.stage_controller_placeholder import (linear_controller,
@@ -38,7 +39,6 @@ else:
                                               z_controller)
 
 class mouvment_delegate(QtCore.QObject):
-    coordinatesCorrected = QtCore.pyqtSignal(np.ndarray, np.ndarray)
     updatePosition = QtCore.pyqtSignal()
 
     def __init__(self, parent):
@@ -47,13 +47,13 @@ class mouvment_delegate(QtCore.QObject):
         self.lockid = None
 
         self.parent = parent
-        self.XYcorr = np.zeros(4)
-        self.zcoeff = np.zeros(3)
 
         self.piezzo = piezzo(self)
         self.motor = motor(self)
 
         self.error = self.parent.error
+        
+        self.coordinatesCorrected = self.motor.coordinatesCorrected
 
     def _checklock(self, lockid=None):
         if not self.locked:
@@ -99,64 +99,48 @@ class mouvment_delegate(QtCore.QObject):
     #     Corrections
     #==========================================================================
 
-    def _set_XY_correction(self, coeffs):
-        if not self._checklock():
-            return
-        coeffs = np.array(coeffs)
-        phi, theta, *offset = coeffs
-        offset = np.asarray(offset)
-        c, s = np.cos(theta), np.sin(theta)
-        R = np.array([[c, -s], [s, c]])
-        c, s = np.cos(phi), np.sin(phi)
-        M = np.array([[1, s], [0, c]])
-
-        self.XYcorr = coeffs
-
-        self.motor.set_XY_correction(R, M, offset)
-        self.piezzo.set_XY_correction(R)
-
-    def _set_Z_correction(self, coeffs):
-        if not self._checklock():
-            return
-        self.zcoeff = coeffs
-        self.motor.set_Z_correction(coeffs)
-
     def save_corrections(self):
         fn = 'corrections.txt'
-        with open(fn, 'bw') as f:
-            np.savetxt(f, self.XYcorr[np.newaxis])
-            np.savetxt(f, self.zcoeff[np.newaxis])
+        with open(fn, 'w') as f:
+            json.dump(self.corrections, f, indent=4)
 
     def load_corrections(self):
         fn = 'corrections.txt'
         try:
             with open(fn, 'r') as f:
-                XYcorr = np.fromstring(f.readline(), sep=" ")
-                Zcorr = np.fromstring(f.readline(), sep=" ")
-                self.set_corrections(XYcorr, Zcorr)
+                corrections = json.load(f)
         except FileNotFoundError:
             self.parent.error.emit('No saved correction')
-
-    def set_corrections(self, XYcorr, Zcorr):
-        self._set_XY_correction(XYcorr)
-        self._set_Z_correction(Zcorr)
-        self.coordinatesCorrected.emit(XYcorr, Zcorr)
-
-    def get_corrections(self):
-        return self.XYcorr, self.zcoeff
+        self.corrections = corrections
+    
+    @property
+    def corrections(self):
+        return self.motor.corrections
+    
+    @corrections.setter
+    def set_corrections(self, corrections):
+        self.motor.corrections = corrections
+        self.piezzo.corrections['rotation angle'] = corrections['rotation angle']
     
     
 class controller(QtCore.QObject):
 
     move_signal = QtCore.pyqtSignal(list, float)
+    coordinatesCorrected = QtCore.pyqtSignal(dict)
 
     def __init__(self, speed, parent):
         super().__init__()
         self._speed = speed
         self.parent = parent
         self._lastXs = None
-        self.zcoeff = np.zeros(3)
         self._ndim = 3
+        
+        self._corrections={
+                "offset": np.zeros(3),
+                "slope": np.zeros(2),
+                "rotation angle": 0,
+                "stage diff angle": 0
+                }
 
     def get_position(self, raw=False):
         X = self._XSPOS()
@@ -264,18 +248,50 @@ class controller(QtCore.QObject):
         return np.squeeze(ret)
 
     velocityRange = property(get_velocityRange)
-
-    def set_Z_correction(self, coeffs):
-        self.zcoeff = coeffs
+        
+    @property
+    def corrections(self):
+        return self._corrections
+    
+    @corrections.setter
+    def set_corrections(self, corrections):
+        self._corrections = corrections
+        self.coordinatesCorrected.emit(corrections)
+    
+    def _get_angle_matrices(self):
+        theta = self._corrections["rotation angle"]
+        phi =  self._corrections["stage diff angle"]
+        
+        c, s = np.cos(theta), np.sin(theta)
+        R = np.array([[c, -s], [s, c]])
+        
+        c, s = np.cos(phi), np.sin(phi)
+        M = np.array([[1, s], [0, c]])
+        
+        return R, M
 
     def reconnect(self):
         pass
 
     def XstoXm(self, Xs):
-        pass
+        R, M = self._get_angle_matrices()
+        
+        Xm = np.array(Xs, float)
+        Xm[:2] = M@Xs[:2]
+        Xm -= self._corrections['offset']
+        Xm[:2] = np.linalg.inv(R)@Xm[:2]
+        Xm[2] -= self._getZPlane(Xs[:2])
+        return Xm
 
     def XmtoXs(self, Xm):
-        pass
+        R, M = self._get_angle_matrices()
+        
+        Xs = np.array(Xm, float)
+        Xs[:2] = R@Xm[:2]
+        Xs += self._corrections['offset']
+        Xs[:2] = np.linalg.inv(M)@Xs[:2]
+        Xs[2] += self._getZPlane(Xs[:2])
+        return Xs
 
     def is_ready(self):
         pass
@@ -301,8 +317,8 @@ class controller(QtCore.QObject):
     def _VRANGE(self, axis):
         pass
     
-    def _getZOrigin(self, XYstage):
-        return np.dot(self.zcoeff[:2], XYstage) + self.zcoeff[2]
+    def _getZPlane(self, XYstage):
+        return np.dot(self._corrections["slope"], XYstage)
 
 
 class motor(controller):
@@ -311,25 +327,6 @@ class motor(controller):
         self.XY_c = linear_controller()
         self.Z_c = z_controller()
         self.XY_c.waitState()
-        self._R = np.eye(2)
-        self._M = np.eye(2)
-        self._offset = np.zeros(2)
-
-    @property
-    def offset(self):
-        return self._offset
-
-    def XstoXm(self, Xs):
-        Xm = np.zeros_like(Xs)
-        Xm[:2] = np.linalg.inv(self._R)@(self._M@Xs[:2] - self._offset)
-        Xm[2] = Xs[2] - self._getZOrigin(Xs[:2])
-        return Xm
-
-    def XmtoXs(self, Xm):
-        Xs = np.zeros_like(Xm)
-        Xs[:2] = np.linalg.inv(self._M)@(self._R@Xm[:2] + self._offset)
-        Xs[2] = Xm[2] + self._getZOrigin(Xs[:2])
-        return Xs
 
     def _XSPOS(self):
         XY = self.XY_c.get_position()
@@ -374,35 +371,16 @@ class motor(controller):
         self.XY_c.reconnect()
         self.Z_c.reconnect()
 
-    def set_XY_correction(self, R, M, offset):
-        self._R = R
-        self._M = M
-        self._offset = offset
-
-
 class piezzo(controller):
     def __init__(self, parent):
         super().__init__(1000, parent)
         self.XYZ_c = cube_controller()
-        self._R = np.eye(2)
-        self._offset = np.array([50, 50, 25])
+        self._corrections['offset'] = np.array([50, 50, 25])
 
     def motorMove(self, checkid=None):
+        self._corrections['offset'][2] = 25
+        self._corrections["slope"] = np.zeros(2)
         self.goto_position([0, 0, 0], checkid=checkid)
-        self.zcoeff = np.zeros(3)
-
-    def XstoXm(self, Xs):
-        Xm = np.zeros_like(Xs)
-        Xm[:2] = np.linalg.inv(self._R)@(Xs[:2] - self._offset[:2])
-        Xm[2] = Xs[2] - self._offset[2] - self._getZOrigin(Xs[:2])
-        return Xm
-
-    def XmtoXs(self, Xm):
-        Xs = np.zeros_like(Xm)
-        Xs[:2] = self._R@Xm[:2]
-        Xs[2] = Xm[2] + self._getZOrigin(Xs[:2])
-        Xs = Xs + self._offset
-        return Xs
 
     def _XSPOS(self):
         return np.asarray(self.XYZ_c.get_position())
@@ -431,9 +409,6 @@ class piezzo(controller):
 
     def reconnect(self):
         self.XYZ_c.reconnect()
-
-    def set_XY_correction(self, R):
-        self._R = R
 
 
 

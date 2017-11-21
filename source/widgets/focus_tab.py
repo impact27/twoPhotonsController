@@ -34,7 +34,10 @@ class Focus_tab(QtWidgets.QWidget):
         step_label = QtWidgets.QLabel("Range step:")
         step_input = QtWidgets.QLineEdit('1')
         
-        precision_check = QtWidgets.QCheckBox("Slow focus")
+        Nloops_label = QtWidgets.QLabel("Number loops:")
+        Nloops_input = QtWidgets.QLineEdit('1')
+        
+        precision_check = QtWidgets.QCheckBox("Piezzo")
 
         focus_button = QtWidgets.QPushButton("Focus")
 
@@ -59,7 +62,9 @@ class Focus_tab(QtWidgets.QWidget):
         focus_grid.addWidget(forth_input, 1, 1)
         focus_grid.addWidget(step_label, 2, 0)
         focus_grid.addWidget(step_input, 2, 1)
-        focus_grid.addWidget(precision_check, 3, 0)
+        focus_grid.addWidget(Nloops_label, 3, 0)
+        focus_grid.addWidget(Nloops_input, 3, 1)
+        focus_grid.addWidget(precision_check, 4, 0)
 
         bottom_layout = QtWidgets.QHBoxLayout()
         bottom_layout.addWidget(save_button)
@@ -86,7 +91,8 @@ class Focus_tab(QtWidgets.QWidget):
             float(back_input.text()),
             float(forth_input.text()),
             float(step_input.text()),
-            precision_check.isChecked()))
+            Nloops=int(Nloops_input.text()),
+            piezzo=precision_check.isChecked()))
 
         clear_list_button.clicked.connect(self.fd.clear)
         save_button.clicked.connect(self.fd.save)

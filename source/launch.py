@@ -22,9 +22,5 @@ from PyQt5 import QtWidgets
 from application_interface import ApplicationWindow
 
 qApp = QtWidgets.QApplication(sys.argv)
-progname = 'Two Photons Controller'
 aw = ApplicationWindow()
-aw.setCentralWidget(QtWidgets.QLabel("Lowl"))
-aw.setWindowTitle("%s" % progname)
-aw.show()
 sys.exit(qApp.exec_())

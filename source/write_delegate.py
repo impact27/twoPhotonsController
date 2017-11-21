@@ -91,9 +91,7 @@ class write_thread(QtCore.QThread):
         self.lockid = None
         self.gcommands = None
         self.parent = parent
-        self._zcorrector = Zcorrector(self.md.motor, parent.camera_delegate)
-        self.addGraph = parent.focus_delegate.addGraph
-        
+        self.focus_delegate = parent.focus_delegate
 
     def set_args(self, gcommands, settings):
         self.settings = settings
@@ -137,17 +135,25 @@ class write_thread(QtCore.QThread):
                           y + focus_offset[1], 
                           z - move_dist])
                     # TODO: remove comments
-#                    # approach
-#                    goto([x + focus_offset[0], 
-#                          y + focus_offset[1], 
-#                          z - focus_range / 2])
-#                    # Focus
-#                    graph = self._zcorrector.focus(0, focus_range, focus_step,
-#                                                   checkid=self.lockid)
-#                    self.addGraph(graph)
+                    # approach
+                    goto([x + focus_offset[0], 
+                          y + focus_offset[1], 
+                          z - focus_range / 2])
+                    # Focus with z stage
+                    self.focus_delegate.focus(0, focus_range, focus_step, 
+                                              Nloops=1, piezzo=False, 
+                                              wait=True,
+                                              checkid=self.lockid)
+                    
                     # Move to pos
-#                    goto([x, y, np.nan])
-                    goto([x, y, z])
+                    goto([x, y, 0])
+                    
+                    #Focus with piezzo
+                    self.focus_delegate.focus(-5, 5, 1, 
+                                              Nloops=2, piezzo=True,
+                                              wait=True,
+                                              checkid=self.lockid)
+                    
                     # Write
                     self.writeGCode()
 

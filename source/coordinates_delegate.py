@@ -121,53 +121,29 @@ class coordinates_delegate(QtCore.QObject):
         else:
             zcoeffs = np.zeros(3)
             xycoeffs = np.zeros(4)
+            
+        stage_diff_angle, rotation_angle, *XYoffset = xycoeffs
+        Zslope, Zoffset = zcoeffs
+        offset = np.asarray([*XYoffset, Zoffset])
+        
+        corrections = {
+            "offset": offset,
+            "slope": Zslope,
+            "rotation angle": rotation_angle,
+            "stage diff angle": stage_diff_angle
+            }
+        
         # Apply correction
-        self._md.set_corrections(xycoeffs, zcoeffs)
+        self._md.corrections = corrections
 
     def _update(self):
         # use saved info to correct coordinates
         self._updateXYZCorr()
         self.updatelist.emit(self._positions)
         
-    def offset_origin(self, offset):
-        xycoeffs, zcoeffs = self._md.get_corrections()
-        xycoeffs[2:] += offset
-        self._md.set_corrections(xycoeffs, zcoeffs)
+    def offset_origin(self, newXm):
+        corrections = self._md.corrections
+        oldXm = self._md.position
+        corrections['offset'] += newXm - oldXm
+        self._md.corrections = corrections
         
-
-
-#class positionThread(QtCore.QThread):
-#
-#    def __init__(self, delegate, bgOffset):
-#        super().__init__()
-#        self.delegate = delegate
-#        self.motor = delegate.motor
-#        self.camera = delegate.camera
-#        self._md = delegate._md
-#        self.XYcorrector = XYcorrector(self.motor, self.camera)
-#        self.Zcorrector = Zcorrector(
-#            self.motor, self.camera, 500, delegate.parent.imageCanvas)
-#        self._bgOffset = np.asarray(bgOffset)
-#
-#    def run(self):
-#        self.lockid = self._md.lock()
-#        if self.lockid is None:
-#            self.error = "Unable to lock the mouvment"
-#            return
-#
-#        # Turn off autoshutter
-#        self.camera.auto_exposure_time(False)
-#        # go to bg position
-#        self.motor.move_by(self._bgOffset, wait=True, checkid=self.lockid)
-#        # focus using laser
-#        graphs = self.Zcorrector.focus(checkid=self.lockid)
-#        # take bg
-#        self.camera.set_bg()
-#        # return to image position
-#        self.motor.move_by(-self._bgOffset, wait=True, checkid=self.lockid)
-#        # correct XY if reference image exists, otherwise set reference image
-#        self.XYcorrector.align(checkid=self.lockid)
-#
-#        self._md.unlock()
-#
-#        self.delegate.endThread(graphs)

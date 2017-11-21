@@ -17,7 +17,7 @@ class Focus_delegate(QtCore.QObject):
         self.app_delegate = app_delegate
         self.md = app_delegate.mouvment_delegate
         self.canvas = app_delegate.canvas_delegate._canvas
-        self.thread = zThread(self.md, app_delegate.camera_delegate,
+        self.thread = zThread(app_delegate.camera_delegate,
                               app_delegate.laser_delegate,
                               self.canvas, self.addGraph)
         
@@ -30,9 +30,32 @@ class Focus_delegate(QtCore.QObject):
         self.app_delegate.canvas_delegate.switch_draw(False)
         self.canvas.plotZCorr(*self._positions[idx]["graphs"])
     
-    def focus(self, back, forth, step, precise=True):
-        self.thread.set_pos_range(back, forth, step, precise)
+
+    def focus(self, back, forth, step, Nloops=1, 
+              piezzo=False, wait=False, checkid=None):
+        """
+        back:
+            How far back from current position
+        forth:
+            How far forth from surrent position
+        step:
+            Step size
+        Nloops default 1:
+            Each loop has a 10X smaller step size.
+        piezzo default False:
+            SHould the piezzo be used
+        wait default False:
+            Should the thread wait for completion
+        """
+        if piezzo:
+            stage = self.md.piezzo
+        else:
+            stage = self.md.motor
+        self.thread.set_args(back, forth, step, Nloops, stage, checkid)
         self.thread.start()
+        
+        if wait:
+            self.thread.wait()
         
     def addGraph(self, graphs):
         self._positions.append({
@@ -66,39 +89,33 @@ class Focus_delegate(QtCore.QObject):
 
 class zThread(QtCore.QThread):
 
-    def __init__(self, md, camera, laser, canvas, addGraph):
+    def __init__(self, camera, laser, canvas, addGraph):
         super().__init__()
-        self._zcorrector = Zcorrector(md.motor, camera, canvas=canvas)
-        self._piezzo_zcorrector = Zcorrector(md.piezzo, camera, canvas=canvas)
         self.addGraph = addGraph
-        self._back = 0
-        self._forth = 0
-        self._step = 0
-        self._md = md
-
-    def set_pos_range(self, back, forth, step, precise):
-        self._back = back
-        self._forth = forth
-        self._step = step
-        self._precise = precise
+        self._zcorrector = Zcorrector(None, camera, canvas=canvas)
+        self._focus_args = None
+        
+    def set_args(self, back, forth, step, Nloops, stage, checkid):
+        self._zcorrector.stage = stage
+        self._focus_args = (back, forth, step, Nloops, checkid)
         
     def run(self):
-        lockid = self._md.lock()
-        if lockid is None:
-            self.error = "Unable to lock the mouvment"
-            return
-        graphs = self._zcorrector.focus(self._back, self._forth, self._step,
-                                        checkid=lockid)
-        self.addGraph(graphs)
-        if self._precise:
-            assert self._step <= 10
-            graphs = self._piezzo_zcorrector.focus(
-                    -(self._step + 2), (self._step + 2), 1, 
-                    checkid=lockid, N_loops=2)
-            self.addGraph(graphs)
-        self._md.unlock()
-
+        if self._focus_args is None:
+            raise RuntimeError("args not initialised!")
+            
+        if self._focus_args[-1] is None:
+            lockid = self._md.lock()
+            if lockid is None:
+                self.error = "Unable to lock the mouvment"
+                return
+        else:
+            lockid = self._focus_args[-1]
+       
         
+        graphs = self._zcorrector.focus(*self._focus_args[:-1], lockid)
+        self._md.unlock()
+        self._focus_args = None
+        self.addGraph(graphs)
 
 class Zcorrector():
 
@@ -142,7 +159,7 @@ class Zcorrector():
         self.camera.exposure_time = self._cam_exposure_time
 #         self.laser.close_shutter()
 
-    def focus(self, back, forth, step, checkid=None, N_loops=1):
+    def focus(self, back, forth, step, N_loops=1, checkid=None):
         """ Go to the best focal point for the laser
         """
         self.lockid = checkid
@@ -203,6 +220,8 @@ class Zcorrector():
         
         self.stage.goto_position([np.nan, np.nan, zBest],
                                  wait=True, checkid=self.lockid)
+        
+        self.stage.corrections["offset"][2] -= zBest
         
         
 

@@ -245,7 +245,7 @@ class Controls_tab(QtWidgets.QWidget):
         cam_autoexposure_time.toggled.connect(cd.auto_exposure_time)
         cam_extshutter.toggled.connect(cd.extShutter)
 
-        def setMotorRange(a, b):
+        def setMotorRange(corrections):
             ranges = md.motor.positionRange
             for s, r in zip(motor_selectors, ranges):
                 s.setRange(*r, 3)

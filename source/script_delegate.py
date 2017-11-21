@@ -139,7 +139,7 @@ class Execute_Parser(Parser):
         self.piezzo_delegate = app_delegate.mouvment_delegate.piezzo
         self.motor_delegate = app_delegate.mouvment_delegate.motor
         self.laser_delegate = app_delegate.laser_delegate
-        self.zcorrector = Zcorrector(self.motor_delegate, self.camera_delegate)
+        self.focus_delegate = app_delegate.focus_delegate
         
     def camera_grab(self, fname):
         im = self.camera_delegate.get_image()
@@ -149,8 +149,18 @@ class Execute_Parser(Parser):
         self.camera_delegate.set_exposure_time(exp_time)
     
     def focus(self, args):
-        back, forth, step = args
-        self.zcorrector.focus(float(back), float(forth), float(step))
+        piezzo, back, forth, step = args
+        Nloops = 1
+        if piezzo.lower() == 'piezzo':
+            piezzo = True
+            Nloops = 2
+        elif piezzo.lower() == 'motor':
+            piezzo = False
+        else:
+            raise RuntimeError(f"Don't know {piezzo}")
+            
+        self.focus_delegate.focus(float(back), float(forth), float(step), 
+                                  Nloops=Nloops, piezzo=piezzo, wait=True)
     
     def motor(self, pos, speed):
         self.motor_delegate.goto_position(pos, speed=speed, wait=True, checkid=None)
