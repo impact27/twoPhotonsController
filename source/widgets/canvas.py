@@ -7,6 +7,7 @@ Created on Wed Oct 25 13:30:56 2017
 from PyQt5 import QtCore, QtWidgets
 import numpy as np
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qt5 import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
 import sys
 import matplotlib
@@ -32,6 +33,14 @@ class MyMplCanvas(FigureCanvas):
                                    QtWidgets.QSizePolicy.Expanding,
                                    QtWidgets.QSizePolicy.Expanding)
         FigureCanvas.updateGeometry(self)
+        
+        self.toolbar = NavigationToolbar(self, parent, False)
+        
+        def notify_axes_change(fig):
+            # This will be called whenever the current axes is changed
+            if self.toolbar is not None:
+                self.toolbar.update()
+        self.figure.add_axobserver(notify_axes_change)
 
     def compute_initial_figure(self):
         pass
@@ -47,10 +56,11 @@ class Canvas(MyMplCanvas):
         self._lastim = np.zeros((2, 2))
         self.figure.canvas.mpl_connect('button_press_event', self.onImageClick)
         self._click_pos = np.array([[np.nan, np.nan], [np.nan, np.nan]])
-        self._crosshandle = None
         
     def clear(self):
         self._imhandle = None
+        self._crosshandle = None
+        self._twinx = None
         self.figure.clear()
         self._axes = self.figure.add_subplot(111)
         self.draw()
@@ -60,8 +70,7 @@ class Canvas(MyMplCanvas):
     
     def imshow(self, im, *args, **kwargs):
         self._lastim = im
-        self.figure.clear()
-        self._axes = self.figure.add_subplot(111)
+        self.clear()
         
         self._imhandle = self._axes.imshow(im, *args, **kwargs)
         
@@ -88,22 +97,30 @@ class Canvas(MyMplCanvas):
         else:
             self.imshow(im, *args, **kwargs)
     
-    def plot(self, X, Y, fmt='-', axis='normal', twinx=False, **kwargs):
+    def plot(self, X, Y, fmt='-', axis='normal', twinx=False, draw=True, **kwargs):
         if self._imhandle is not None:
             self.clear()
-        ax = self._axes
+        
         if twinx:
-            ax = self._axes.twinx()
+            if self._twinx is None:
+                self._twinx = self._axes.twinx()
+            ax = self._twinx
+        else:
+            ax = self._axes
+            
         ax.plot(X, Y, fmt, **kwargs)
         self._axes.axis(axis)
-        self.draw()
+        if draw:
+            self.draw()
+        
     
     def onImageClick(self, event):
         """A CLICK!!!!!!!!"""
         # Are we displaying an image?
         if self._imhandle is None or event.ydata is None or event.xdata is None:
             return
-        
+        if QtWidgets.QApplication.keyboardModifiers() != QtCore.Qt.ControlModifier:
+            return
         #What button was that?
         if event.button == 1:
             idx = 0
@@ -114,7 +131,10 @@ class Canvas(MyMplCanvas):
         
         self._click_pos[idx, :] = [float(event.ydata), float(event.xdata)]
         
-        self._crosshandle = self._axes.plot(
+        if self._crosshandle is not None:
+            self._crosshandle[0].set_data(self._click_pos[:,1], self._click_pos[:,0])
+        else:
+            self._crosshandle = self._axes.plot(
                     self._click_pos[:,1], self._click_pos[:,0], 'r-x')
         self.update_image(self.get_last_im())
         self.newclick.emit(self._click_pos)
@@ -146,13 +166,14 @@ class Canvas(MyMplCanvas):
             for Z, I, size in zip(list_Z, list_I, list_size):
                 self.plot(Z, I, 'x')
                 goodsize = size < 4 * np.min(size)
-                self.plot(Z[goodsize], size[goodsize], '.C2', twinx=True)
+                self.plot(Z[goodsize], size[goodsize], '.', twinx=True)
                 
-            fitI = np.poly1d(fit)(Z)
+#            fitI = np.poly1d(fit)(Z)
 #            self.plot(Z[fitI>0], fitI[fitI>0], '-')
             self.draw()
         except:
             print("Can't Plot!!!",sys.exc_info()[0])
+            raise
                 
     
     

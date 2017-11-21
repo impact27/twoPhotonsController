@@ -37,7 +37,115 @@ else:
                                               cube_controller,
                                               z_controller)
 
+class mouvment_delegate(QtCore.QObject):
+    coordinatesCorrected = QtCore.pyqtSignal(np.ndarray, np.ndarray)
+    updatePosition = QtCore.pyqtSignal()
 
+    def __init__(self, parent):
+        super().__init__()
+        self.locked = False
+        self.lockid = None
+
+        self.parent = parent
+        self.XYcorr = np.zeros(4)
+        self.zcoeff = np.zeros(3)
+
+        self.piezzo = piezzo(self)
+        self.motor = motor(self)
+
+        self.error = self.parent.error
+
+    def _checklock(self, lockid=None):
+        if not self.locked:
+            return True
+        elif self.lockid == lockid:
+            return True
+        else:
+            raise RuntimeError('Mouvment is locked!')
+
+    def lock(self):
+        if not self._checklock(None):
+            return None
+
+        self.locked = True
+        self.lockid = random.randint(0, 100)
+        return self.lockid
+
+    def unlock(self):
+        self.locked = False
+        self.lockid = None
+        
+    def stop(self):
+        self.piezzo.stop()
+        self.motor.stop()
+
+    def ESTOP(self):
+        self.piezzo.ESTOP()
+        self.motor.ESTOP()
+
+    def is_onTarget(self):
+        return (self.piezzo.is_onTarget()
+                and self.motor.is_onTarget())
+
+    @property
+    def position(self):
+        return self.motor.position + self.piezzo.position
+
+    @property
+    def is_ready(self):
+        return self.motor.is_ready() and self.piezzo.is_ready()
+
+    #==========================================================================
+    #     Corrections
+    #==========================================================================
+
+    def _set_XY_correction(self, coeffs):
+        if not self._checklock():
+            return
+        coeffs = np.array(coeffs)
+        phi, theta, *offset = coeffs
+        offset = np.asarray(offset)
+        c, s = np.cos(theta), np.sin(theta)
+        R = np.array([[c, -s], [s, c]])
+        c, s = np.cos(phi), np.sin(phi)
+        M = np.array([[1, s], [0, c]])
+
+        self.XYcorr = coeffs
+
+        self.motor.set_XY_correction(R, M, offset)
+        self.piezzo.set_XY_correction(R)
+
+    def _set_Z_correction(self, coeffs):
+        if not self._checklock():
+            return
+        self.zcoeff = coeffs
+        self.motor.set_Z_correction(coeffs)
+
+    def save_corrections(self):
+        fn = 'corrections.txt'
+        with open(fn, 'bw') as f:
+            np.savetxt(f, self.XYcorr[np.newaxis])
+            np.savetxt(f, self.zcoeff[np.newaxis])
+
+    def load_corrections(self):
+        fn = 'corrections.txt'
+        try:
+            with open(fn, 'r') as f:
+                XYcorr = np.fromstring(f.readline(), sep=" ")
+                Zcorr = np.fromstring(f.readline(), sep=" ")
+                self.set_corrections(XYcorr, Zcorr)
+        except FileNotFoundError:
+            self.parent.error.emit('No saved correction')
+
+    def set_corrections(self, XYcorr, Zcorr):
+        self._set_XY_correction(XYcorr)
+        self._set_Z_correction(Zcorr)
+        self.coordinatesCorrected.emit(XYcorr, Zcorr)
+
+    def get_corrections(self):
+        return self.XYcorr, self.zcoeff
+    
+    
 class controller(QtCore.QObject):
 
     move_signal = QtCore.pyqtSignal(list, float)
@@ -328,113 +436,4 @@ class piezzo(controller):
         self._R = R
 
 
-class mouvment_delegate(QtCore.QObject):
-    coordinatesCorrected = QtCore.pyqtSignal(np.ndarray, np.ndarray)
-    updatePosition = QtCore.pyqtSignal()
 
-    def __init__(self, parent):
-        super().__init__()
-        self.locked = False
-        self.lockid = None
-
-        self.parent = parent
-        self.XYcorr = np.zeros(4)
-        self.zcoeff = np.zeros(3)
-
-        self.piezzo = piezzo(self)
-        self.motor = motor(self)
-
-        self.error = self.parent.error
-
-    def _checklock(self, lockid):
-        if not self.locked:
-            return True
-        elif self.lockid == lockid:
-            return True
-        else:
-            self.error.emit('Mouvment is locked!')
-            return False
-
-    def lock(self):
-        if not self._checklock(None):
-            return None
-
-        self.locked = True
-        self.lockid = random.randint(0, 100)
-        return self.lockid
-
-    def unlock(self):
-        self.locked = False
-        self.lockid = None
-        
-    def stop(self):
-        self.piezzo.stop()
-        self.motor.stop()
-
-    def ESTOP(self):
-        self.piezzo.ESTOP()
-        self.motor.ESTOP()
-
-    def is_onTarget(self):
-        return (self.piezzo.is_onTarget()
-                and self.motor.is_onTarget())
-
-    @property
-    def position(self):
-        return self.motor.position + self.piezzo.position
-
-    @property
-    def is_ready(self):
-        return self.motor.is_ready() and self.piezzo.is_ready()
-
-    #==========================================================================
-    #     Corrections
-    #==========================================================================
-
-    def _set_XY_correction(self, coeffs):
-        if self.locked:
-            self.error.emit('Mouvment is locked!')
-            return
-        coeffs = np.array(coeffs)
-        phi, theta, *offset = coeffs
-        offset = np.asarray(offset)
-        c, s = np.cos(theta), np.sin(theta)
-        R = np.array([[c, -s], [s, c]])
-        c, s = np.cos(phi), np.sin(phi)
-        M = np.array([[1, s], [0, c]])
-
-        self.XYcorr = coeffs
-
-        self.motor.set_XY_correction(R, M, offset)
-        self.piezzo.set_XY_correction(R)
-
-    def _set_Z_correction(self, coeffs):
-        if self.locked:
-            self.error.emit('Mouvment is locked!')
-            return
-        self.zcoeff = coeffs
-        self.motor.set_Z_correction(coeffs)
-
-    def save_corrections(self):
-        fn = 'corrections.txt'
-        with open(fn, 'bw') as f:
-            np.savetxt(f, self.XYcorr[np.newaxis])
-            np.savetxt(f, self.zcoeff[np.newaxis])
-
-    def load_corrections(self):
-        fn = 'corrections.txt'
-        try:
-            with open(fn, 'r') as f:
-                XYcorr = np.fromstring(f.readline(), sep=" ")
-                Zcorr = np.fromstring(f.readline(), sep=" ")
-                self.set_corrections(XYcorr, Zcorr)
-        except FileNotFoundError:
-            self.parent.error.emit('No saved correction')
-
-    def set_corrections(self, XYcorr, Zcorr):
-        self._set_XY_correction(XYcorr)
-        self._set_Z_correction(Zcorr)
-        self.coordinatesCorrected.emit(XYcorr, Zcorr)
-
-    def get_corrections(self):
-        return self.XYcorr, self.zcoeff

@@ -11,6 +11,8 @@ import matplotlib
 cmap=matplotlib.cm.get_cmap('viridis')
 from PyQt5 import QtCore
 
+from focus_delegate import Zcorrector
+
 
 class Script_delegate():
     def __init__(self, app_delegate):
@@ -30,6 +32,10 @@ class Script_delegate():
         self._draw_thread.set_filename(filename)
         self._draw_thread.start()
         
+    def ESTOP(self):
+        self._execute_thread.terminate()
+        self._execute_thread.terminate()
+        
 class Parse_thread(QtCore.QThread):
     def __init__(self, parser):
         super().__init__()
@@ -40,7 +46,10 @@ class Parse_thread(QtCore.QThread):
         self._filename = filename
         
     def run(self):
-        self._parser.parse(self._filename)
+        try:
+            self._parser.parse(self._filename)
+        except:
+            print("Error while parsing")
 
 class Parser():
     
@@ -130,7 +139,7 @@ class Execute_Parser(Parser):
         self.piezzo_delegate = app_delegate.mouvment_delegate.piezzo
         self.motor_delegate = app_delegate.mouvment_delegate.motor
         self.laser_delegate = app_delegate.laser_delegate
-        self.focus_delegate = app_delegate.focus_delegate
+        self.zcorrector = Zcorrector(self.motor_delegate, self.camera_delegate)
         
     def camera_grab(self, fname):
         im = self.camera_delegate.get_image()
@@ -141,7 +150,7 @@ class Execute_Parser(Parser):
     
     def focus(self, args):
         back, forth, step = args
-        self.focus_delegate.focus(back, forth, step)
+        self.zcorrector.focus(float(back), float(forth), float(step))
     
     def motor(self, pos, speed):
         self.motor_delegate.goto_position(pos, speed=speed, wait=True, checkid=None)
@@ -162,6 +171,11 @@ class Draw_Parser(Parser):
         self.writing = False
         self.motor_position = np.zeros(3)
         self.piezzo_position = np.zeros(3)
+        
+    def parse(self, filename):
+        self.canvas.clear()
+        super().parse(filename)
+        self.canvas.draw()
     
     def plotto(self, pos):
         if self.writing:
@@ -169,7 +183,7 @@ class Draw_Parser(Parser):
             self.canvas.plot([pos[0], start[0]], 
                              [pos[1], start[1]],
                              c=self.color,
-                             axis='equal')
+                             axis='equal', draw=False)
             
     def piezzo(self, pos, speed):
         piezzo_to = self.move(self.piezzo_position, pos)

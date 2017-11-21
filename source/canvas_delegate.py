@@ -71,12 +71,6 @@ class Canvas_delegate(QtCore.QObject):
             "Images (*.tif)")
         im = self._canvas.get_last_im()
         tifffile.imsave(fn[0], np.asarray(im, dtype='float32'))
-
-    def save_fig(self):
-        fn = QtWidgets.QFileDialog.getSaveFileName(
-            self._canvas, 'PDF File', QtCore.QDir.homePath(),
-            "Images (*.pdf)")
-        self.figure.savefig(fn[0])
         
     def switch_live(self, on):
         if on:
@@ -95,11 +89,6 @@ class Canvas_delegate(QtCore.QObject):
             self.lastpos = [np.nan, np.nan]
             self.lastFracIntensity = np.nan
         self.drawSwitched.emit(on)
-        
-    def update_click(self):
-        self._crosshandle = self._axes.plot(self._click_pos[:,1], 
-                                            self._click_pos[:,0], 'r-x')
-        self.frameshow(self._lastim)
         
     def set_pixel_size(self, pxsize):
         factor = pxsize/self._pixelSize

@@ -35,7 +35,6 @@ class Bottom_widget(QtWidgets.QWidget):
 
         clear_button = QtWidgets.QPushButton('Clear Graph')
         save_im_button = QtWidgets.QPushButton('Save Image')
-        save_fig_button = QtWidgets.QPushButton('Save Figure')
 
         buttons_layout = QtWidgets.QGridLayout(self)
         buttons_layout.addWidget(live_button, 0, 0)
@@ -44,12 +43,10 @@ class Bottom_widget(QtWidgets.QWidget):
         buttons_layout.addWidget(bg_button, 1, 1)
         buttons_layout.addWidget(ESTOP_button, 0, 3, 2, 3)
         buttons_layout.addWidget(save_im_button, 0, 2)
-        buttons_layout.addWidget(save_fig_button, 1, 2)
         
         ESTOP_button.clicked.connect(application_delegate.ESTOP)
         clear_button.clicked.connect(application_delegate.canvas_delegate.clear)
         save_im_button.clicked.connect(application_delegate.canvas_delegate.save_im)
-        save_fig_button.clicked.connect(application_delegate.canvas_delegate.save_fig)
 
         def switchBGButton(on):
             if on:

@@ -50,3 +50,5 @@ class application_delegate(QtCore.QObject):
         self.focus_delegate.ESTOP()
         self.write_delegate.ESTOP()
         self.mouvment_delegate.ESTOP()
+        self.script_delegate.ESTOP()
+        self.mouvment_delegate.unlock()

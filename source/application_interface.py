@@ -86,6 +86,7 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         #     Layout
         #======================================================================
         vertical = QtWidgets.QVBoxLayout()
+        vertical.addWidget(imCanvas.toolbar, 1)
         vertical.addWidget(imCanvas, 1)
         vertical.addWidget(Canvas_widget(self.application_delegate))
         vertical.addWidget(Bottom_widget(self.application_delegate))

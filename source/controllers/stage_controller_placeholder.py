@@ -68,7 +68,7 @@ class fake_controller(stage_controller):
 
     def MOVVEL(self, X, V):
         self.position = self.get_position()
-        self.V = V
+        self.V = V*np.sign(X-self.position)
         self.startTime = time.time()
         self.target = X
 

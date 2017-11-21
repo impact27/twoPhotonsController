@@ -91,8 +91,7 @@ class write_thread(QtCore.QThread):
         self.lockid = None
         self.gcommands = None
         self.parent = parent
-        self._zcorrector = Zcorrector(self.md.motor, parent.camera_delegate, 
-                                      self.ld)
+        self._zcorrector = Zcorrector(self.md.motor, parent.camera_delegate)
         self.addGraph = parent.focus_delegate.addGraph
         
 

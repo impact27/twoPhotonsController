@@ -87,11 +87,12 @@ class doubleSelector(QtWidgets.QWidget):
         self.setLayout(layout)
 
         def updateLineInput(value):
+            if value == int(getValue()*self.factor):
+                return
             value = value / self.factor
             if self.isLog:
                 value = np.exp(value)
-            if value != getValue():
-                self.setInputValue(value)
+            self.setInputValue(value)
 
         slider.valueChanged.connect(updateLineInput)
         lineInput.editingFinished.connect(lambda:

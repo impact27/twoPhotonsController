@@ -68,7 +68,8 @@ class zThread(QtCore.QThread):
 
     def __init__(self, md, camera, laser, canvas, addGraph):
         super().__init__()
-        self._zcorrector = Zcorrector(md.motor, camera, laser, canvas)
+        self._zcorrector = Zcorrector(md.motor, camera, canvas=canvas)
+        self._piezzo_zcorrector = Zcorrector(md.piezzo, camera, canvas=canvas)
         self.addGraph = addGraph
         self._back = 0
         self._forth = 0
@@ -87,20 +88,26 @@ class zThread(QtCore.QThread):
             self.error = "Unable to lock the mouvment"
             return
         graphs = self._zcorrector.focus(self._back, self._forth, self._step,
-                                        checkid=lockid, precise=self._precise)
+                                        checkid=lockid)
+        self.addGraph(graphs)
+        if self._precise:
+            assert self._step <= 10
+            graphs = self._piezzo_zcorrector.focus(
+                    -(self._step + 2), (self._step + 2), 1, 
+                    checkid=lockid, N_loops=2)
+            self.addGraph(graphs)
         self._md.unlock()
 
-        self.addGraph(graphs)
+        
 
 class Zcorrector():
 
-    def __init__(self, motor, camera, laser, canvas=None):
+    def __init__(self, stage, camera, *,  canvas=None):
         super().__init__()
-        self.motor = motor
+        self.stage = stage
         self.camera = camera
-        self.error = None
-        self.lockid = None
         self.canvas = canvas
+        self.lockid = None
 
     def get_image_range(self, start, stop, step):
         """get the images corresponding to the positions in zPos
@@ -112,7 +119,7 @@ class Zcorrector():
         sizes = np.zeros(len(zPos))
 
         for i, z in enumerate(zPos):
-            self.motor.goto_position([np.nan, np.nan, z],
+            self.stage.goto_position([np.nan, np.nan, z],
                                      wait=True, checkid=self.lockid)
             self.camera.get_image()
             im = self.camera.get_image()
@@ -135,13 +142,13 @@ class Zcorrector():
         self.camera.exposure_time = self._cam_exposure_time
 #         self.laser.close_shutter()
 
-    def focus(self, back, forth, step, checkid=None, precise=True):
+    def focus(self, back, forth, step, checkid=None, N_loops=1):
         """ Go to the best focal point for the laser
         """
         self.lockid = checkid
         self.startlaser()
 
-        Z = self.motor.position[2]
+        Z = self.stage.position[2]
         z_start = Z + back
         z_stop = Z + forth
         
@@ -151,13 +158,11 @@ class Zcorrector():
         list_int = []
         list_sizes = []
 
-        for i in range(2):
-#            if precise:
+        for i in range(N_loops):
+
             zPos, intensity, sizes = self.get_image_range(
                         z_start, z_stop, current_step)
-#            else:
-#                zPos, intensity, sizes = self.get_image_range_quick(
-#                        z_start, z_stop, current_step)  
+
             
             argbest = np.argmax(intensity)
             
@@ -196,7 +201,7 @@ class Zcorrector():
         if self.canvas is not None:
             self.canvas.plotZCorr(*ret)
         
-        self.motor.goto_position([np.nan, np.nan, zBest],
+        self.stage.goto_position([np.nan, np.nan, zBest],
                                  wait=True, checkid=self.lockid)
         
         
@@ -204,44 +209,44 @@ class Zcorrector():
         # save result and position
         return ret
 
-    def get_image_range_quick(self, start, stop, step):
-        
-        
-        #Move to start
-        self.motor.goto_position([np.nan, np.nan, start],
-                                     wait=True, checkid=self.lockid)
-        
-        z_array = [self.motor.position[2]]
-        intensities = []
-        sizes = []
-        
-        #Compute speed assuming 5fps
-        speed = step*5
-        
-        #Move to finish with small speed
-        self.motor.goto_position([np.nan, np.nan, stop], speed=speed,
-                                     wait=False, checkid=self.lockid)
-        #while not finished, record position and intensity
-        stop = False
-        while not stop:
-            im = self.camera.get_image()
-            mymax = np.amax(im)
-            size = np.sum(im>mymax/10)
-            intensities.append(mymax)
-            sizes.append(size)
-            z_array.append(self.motor.position[2])
-            #Stop if condition met
-            if mymax < np.max(intensities)/2:
-                self.motor.stop(True, checkid=self.lockid)
-                stop = True
-            if self.motor.is_onTarget():
-                stop =True
-        
-        z_array = np.asarray(z_array)
-        z_array = z_array[:-1] + np.diff(z_array)/2
-        
-        return z_array, np.asarray(intensities), np.asarray(sizes)
-        
+#    def get_image_range_quick(self, start, stop, step):
+#        
+#        
+#        #Move to start
+#        self.motor.goto_position([np.nan, np.nan, start],
+#                                     wait=True, checkid=self.lockid)
+#        
+#        z_array = [self.motor.position[2]]
+#        intensities = []
+#        sizes = []
+#        
+#        #Compute speed assuming 5fps
+#        speed = step*5
+#        
+#        #Move to finish with small speed
+#        self.motor.goto_position([np.nan, np.nan, stop], speed=speed,
+#                                     wait=False, checkid=self.lockid)
+#        #while not finished, record position and intensity
+#        stop = False
+#        while not stop:
+#            im = self.camera.get_image()
+#            mymax = np.amax(im)
+#            size = np.sum(im>mymax/10)
+#            intensities.append(mymax)
+#            sizes.append(size)
+#            z_array.append(self.motor.position[2])
+#            #Stop if condition met
+#            if mymax < np.max(intensities)/2:
+#                self.motor.stop(True, checkid=self.lockid)
+#                stop = True
+#            if self.motor.is_onTarget():
+#                stop =True
+#        
+#        z_array = np.asarray(z_array)
+#        z_array = z_array[:-1] + np.diff(z_array)/2
+#        
+#        return z_array, np.asarray(intensities), np.asarray(sizes)
+#        
             
         
         
