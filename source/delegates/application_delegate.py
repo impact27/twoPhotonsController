@@ -17,25 +17,29 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
+import sys
 from PyQt5 import QtCore
-from coordinates_delegate import coordinates_delegate
-from mouvment_delegate import mouvment_delegate
-from write_delegate import write_delegate
-from laser_delegate import laser_delegate
-from camera_delegate import camera_delegate
-from focus_delegate import Focus_delegate
-from canvas_delegate import Canvas_delegate
-from script_delegate import Script_delegate
+
+from .coordinates_delegate import coordinates_delegate
+from .mouvment_delegate import mouvment_delegate
+from .write_delegate import write_delegate
+from .laser_delegate import laser_delegate
+from .camera_delegate import camera_delegate
+from .focus_delegate import Focus_delegate
+from .canvas_delegate import Canvas_delegate
+from .script_delegate import Script_delegate
+
+from widgets.application_interface import ApplicationWindow
 
 
-class application_delegate(QtCore.QObject):
+class Application_delegate(QtCore.QObject):
     error = QtCore.pyqtSignal(str)
 
-    def __init__(self, canvas):
+    def __init__(self):
         super().__init__()
         
         # Create delegates for I/O
-        self.canvas_delegate = Canvas_delegate(self, canvas)
+        self.canvas_delegate = Canvas_delegate(self)
         self.mouvment_delegate = mouvment_delegate(self)
         self.camera_delegate = camera_delegate()
         self.laser_delegate = laser_delegate()
@@ -45,6 +49,8 @@ class application_delegate(QtCore.QObject):
         # Create delegates for actions
         self.coordinates_delegate = coordinates_delegate(self)
         self.write_delegate = write_delegate(self)
+        
+        self.mainWindow = ApplicationWindow(self, self.canvas_delegate._canvas)
 
     def ESTOP(self):
         self.focus_delegate.ESTOP()
@@ -52,3 +58,4 @@ class application_delegate(QtCore.QObject):
         self.mouvment_delegate.ESTOP()
         self.script_delegate.ESTOP()
         self.mouvment_delegate.unlock()
+         

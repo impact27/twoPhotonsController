@@ -18,9 +18,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 from PyQt5 import QtCore, QtWidgets
-from application_delegate import application_delegate
 
-from widgets.canvas import Canvas
 from widgets.coordinates_tab import Coordinates_tab
 from widgets.write_tab import Write_tab
 from widgets.controls_tab import Controls_tab
@@ -30,7 +28,7 @@ from widgets.script_tab import Script_tab
 from widgets.canvas_tab import Canvas_widget
 
 class ApplicationWindow(QtWidgets.QMainWindow):
-    def __init__(self):
+    def __init__(self, application_delegate, imCanvas):
 
         # Init everything
         QtWidgets.QMainWindow.__init__(self)
@@ -52,11 +50,8 @@ class ApplicationWindow(QtWidgets.QMainWindow):
 
 #        self.statusBar().showMessage("Hello", 2000)
 
-        # Create canevas
-        imCanvas = Canvas()
-
         # create appication delegate
-        self.application_delegate = application_delegate(imCanvas)
+        self.application_delegate = application_delegate
 
         #======================================================================
         #       Create Widgets

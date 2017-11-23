@@ -21,8 +21,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import numpy as np
 import sys
 from PyQt5 import QtCore
-from gcode import gcode_reader, gcode_checker, gcode_draw
 from serial.serialutil import SerialTimeoutException
+
+from .gcode import gcode_reader, gcode_checker, gcode_draw
 
 class write_delegate(QtCore.QObject):
     def __init__(self, parent):

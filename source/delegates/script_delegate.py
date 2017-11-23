@@ -133,11 +133,21 @@ class Execute_Parser(Parser):
     def __init__(self, app_delegate):
         super().__init__()
         self.camera_delegate = app_delegate.camera_delegate
+        self.md = app_delegate.mouvment_delegate
         self.piezzo_delegate = app_delegate.mouvment_delegate.piezzo
         self.motor_delegate = app_delegate.mouvment_delegate.motor
         self.laser_delegate = app_delegate.laser_delegate
         self.focus_delegate = app_delegate.focus_delegate
-        
+        self.lockid = None
+     
+    def parse(self, filename):
+        self.lockid = self.md.lock()
+        if self.lockid is None:
+            raise RuntimeError("Can't lock motion")
+        super().parse(filename)
+        self.md.unlock()
+        self.lockid = None
+                
     def camera_grab(self, fname):
         im = self.camera_delegate.get_image()
         tifffile.imsave(fname, im)
@@ -147,23 +157,34 @@ class Execute_Parser(Parser):
     
     def focus(self, args):
         piezzo, back, forth, step = args
-        Nloops = 1
+        back, forth, step = float(back), float(forth), float(step)
         if piezzo.lower() == 'piezzo':
-            piezzo = True
-            Nloops = 2
+            self.focus_delegate.focus(back, forth, step, 
+                                      Nloops=2, piezzo=True, wait=True,
+                                      checkid=self.lockid)
         elif piezzo.lower() == 'motor':
-            piezzo = False
+            self.focus_delegate.focus(back, forth, step, 
+                                      Nloops=1, piezzo=False, wait=True,
+                                      checkid=self.lockid)
+        elif piezzo.lower() == 'both':
+            self.focus_delegate.focus(back, forth, step, 
+                                      Nloops=1, piezzo=False, wait=True,
+                                      checkid=self.lockid)
+            self.focus_delegate.focus(-2, 2, 1, 
+                                      Nloops=2, piezzo=True, wait=True,
+                                      checkid=self.lockid)
         else:
             raise RuntimeError(f"Don't know {piezzo}")
             
-        self.focus_delegate.focus(float(back), float(forth), float(step), 
-                                  Nloops=Nloops, piezzo=piezzo, wait=True)
+        
     
     def motor(self, pos, speed):
-        self.motor_delegate.goto_position(pos, speed=speed, wait=True, checkid=None)
+        self.motor_delegate.goto_position(pos, speed=speed, wait=True,
+                                          checkid=self.lockid)
         
     def piezzo(self, pos, speed):
-        self.piezzo_delegate.goto_position(pos, speed=speed, wait=True, checkid=None)
+        self.piezzo_delegate.goto_position(pos, speed=speed, wait=True,
+                                          checkid=self.lockid)
     
     def laser_state(self, state):
         self.laser_delegate.switch(state)

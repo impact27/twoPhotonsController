@@ -166,8 +166,8 @@ class Zcorrector():
             intensities[i] = mymax
             sizes[i] = size
             if mymax == 255:
-                if i > 0:
-                    start = zPos[i-1]
+                if i > 1:
+                    start = zPos[i-2]
                 self.decrease_power()
                 return self.get_image_range(start, stop, step)
             

@@ -18,9 +18,11 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 import numpy as np
-#from position_correctors import XYcorrector
-from coordinates_solver import Zsolver, XYsolver
 from PyQt5 import QtCore, QtWidgets
+
+#from position_correctors import XYcorrector
+from .coordinates_solver import Zsolver, XYsolver
+
 
 
 class coordinates_delegate(QtCore.QObject):

@@ -11,15 +11,17 @@ import tifffile
 import matplotlib
 cmap = matplotlib.cm.get_cmap('plasma')
 
+from widgets.canvas import Canvas
+
 class Canvas_delegate(QtCore.QObject):
     newrange = QtCore.pyqtSignal(float, float)
     liveSwitched = QtCore.pyqtSignal(bool)
     drawSwitched = QtCore.pyqtSignal(bool)
     
-    def __init__(self, parent, canvas):
+    def __init__(self, parent):
         super().__init__()
         self._parent = parent
-        self._canvas = canvas
+        self._canvas = Canvas()
         
         # Create timers
         self.live_timer = QtCore.QTimer()
