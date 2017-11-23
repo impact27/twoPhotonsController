@@ -124,8 +124,9 @@ class coordinates_delegate(QtCore.QObject):
             zcoeffs = np.zeros(3)
             xycoeffs = np.zeros(4)
             
+        Zslope = np.zeros(2)
         stage_diff_angle, rotation_angle, *XYoffset = xycoeffs
-        Zslope, Zoffset = zcoeffs
+        Zslope[0], Zslope[1], Zoffset = zcoeffs
         offset = np.asarray([*XYoffset, Zoffset])
         
         corrections = {

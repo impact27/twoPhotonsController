@@ -158,19 +158,21 @@ class Execute_Parser(Parser):
     def focus(self, args):
         piezzo, back, forth, step = args
         back, forth, step = float(back), float(forth), float(step)
+        #TODO: change that
+        intensity = 1
         if piezzo.lower() == 'piezzo':
-            self.focus_delegate.focus(back, forth, step, 
+            self.focus_delegate.focus(back, forth, step, intensity,
                                       Nloops=2, piezzo=True, wait=True,
                                       checkid=self.lockid)
         elif piezzo.lower() == 'motor':
-            self.focus_delegate.focus(back, forth, step, 
+            self.focus_delegate.focus(back, forth, step, intensity,
                                       Nloops=1, piezzo=False, wait=True,
                                       checkid=self.lockid)
         elif piezzo.lower() == 'both':
-            self.focus_delegate.focus(back, forth, step, 
+            self.focus_delegate.focus(back, forth, step, intensity, 
                                       Nloops=1, piezzo=False, wait=True,
                                       checkid=self.lockid)
-            self.focus_delegate.focus(-2, 2, 1, 
+            self.focus_delegate.focus(-2, 2, 1, intensity,
                                       Nloops=2, piezzo=True, wait=True,
                                       checkid=self.lockid)
         else:

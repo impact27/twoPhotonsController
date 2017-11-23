@@ -113,14 +113,22 @@ class write_thread(QtCore.QThread):
             focus_range = self.settings['focus range']
             focus_step = self.settings['focus step']
             move_dist = self.settings['movment retraction']
-            
+            intensity = .5
 
             if Nx == 1:
                 dx = 1
             if Ny == 1:
                 dy = 1
-
-            z = self.md.motor.position[2]
+                
+             # Focus with z stage
+            self.focus_delegate.focus(-focus_range/2, focus_range/2, focus_step, 
+                                      intensity=intensity,
+                                      Nloops=1, piezzo=False, 
+                                      wait=True,
+                                      checkid=self.lockid)
+            
+            intensity = self.ld.get_intensity()
+                
             for par, y in enumerate(np.arange(yori, yori + Ny * dy, dy)):
                 # Want to draw s
                 parity = 2 * ((par + 1) % 2) - 1
@@ -128,18 +136,19 @@ class write_thread(QtCore.QThread):
                     # Retract
                     goto([np.nan,
                           np.nan,
-                          z - move_dist])
+                          - move_dist])
                     # Move to pos
                     goto([x + focus_offset[0], 
                           y + focus_offset[1], 
-                          z - move_dist])
+                          - move_dist])
     
                     # approach
                     goto([x + focus_offset[0], 
                           y + focus_offset[1], 
-                          z - focus_range / 2])
+                          - focus_range / 2])
                     # Focus with z stage
                     self.focus_delegate.focus(0, focus_range, focus_step, 
+                                              intensity=intensity,
                                               Nloops=1, piezzo=False, 
                                               wait=True,
                                               checkid=self.lockid)
@@ -148,7 +157,8 @@ class write_thread(QtCore.QThread):
                     goto([x, y, 0])
                     
                     #Focus with piezzo
-                    self.focus_delegate.focus(-5, 5, 1, 
+                    self.focus_delegate.focus(-5, 5, 1,
+                                              intensity=intensity,
                                               Nloops=2, piezzo=True,
                                               wait=True,
                                               checkid=self.lockid)

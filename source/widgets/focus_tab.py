@@ -91,6 +91,7 @@ class Focus_tab(QtWidgets.QWidget):
             float(back_input.text()),
             float(forth_input.text()),
             float(step_input.text()),
+            intensity=1,
             Nloops=int(Nloops_input.text()),
             piezzo=precision_check.isChecked()))
 
