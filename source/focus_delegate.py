@@ -31,7 +31,7 @@ class Focus_delegate(QtCore.QObject):
         self.canvas.plotZCorr(*self._positions[idx]["graphs"])
     
 
-    def focus(self, back, forth, step, Nloops=1, 
+    def focus(self, back, forth, step, Nloops=1, *, intensity=None, 
               piezzo=False, wait=False, checkid=None):
         """
         back:
@@ -51,7 +51,7 @@ class Focus_delegate(QtCore.QObject):
             stage = self.md.piezzo
         else:
             stage = self.md.motor
-        self.thread.set_args(back, forth, step, Nloops, stage, checkid)
+        self.thread.set_args(back, forth, step, Nloops, stage, intensity, checkid)
         self.thread.run()
 #        self.thread.start()
         
@@ -93,13 +93,13 @@ class zThread(QtCore.QThread):
     def __init__(self, mouvment_delegate, camera, laser, canvas, addGraph):
         super().__init__()
         self.addGraph = addGraph
-        self._zcorrector = Zcorrector(None, camera, canvas=canvas)
+        self._zcorrector = Zcorrector(None, camera, laser, canvas=canvas)
         self._focus_args = None
         self._md = mouvment_delegate
         
-    def set_args(self, back, forth, step, Nloops, stage, checkid):
+    def set_args(self, back, forth, step, Nloops, stage, intensity, checkid):
         self._zcorrector.stage = stage
-        self._focus_args = (back, forth, step, Nloops, checkid)
+        self._focus_args = (back, forth, step, Nloops, intensity, checkid)
         
     def run(self):
         if self._focus_args is None:
@@ -121,12 +121,31 @@ class zThread(QtCore.QThread):
 
 class Zcorrector():
 
-    def __init__(self, stage, camera, *,  canvas=None):
+    def __init__(self, stage, camera, laser, *,  canvas=None):
         super().__init__()
         self.stage = stage
         self.camera = camera
         self.canvas = canvas
         self.lockid = None
+        self.laser = laser
+    
+    def decrease_power(self):
+        V = self.laser.get_intensity()
+        V = 0.8*V
+        self.laser.set_intensity(V)
+        
+    def startlaser(self, intensity):
+        self.camera.auto_exposure_time(False)
+        self._cam_exposure_time = self.camera.exposure_time
+        self.camera.set_exposure_time(self.camera.exposure_time_range()[0])
+        if intensity is not None:
+            self.laser.set_intensity(intensity)
+        self.camera.extShutter(True)
+#         self.laser.open_shutter()
+
+    def endlaser(self):
+        self.camera.exposure_time = self._cam_exposure_time
+#         self.laser.close_shutter()
 
     def get_image_range(self, start, stop, step):
         """get the images corresponding to the positions in zPos
@@ -146,26 +165,22 @@ class Zcorrector():
             size = np.sum(im>mymax/10)
             intensities[i] = mymax
             sizes[i] = size
+            if mymax == 255:
+                if i > 0:
+                    start = zPos[i-1]
+                self.decrease_power()
+                return self.get_image_range(start, stop, step)
+            
             if mymax < np.max(intensities)/2:
                 return zPos, intensities, sizes
              
         return zPos, intensities, sizes
 
-    def startlaser(self):
-        self.camera.auto_exposure_time(False)
-        self._cam_exposure_time = self.camera.exposure_time
-        self.camera.set_exposure_time(self.camera.exposure_time_range()[0])
-#         self.laser.open_shutter()
-
-    def endlaser(self):
-        self.camera.exposure_time = self._cam_exposure_time
-#         self.laser.close_shutter()
-
-    def focus(self, back, forth, step, N_loops=1, checkid=None):
+    def focus(self, back, forth, step, N_loops=1, intensity=None, checkid=None):
         """ Go to the best focal point for the laser
         """
         self.lockid = checkid
-        self.startlaser()
+        self.startlaser(intensity)
 
         Z = self.stage.position[2]
         z_start = Z + back

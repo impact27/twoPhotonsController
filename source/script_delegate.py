@@ -11,9 +11,6 @@ import matplotlib
 cmap=matplotlib.cm.get_cmap('viridis')
 from PyQt5 import QtCore
 
-from focus_delegate import Zcorrector
-
-
 class Script_delegate():
     def __init__(self, app_delegate):
         super().__init__()

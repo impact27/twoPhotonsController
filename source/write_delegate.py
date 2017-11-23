@@ -23,8 +23,6 @@ import sys
 from PyQt5 import QtCore
 from gcode import gcode_reader, gcode_checker, gcode_draw
 from serial.serialutil import SerialTimeoutException
-from focus_delegate import Zcorrector
-
 
 class write_delegate(QtCore.QObject):
     def __init__(self, parent):
@@ -134,7 +132,7 @@ class write_thread(QtCore.QThread):
                     goto([x + focus_offset[0], 
                           y + focus_offset[1], 
                           z - move_dist])
-                    # TODO: remove comments
+    
                     # approach
                     goto([x + focus_offset[0], 
                           y + focus_offset[1], 
@@ -166,11 +164,12 @@ class write_thread(QtCore.QThread):
 
         self.md.unlock()
 
-    def writeGCode(self,):
+    def writeGCode(self):
         self.parent.camera_delegate.extShutter(False)
         defaultCubeSpeed = self.md.piezzo.get_velocity()
         writer = gwriter(self.md.piezzo, self.ld, self.lockid)
         writer.readGcommands(self.gcommands)
+        self.ld.set_intensity(0)
         self.md.piezzo.set_velocity(defaultCubeSpeed, checkid=self.lockid)
         self.parent.camera_delegate.extShutter(True)
 
