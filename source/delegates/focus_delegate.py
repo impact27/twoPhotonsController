@@ -52,8 +52,7 @@ class Focus_delegate(QtCore.QObject):
         else:
             stage = self.md.motor
         self.thread.set_args(back, forth, step, Nloops, stage, intensity, checkid)
-        self.thread.run()
-#        self.thread.start()
+        self.thread.start()
         
         if wait:
             self.thread.wait()
@@ -223,10 +222,11 @@ class Zcorrector():
         self.endlaser()
         
         Y = intensity
-        if intensity[argbest] == 255:
-            Y = sizes
             
-        close = np.abs(zPos-zPos[argbest]) < step/2
+        
+        close = intensity > .8*intensity.max()
+        if np.sum(close) < 4:
+            close = np.abs(zPos-zPos[argbest]) < 1.5*step
         fit = np.polyfit(zPos[close], Y[close], 2)
         zBest = -fit[1]/(2*fit[0])
         
@@ -234,7 +234,7 @@ class Zcorrector():
         
         if self.canvas is not None:
             self.canvas.plotZCorr(*ret)
-        
+            
         self.stage.goto_position([np.nan, np.nan, zBest],
                                  wait=True, checkid=self.lockid)
         

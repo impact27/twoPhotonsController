@@ -189,7 +189,6 @@ class cube_controller(stage_controller):
 
     def set_stage(self, stage):
         self.cube = stage
-        self.MOVVEL([50, 50, 25], [100, 100, 100])
 
     def reconnect(self):
         if self.cube is not None:
