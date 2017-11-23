@@ -143,7 +143,7 @@ class Canvas(MyMplCanvas):
     
     def clear_click(self):
         self.set_click_pos(np.array([[np.nan, np.nan], [np.nan, np.nan]]))
-        self._crosshandle = None
+        self._crosshandle[0].set_data(np.nan, np.nan)
         if self._imhandle is not None:
             self.update_image(self.get_last_im())
     
