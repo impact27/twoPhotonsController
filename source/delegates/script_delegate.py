@@ -8,6 +8,7 @@ import tifffile
 import numpy as np
 import re
 import matplotlib
+import sys
 cmap=matplotlib.cm.get_cmap('viridis')
 from PyQt5 import QtCore
 
@@ -47,6 +48,7 @@ class Parse_thread(QtCore.QThread):
             self._parser.parse(self._filename)
         except:
             print("Error while parsing")
+            print(sys.exc_info())
 
 class Parser():
     
@@ -162,21 +164,26 @@ class Execute_Parser(Parser):
         back, forth, step = float(back), float(forth), float(step)
         #TODO: change that
         if piezzo.lower() == 'piezzo':
-            self.focus_delegate.focus(back, forth, step, intensity,
+            self.focus_delegate.focus(back, forth, step,
+                                      self.focus_intensity,
                                       Nloops=2, piezzo=True, wait=True,
                                       checkid=self.lockid)
         elif piezzo.lower() == 'motor':
-            self.focus_delegate.focus(back, forth, step, intensity,
+            self.focus_delegate.focus(back, forth, step,
+                                      self.focus_intensity,
                                       Nloops=1, piezzo=False, wait=True,
                                       checkid=self.lockid)
         elif piezzo.lower() == 'both':
-            self.focus_delegate.focus(back, forth, step, intensity, 
+            self.focus_delegate.focus(back, forth, step,
+                                      self.focus_intensity, 
                                       Nloops=1, piezzo=False, wait=True,
                                       checkid=self.lockid)
-            self.focus_delegate.focus(-2, 2, 1, intensity,
+            self.focus_delegate.focus(-2, 2, 1,
+                                      self.focus_intensity,
                                       Nloops=2, piezzo=True, wait=True,
                                       checkid=self.lockid)
         else:
+            self.md.unlock()
             raise RuntimeError(f"Don't know {piezzo}")
             
         self.focus_intensity = self.laser_delegate.get_intensity()
@@ -239,4 +246,4 @@ class Draw_Parser(Parser):
         self.writing = state
     
     def laser_power(self, power):
-        self.color = cmap(power/100)
+        self.color = cmap(power/10)

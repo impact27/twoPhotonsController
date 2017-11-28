@@ -19,6 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 import numpy as np
 import serial
+import time
 
 from .HW_conf import laser_power_COM
 
@@ -27,15 +28,29 @@ class laser_controller():
     def __init__(self):
         self.ser = None
         self.reconnect()
+        self.buffer = ''
+        
+    def readline(self, timeout = 1):
+        start = time.time()
+        while '\n' not in self.buffer and time.time() < start + timeout:
+            self.buffer += self.ser.read_all().decode()
+        if '\n' not in self.buffer:
+            raise RuntimeError("Laser timeout")
+        idx = self.buffer.find('\n')+1
+        ret = self.buffer[:idx]
+        self.buffer = self.buffer[idx:]
+        return ret
+        
 
     def reconnect(self):
         del self.ser
         self.ser = serial.Serial(laser_power_COM, timeout=1)
         self.sendCommand('*IDN?')
-        res = self.ser.readline().decode()
+        res = self.readline()
         print(res)
 
     def sendCommand(self, cmd):
+        self.buffer = ''
         self.ser.write('{}\n'.format(cmd).encode())
 
     def __del__(self):
@@ -54,8 +69,8 @@ class laser_controller():
 
     def get_intensity(self):
         self.sendCommand('V?')
-        res = self.ser.readline().decode()[:-2]
-        return float(res[2:])
+        res = self.readline()
+        return float(res[2:-2])
 
     def switch(self, on):
         if on:
@@ -65,7 +80,7 @@ class laser_controller():
 
     def get_state(self):
         self.sendCommand('OUT?')
-        res = self.ser.readline().decode()[:-2]
+        res = self.readline()[:-2]
         if res == 'OUT ON':
             return True
         elif res == 'OUT OFF':
@@ -73,7 +88,7 @@ class laser_controller():
         else:
             print(res)
             return None
-
+        
 
 
 #%%
