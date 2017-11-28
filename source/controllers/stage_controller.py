@@ -339,9 +339,6 @@ class z_controller(stage_controller):
             raise
 
     def move_to(self, pos, timeout=0):
-        currpos = self.get_position()
-        if np.abs(pos - currpos)< 0.01:
-            return
         try:
             pos = pos / 1000
             # Move the device to position 0. We specify 0 as the wait timeout
