@@ -139,6 +139,7 @@ class Execute_Parser(Parser):
         self.laser_delegate = app_delegate.laser_delegate
         self.focus_delegate = app_delegate.focus_delegate
         self.lockid = None
+        self.focus_intensity = .5
      
     def parse(self, filename):
         self.lockid = self.md.lock()
@@ -149,6 +150,7 @@ class Execute_Parser(Parser):
         self.lockid = None
                 
     def camera_grab(self, fname):
+        self.camera_delegate.extShutter(True)
         im = self.camera_delegate.get_image()
         tifffile.imsave(fname, im)
     
@@ -159,7 +161,6 @@ class Execute_Parser(Parser):
         piezzo, back, forth, step = args
         back, forth, step = float(back), float(forth), float(step)
         #TODO: change that
-        intensity = 1
         if piezzo.lower() == 'piezzo':
             self.focus_delegate.focus(back, forth, step, intensity,
                                       Nloops=2, piezzo=True, wait=True,
@@ -178,6 +179,8 @@ class Execute_Parser(Parser):
         else:
             raise RuntimeError(f"Don't know {piezzo}")
             
+        self.focus_intensity = self.laser_delegate.get_intensity()
+            
         
     
     def motor(self, pos, speed):
@@ -189,9 +192,12 @@ class Execute_Parser(Parser):
                                           checkid=self.lockid)
     
     def laser_state(self, state):
+        if state:
+            self.camera_delegate.extShutter(False)
         self.laser_delegate.switch(state)
         
     def laser_power(self, power):
+        self.camera_delegate.extShutter(False)
         self.laser_delegate.set_intensity(power)
 
 class Draw_Parser(Parser):

@@ -51,8 +51,6 @@ class laser_delegate(QtCore.QObject):
             self.I = self.controller.get_intensity()
 
     def get_intensity(self):
-        if not self.state:
-            return 0
         return self.controller.get_intensity()
 
     def switch(self, state):
