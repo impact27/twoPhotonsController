@@ -186,7 +186,7 @@ class controller(QtCore.QObject):
         self._lastXs = Xs
 
         # Don't move if final = now
-        if np.all(Xs == XsFrom):
+        if np.linalg.norm(Xs - XsFrom) < 1e-3:
             return
 
         # Get correct speed for each axis
