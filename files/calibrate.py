@@ -6,9 +6,9 @@ Created on Thu Nov  2 15:18:13 2017
 """
 import numpy as np
 
-powers = np.arange(40, 101, 10)#mW
-speeds = np.arange(20, 201, 20)#umph
-z_offsets = np.arange(-3, 0.1, .5)#um
+powers = np.array([2.14, 2.76, 3.43, 4.38])#mW
+speeds = np.arange(20, 201, 20)#umps
+z_offsets = np.arange(-3, 4, 1)#um
 
 motor_step = 125
 motor_origin = [25000, 25000]
@@ -16,7 +16,7 @@ motor_origin = [25000, 25000]
 lines = []
 for xpos, power in enumerate(powers):
     line_space = 5 + power / np.max(powers) * 5
-    lines.append("laser power {:d}".format(power))
+    lines.append("laser power {:f}".format(power))
     lines.append("motor X{:.2f}".format(xpos*motor_step + motor_origin [0]))
     
     for ypos, speed in enumerate(speeds):
