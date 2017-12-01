@@ -291,11 +291,13 @@ class z_controller(stage_controller):
             1000 * self._kCubeDCServoMotor.AdvancedMotorLimits.VelocityMaximum]
 
     def MOVVEL(self, X, V):
-        if V[0] >= 1:
-            self.set_velocity(V[0])
-            self.move_to(X[0])
+        if V[0] < 1:
+            V[0] = 1
         else:
-            print("Not moving")
+            print("Ajusting speed")
+        self.set_velocity(V[0])
+        self.move_to(X[0])
+        
 
     def is_ready(self):
         return not self._kCubeDCServoMotor.IsDeviceBusy

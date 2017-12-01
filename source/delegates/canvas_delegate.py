@@ -39,17 +39,19 @@ class Canvas_delegate(QtCore.QObject):
         self._vmax = 255
         
     def show_frame(self, frame=None):
-        
-        if frame is None:
-            frame = self._parent.camera_delegate.get_image()
-            frame = cv2.resize(frame, (frame.shape[1]//2, frame.shape[0]//2), 
-                           interpolation=cv2.INTER_AREA)
-
-        extent = (0, frame.shape[1]*self._pixelSize,
-                  0, frame.shape[0]*self._pixelSize)
-        
-        self._canvas.update_image(
-                frame, vmin=self._vmin, vmax=self._vmax, extent=extent)
+        try:
+            if frame is None:
+                frame = self._parent.camera_delegate.get_image()
+                frame = cv2.resize(frame, (frame.shape[1]//2, frame.shape[0]//2), 
+                               interpolation=cv2.INTER_AREA)
+    
+            extent = (0, frame.shape[1]*self._pixelSize,
+                      0, frame.shape[0]*self._pixelSize)
+            
+            self._canvas.update_image(
+                    frame, vmin=self._vmin, vmax=self._vmax, extent=extent)
+        except:
+            print("Can't show frame")
         
     def show_image(self, image):
         self._canvas.imshow(image)

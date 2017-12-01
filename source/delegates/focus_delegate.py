@@ -47,6 +47,8 @@ class Focus_delegate(QtCore.QObject):
         wait default False:
             Should the thread wait for completion
         """
+        if intensity is None:
+            intensity = self.app_delegate.laser_delegate.get_intensity()
         if piezzo:
             stage = self.md.piezzo
         else:
@@ -73,7 +75,8 @@ class Focus_delegate(QtCore.QObject):
                 data = pos["graphs"][0]
                 for scan_idx in range(data.shape[1]):
                     f.write(('{} pass:\n').format(scan_idx).encode())
-                    np.savetxt(f, data[:, scan_idx])
+                    for line in data[:, scan_idx]:
+                       np.savetxt(f, line)
                 f.write(('Best: {}\n').format(pos["graphs"][1]).encode())
                 
     
@@ -158,7 +161,7 @@ class Zcorrector():
 
         for i, z in enumerate(zPos):
             self.stage.goto_position([np.nan, np.nan, z],
-                                     wait=True, checkid=self.lockid)
+                                     wait=True, checkid=self.lockid, isRaw=True)
             self.camera.restart_streaming()
             im = self.camera.get_image()
             mymax = np.amax(im)
@@ -171,7 +174,7 @@ class Zcorrector():
                 self.decrease_power()
                 return self.get_image_range(start, stop, step)
             
-            if mymax < np.max(intensities)/2:
+            if mymax < np.max(intensities)/3:
                 return zPos, intensities, sizes
              
         return zPos, intensities, sizes
@@ -182,7 +185,7 @@ class Zcorrector():
         self.lockid = checkid
         self.startlaser(intensity)
 
-        Z = self.stage.position[2]
+        Z = self.stage.get_position(raw=True)[2]
         z_start = Z + back
         z_stop = Z + forth
         
@@ -236,11 +239,9 @@ class Zcorrector():
         ret = np.asarray([list_zpos, list_int, list_sizes]), zBest
             
         self.stage.goto_position([np.nan, np.nan, zBest],
-                                 wait=True, checkid=self.lockid)
+                                 wait=True, checkid=self.lockid, isRaw=True)
         
-        corrections = self.stage.corrections
-        corrections["offset"][2] += zBest
-        self.stage.corrections = corrections
+        self.stage.set_raw_Z_zero(zBest)
         
         # save result and position
         return ret

@@ -155,7 +155,7 @@ class controller(QtCore.QObject):
 
         Any value of Xm set to nan will not be moved
         """
-        self.move_signal.emit(list(Xm), speed)
+        
         Xm = np.asarray(Xm)
         # Check lock
         if not self.parent._checklock(checkid):
@@ -178,11 +178,13 @@ class controller(QtCore.QObject):
         if isRaw:
             Xs = Xm
             Xs[toreplace] = XsFrom[toreplace]
+            Xm = self.XstoXm(Xs)
         else:
             if np.any(toreplace):
                 Xm[toreplace] = self.XstoXm(XsFrom)[toreplace]
             Xs = self.XmtoXs(Xm)
-
+            
+        self.move_signal.emit(list(Xm), speed)
         self._lastXs = Xs
 
         # Don't move if final = now
@@ -292,6 +294,12 @@ class controller(QtCore.QObject):
         Xs[:2] = np.linalg.inv(M)@Xs[:2]
         Xs[2] += self._getZPlane(Xs[:2])
         return Xs
+    
+    def set_raw_Z_zero(self, Zzero):
+        actualZ = self.XmtoXs([*self.position[:2], 0])[2]
+        self.corrections["offset"] = np.asarray(self.corrections["offset"], 
+                                                float)
+        self.corrections["offset"][2] += Zzero - actualZ
 
     def is_ready(self):
         pass
