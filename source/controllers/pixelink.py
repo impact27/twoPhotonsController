@@ -115,7 +115,7 @@ class PxLapi(object):
     # define FEATURE_IRIS                    9
     # define FEATURE_FOCUS                   10
     # define FEATURE_SENSOR_TEMPERATURE      11
-    # define FEATURE_TRIGGER                 12
+    FEATURE_TRIGGER = 12
     # define FEATURE_ZOOM                    13
     # define FEATURE_PAN                     14
     # define FEATURE_TILT                    15
@@ -147,7 +147,7 @@ class PxLapi(object):
     # more specific, as the temperature is from the sensor */
 
     # For PxLGetCameraFeatures
-    # define FEATURE_ALL 0xFFFFFFFF
+    FEATURE_ALL = 0xFFFFFFFF
 
     # Feature Flags
     # define FEATURE_FLAG_PRESENCE       0x00000001  /* The feature is supported on this camera. */
@@ -253,6 +253,42 @@ class PxLapi(object):
             msg += ' function: %s' % self.strFunctionName
             return msg
 
+    class FEATURE_PARAM(C.Structure):
+        _fields_ = [
+            ("fMinValue", C.c_float),
+            ("fMaxValue", C.c_float),
+        ]
+        def __str__(self):
+            return "Min: {:f} Max: {:f}".format(self.fMinValue, self.fMaxValue)
+        
+    class CAMERA_FEATURE(C.Structure):
+        _fields_ = [
+            ("uFeatureId", C.c_uint),#U32
+            ("uFlags", C.c_uint),#U32
+            ("uNumberOfParameters", C.c_uint),#U32
+            ("pParams", C.POINTER(FEATURE_PARAM)),
+        ]
+        def __str__(self):
+            msg = ''
+            msg += "FeatureID : {}".format(self.uFeatureId)
+            msg += "Flags : {}".format(self.uFlags)
+            msg += "NumberOfParameters : {}".format(self.uNumberOfParameters)
+            msg += "Params : {}".format(C.from_address(self.pParams))
+            return msg
+        
+    class CAMERA_FEATURES(C.Structure):
+        _fields_ = [
+            ("uSize", C.c_uint),#U32
+            ("uNumberOfFeatures", C.c_uint),#U32
+            ("pFeatures", C.POINTER(CAMERA_FEATURE)),
+        ]
+        def __str__(self):
+            msg = ''
+            msg += "Size : {}".format(self.uSize)
+            msg += "NumberOfFeatures : {}".format(self.uNumberOfFeatures)
+            msg += "Features : {}".format(C.from_address(self.pFeatures))
+            return msg
+    
     # -------------------------------------------------------------------------
     def __init__(self, useReturnCodes=False, libPath=DLL_PATH):
         self.__lib = C.windll.LoadLibrary(libPath)
@@ -436,7 +472,28 @@ class PxLapi(object):
                 return (rc, value[0])
             else:
                 return (rc, [float(v) for v in value])
+    
+    @wrap_return_code
+    def GetAllFeature(self, hCamera, numParams=1):
+        """ Retrieve a camera setting using the feature id definitions. """
+        value = (C.c_float * numParams)()
+        flags = C.c_ulong(0)
+        paramLen = C.c_ulong(numParams)
+        rc = self.__lib.PxLGetCameraFeatures(
+            hCamera,
+            PxLapi.FEATURE_ALL,
+            C.byref(flags),
+            C.byref(paramLen),
+            C.byref(value))
+        if rc < 0:
+            return (rc, 0)
+        else:
+            if numParams == 1:
+                return (rc, value[0])
+            else:
+                return (rc, [float(v) for v in value])
 
+    
     # -------------------------------------------------------------------------
     @wrap_return_code
     def SetFeature(self, hCamera, feature, value):
@@ -597,6 +654,16 @@ class PixeLINK(Camera):
     @shutter.setter
     def shutter(self, seconds):
         return self.set_property_value(PxLapi.FEATURE_SHUTTER, seconds)
+    
+     # --------------------------------------------------------------------------
+    @property
+    def trigger(self):
+        return self.get_property_value(PxLapi.FEATURE_TRIGGER)
+
+    # --------------------------------------------------------------------------
+    @trigger.setter
+    def trigger(self, seconds):
+        return self.set_property_value(PxLapi.FEATURE_TRIGGER, seconds)
 
     # --------------------------------------------------------------------------
     @property
@@ -729,7 +796,7 @@ def TestCameraAPI():
         #        print(serialNums)
 
         hCamera = api.Initialize(pixeLINK_SN)
-
+        
         # test integration time setting
         print("shutter", api.GetFeature(hCamera, PxLapi.FEATURE_SHUTTER))
         api.SetFeature(hCamera, PxLapi.FEATURE_SHUTTER, 1.5)
