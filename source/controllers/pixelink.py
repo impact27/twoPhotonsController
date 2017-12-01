@@ -474,24 +474,27 @@ class PxLapi(object):
                 return (rc, [float(v) for v in value])
     
     @wrap_return_code
-    def GetAllFeature(self, hCamera, numParams=1):
+    def GetAllFeature(self, hCamera):
         """ Retrieve a camera setting using the feature id definitions. """
-        value = (C.c_float * numParams)()
-        flags = C.c_ulong(0)
-        paramLen = C.c_ulong(numParams)
+        BufferSize = C.c_int(0)
         rc = self.__lib.PxLGetCameraFeatures(
             hCamera,
             PxLapi.FEATURE_ALL,
-            C.byref(flags),
-            C.byref(paramLen),
-            C.byref(value))
+            None,
+            C.byref(BufferSize))
         if rc < 0:
             return (rc, 0)
         else:
-            if numParams == 1:
-                return (rc, value[0])
+            FeatureInfo = (CAMERA_FEATURES * BufferSize)()
+            rc = self.__lib.PxLGetCameraFeatures(
+                hCamera,
+                PxLapi.FEATURE_ALL,
+                C.byref(FeatureInfo),
+                C.byref(BufferSize))
+            if rc < 0:
+                return (rc, 0)
             else:
-                return (rc, [float(v) for v in value])
+                return rc, BufferSize, FeatureInfo
 
     
     # -------------------------------------------------------------------------
@@ -797,6 +800,7 @@ def TestCameraAPI():
 
         hCamera = api.Initialize(pixeLINK_SN)
         
+        print(api.GetAllFeature(hCamera))
         # test integration time setting
         print("shutter", api.GetFeature(hCamera, PxLapi.FEATURE_SHUTTER))
         api.SetFeature(hCamera, PxLapi.FEATURE_SHUTTER, 1.5)
