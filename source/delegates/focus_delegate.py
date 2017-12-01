@@ -70,7 +70,11 @@ class Focus_delegate(QtCore.QObject):
         with open(fn, 'bw') as f:
             for pos in self._positions:
                 f.write((str(pos["Xs"]) + '\n').encode())
-                np.savetxt(f, pos["graphs"])
+                data = pos["graphs"][0]
+                for scan_idx in range(data.shape[1]):
+                    f.write(('{} pass:\n').format(scan_idx).encode())
+                    np.savetxt(f, data[:, scan_idx])
+                f.write(('Best: {}\n').format(pos["graphs"][1]).encode())
                 
     
     def clear(self):
@@ -229,7 +233,7 @@ class Zcorrector():
         if np.abs(zBest - zPos[argbest]) > 2*step:
             zBest = zPos[argbest]
         
-        ret = np.asarray([list_zpos, list_int, list_sizes]), fit
+        ret = np.asarray([list_zpos, list_int, list_sizes]), zBest
             
         self.stage.goto_position([np.nan, np.nan, zBest],
                                  wait=True, checkid=self.lockid)

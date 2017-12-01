@@ -33,25 +33,6 @@ class camera_controller():
 
     def get_image(self):
         return np.random.rand(50, 100) * 256
-        fns = 'Misc/Images/50_50/*.bmp'
-        reg = 'Misc/Images\/50_50\/(\d+)\.bmp'
-        fns = glob(fns)
-        if fns != []:
-            fns = np.array(fns)
-            X = np.array([int(re.search(reg, fn)[1]) for fn in fns])
-            fns = fns[np.argsort(X)]
-            X = X[np.argsort(X)]
-
-            if z is not None:
-                idx = np.argmin((z - X)**2)
-                fn = fns[idx]
-            else:
-                fn = random.choice(fns)
-            im = imread(fn)[:, :, 0]
-            return im
-        else:
-            print(fns)
-            return np.random.rand(50, 50) * 256
 
     def exposure_time_range(self):
         return [1.9e-5, .1]
@@ -63,4 +44,7 @@ class camera_controller():
         return self.exposure_time
     
     def ext_shutter(self, Open):
+        pass
+    
+    def restart_streaming(self):
         pass

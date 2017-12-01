@@ -159,7 +159,7 @@ class Canvas(MyMplCanvas):
         return self._imhandle is not None
     # TODO: give to focus    
         
-    def plotZCorr(self, data, fit):
+    def plotZCorr(self, data, zBest):
         try:
             list_Z, list_I, list_size = data
             self.clear()
@@ -167,9 +167,7 @@ class Canvas(MyMplCanvas):
                 self.plot(Z, I, 'x')
                 goodsize = size < 4 * np.min(size)
                 self.plot(Z[goodsize], size[goodsize], '.', twinx=True)
-                
-#            fitI = np.poly1d(fit)(Z)
-#            self.plot(Z[fitI>0], fitI[fitI>0], '-')
+            self.plot(zBest*np.ones(2), self._axes.get_ylim(), 'k-')
             self.draw()
         except:
             print("Can't Plot!!!",sys.exc_info()[0])

@@ -73,3 +73,6 @@ class camera_delegate(QtCore.QObject):
 
     def set_bg(self):
         self._bg = self.controller.get_image()
+        
+    def restart_streaming(self):
+        self.controller.restart_streaming()
