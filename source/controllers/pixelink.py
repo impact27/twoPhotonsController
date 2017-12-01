@@ -59,7 +59,7 @@ import threading
 import ctypes as C
 import ctypes.wintypes as W
 from functools import wraps
-from HW_conf import pixeLINK_SN
+from .HW_conf import pixeLINK_SN
 
 try:
     # try and import numpy, if it is not installed on the user's computer
