@@ -111,7 +111,8 @@ class CAMERA_FEATURE(C.Structure):
         msg += "FeatureID : {}\n".format(self.uFeatureId)
         msg += "Flags : {}\n".format(self.uFlags)
         msg += "NumberOfParameters : {}\n".format(self.uNumberOfParameters)
-        msg += "Params : {}\n".format(self.pParams.contents)
+#        for i in range(self.uNumberOfParameters):
+#            msg += str(self.pParams[i])
         return msg
     
 class CAMERA_FEATURES(C.Structure):
@@ -124,8 +125,9 @@ class CAMERA_FEATURES(C.Structure):
         msg = ''
         msg += "Size : {}\n".format(self.uSize)
         msg += "NumberOfFeatures : {}\n".format(self.uNumberOfFeatures)
-        for i in range(self.uNumberOfFeatures.value):
+        for i in range(self.uNumberOfFeatures):
             msg += str(self.pFeatures[i])
+            msg += '\n'
         return msg
 # =============================================================================
 class PxLapi(object):
