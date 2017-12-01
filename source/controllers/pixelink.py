@@ -91,7 +91,41 @@ except ImportError:
         def grab(self):
             return self._get_frame()
 
-
+class FEATURE_PARAM(C.Structure):
+    _fields_ = [
+        ("fMinValue", C.c_float),
+        ("fMaxValue", C.c_float),
+    ]
+    def __str__(self):
+        return "Min: {:f} Max: {:f}".format(self.fMinValue, self.fMaxValue)
+    
+class CAMERA_FEATURE(C.Structure):
+    _fields_ = [
+        ("uFeatureId", C.c_uint),#U32
+        ("uFlags", C.c_uint),#U32
+        ("uNumberOfParameters", C.c_uint),#U32
+        ("pParams", C.POINTER(FEATURE_PARAM)),
+    ]
+    def __str__(self):
+        msg = ''
+        msg += "FeatureID : {}".format(self.uFeatureId)
+        msg += "Flags : {}".format(self.uFlags)
+        msg += "NumberOfParameters : {}".format(self.uNumberOfParameters)
+        msg += "Params : {}".format(C.from_address(self.pParams))
+        return msg
+    
+class CAMERA_FEATURES(C.Structure):
+    _fields_ = [
+        ("uSize", C.c_uint),#U32
+        ("uNumberOfFeatures", C.c_uint),#U32
+        ("pFeatures", C.POINTER(CAMERA_FEATURE)),
+    ]
+    def __str__(self):
+        msg = ''
+        msg += "Size : {}".format(self.uSize)
+        msg += "NumberOfFeatures : {}".format(self.uNumberOfFeatures)
+        msg += "Features : {}".format(C.from_address(self.pFeatures))
+        return msg
 # =============================================================================
 class PxLapi(object):
     """
@@ -253,41 +287,7 @@ class PxLapi(object):
             msg += ' function: %s' % self.strFunctionName
             return msg
 
-    class FEATURE_PARAM(C.Structure):
-        _fields_ = [
-            ("fMinValue", C.c_float),
-            ("fMaxValue", C.c_float),
-        ]
-        def __str__(self):
-            return "Min: {:f} Max: {:f}".format(self.fMinValue, self.fMaxValue)
-        
-    class CAMERA_FEATURE(C.Structure):
-        _fields_ = [
-            ("uFeatureId", C.c_uint),#U32
-            ("uFlags", C.c_uint),#U32
-            ("uNumberOfParameters", C.c_uint),#U32
-            ("pParams", C.POINTER(FEATURE_PARAM)),
-        ]
-        def __str__(self):
-            msg = ''
-            msg += "FeatureID : {}".format(self.uFeatureId)
-            msg += "Flags : {}".format(self.uFlags)
-            msg += "NumberOfParameters : {}".format(self.uNumberOfParameters)
-            msg += "Params : {}".format(C.from_address(self.pParams))
-            return msg
-        
-    class CAMERA_FEATURES(C.Structure):
-        _fields_ = [
-            ("uSize", C.c_uint),#U32
-            ("uNumberOfFeatures", C.c_uint),#U32
-            ("pFeatures", C.POINTER(CAMERA_FEATURE)),
-        ]
-        def __str__(self):
-            msg = ''
-            msg += "Size : {}".format(self.uSize)
-            msg += "NumberOfFeatures : {}".format(self.uNumberOfFeatures)
-            msg += "Features : {}".format(C.from_address(self.pFeatures))
-            return msg
+    
     
     # -------------------------------------------------------------------------
     def __init__(self, useReturnCodes=False, libPath=DLL_PATH):
@@ -474,24 +474,27 @@ class PxLapi(object):
                 return (rc, [float(v) for v in value])
     
     @wrap_return_code
-    def GetAllFeature(self, hCamera, numParams=1):
+    def GetAllFeature(self, hCamera):
         """ Retrieve a camera setting using the feature id definitions. """
-        value = (C.c_float * numParams)()
-        flags = C.c_ulong(0)
-        paramLen = C.c_ulong(numParams)
+        BufferSize = C.c_int(0)
         rc = self.__lib.PxLGetCameraFeatures(
             hCamera,
             PxLapi.FEATURE_ALL,
-            C.byref(flags),
-            C.byref(paramLen),
-            C.byref(value))
+            None,
+            C.byref(BufferSize))
         if rc < 0:
             return (rc, 0)
         else:
-            if numParams == 1:
-                return (rc, value[0])
+            FeatureInfo = (CAMERA_FEATURES * BufferSize)()
+            rc = self.__lib.PxLGetCameraFeatures(
+                hCamera,
+                PxLapi.FEATURE_ALL,
+                C.byref(FeatureInfo),
+                C.byref(BufferSize))
+            if rc < 0:
+                return (rc, 0)
             else:
-                return (rc, [float(v) for v in value])
+                return rc, BufferSize, FeatureInfo
 
     
     # -------------------------------------------------------------------------
@@ -797,6 +800,7 @@ def TestCameraAPI():
 
         hCamera = api.Initialize(pixeLINK_SN)
         
+        print(api.GetAllFeature(hCamera))
         # test integration time setting
         print("shutter", api.GetFeature(hCamera, PxLapi.FEATURE_SHUTTER))
         api.SetFeature(hCamera, PxLapi.FEATURE_SHUTTER, 1.5)
