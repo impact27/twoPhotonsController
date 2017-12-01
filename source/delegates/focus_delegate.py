@@ -155,7 +155,7 @@ class Zcorrector():
         for i, z in enumerate(zPos):
             self.stage.goto_position([np.nan, np.nan, z],
                                      wait=True, checkid=self.lockid)
-            self.camera.get_image()
+            self.camera.restart_streaming()
             im = self.camera.get_image()
             mymax = np.amax(im)
             size = np.sum(im>mymax/10)
