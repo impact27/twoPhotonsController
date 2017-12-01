@@ -162,7 +162,6 @@ class Execute_Parser(Parser):
     def focus(self, args):
         piezzo, back, forth, step = args
         back, forth, step = float(back), float(forth), float(step)
-        #TODO: change that
         if piezzo.lower() == 'piezzo':
             self.focus_delegate.focus(back, forth, step,
                                       self.focus_intensity,
@@ -204,7 +203,8 @@ class Execute_Parser(Parser):
         self.laser_delegate.switch(state)
         
     def laser_power(self, power):
-        self.camera_delegate.extShutter(False)
+        if power > 0:
+            self.camera_delegate.extShutter(False)
         self.laser_delegate.set_intensity(power)
 
 class Draw_Parser(Parser):
