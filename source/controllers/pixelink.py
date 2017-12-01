@@ -124,7 +124,8 @@ class CAMERA_FEATURES(C.Structure):
         msg = ''
         msg += "Size : {}\n".format(self.uSize)
         msg += "NumberOfFeatures : {}\n".format(self.uNumberOfFeatures)
-        msg += "Features : {}\n".format(self.pFeatures.contents)
+        for i in range(self.uNumberOfFeatures.value):
+            msg += str(self.pFeatures[i])
         return msg
 # =============================================================================
 class PxLapi(object):
@@ -485,7 +486,8 @@ class PxLapi(object):
         if rc < 0:
             return (rc, 0)
         else:
-            FeatureInfo = (CAMERA_FEATURES * BufferSize.value)()
+            FeatureInfo = CAMERA_FEATURES()
+            C.resize(FeatureInfo, BufferSize.value)
             rc = self.__lib.PxLGetCameraFeatures(
                 hCamera,
                 PxLapi.FEATURE_ALL,
@@ -494,7 +496,7 @@ class PxLapi(object):
             if rc < 0:
                 return (rc, 0)
             else:
-                return rc, (BufferSize, FeatureInfo)
+                return rc, FeatureInfo
 
     
     # -------------------------------------------------------------------------
@@ -799,9 +801,8 @@ def TestCameraAPI():
         #        print(serialNums)
 
         hCamera = api.Initialize(pixeLINK_SN)
-        ret = api.GetAllFeature(hCamera)
-        for feature in ret[1]:
-            print(feature)
+        featuresinfo = api.GetAllFeature(hCamera)
+        print(featuresinfo)
         # test integration time setting
         print("shutter", api.GetFeature(hCamera, PxLapi.FEATURE_SHUTTER))
         api.SetFeature(hCamera, PxLapi.FEATURE_SHUTTER, 1.5)
