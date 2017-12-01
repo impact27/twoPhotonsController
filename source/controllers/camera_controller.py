@@ -59,6 +59,11 @@ class camera_controller():
 
     def get_exposure_time(self):
         return self.cam.shutter
+    
+    def restart_streaming(self):
+        self.cam.streaming = False
+        self.cam.streaming = True
+        
 
     def ext_shutter(self, Open):
         if Open:
