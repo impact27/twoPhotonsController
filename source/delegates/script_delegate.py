@@ -214,6 +214,7 @@ class Draw_Parser(Parser):
         self.writing = False
         self.motor_position = np.zeros(3)
         self.piezzo_position = np.zeros(3)
+        self.color = cmap(0)
         
     def parse(self, filename):
         self.canvas.clear()
