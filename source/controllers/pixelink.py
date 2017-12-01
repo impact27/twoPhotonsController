@@ -59,7 +59,7 @@ import threading
 import ctypes as C
 import ctypes.wintypes as W
 from functools import wraps
-from .HW_conf import pixeLINK_SN
+from HW_conf import pixeLINK_SN
 
 try:
     # try and import numpy, if it is not installed on the user's computer
@@ -91,7 +91,41 @@ except ImportError:
         def grab(self):
             return self._get_frame()
 
-
+class FEATURE_PARAM(C.Structure):
+    _fields_ = [
+        ("fMinValue", C.c_float),
+        ("fMaxValue", C.c_float),
+    ]
+    def __str__(self):
+        return "Min: {:f} Max: {:f}".format(self.fMinValue, self.fMaxValue)
+    
+class CAMERA_FEATURE(C.Structure):
+    _fields_ = [
+        ("uFeatureId", C.c_uint),#U32
+        ("uFlags", C.c_uint),#U32
+        ("uNumberOfParameters", C.c_uint),#U32
+        ("pParams", C.POINTER(FEATURE_PARAM)),
+    ]
+    def __str__(self):
+        msg = ''
+        msg += "FeatureID : {}".format(self.uFeatureId)
+        msg += "Flags : {}".format(self.uFlags)
+        msg += "NumberOfParameters : {}".format(self.uNumberOfParameters)
+        msg += "Params : {}".format(C.from_address(self.pParams))
+        return msg
+    
+class CAMERA_FEATURES(C.Structure):
+    _fields_ = [
+        ("uSize", C.c_uint),#U32
+        ("uNumberOfFeatures", C.c_uint),#U32
+        ("pFeatures", C.POINTER(CAMERA_FEATURE)),
+    ]
+    def __str__(self):
+        msg = ''
+        msg += "Size : {}".format(self.uSize)
+        msg += "NumberOfFeatures : {}".format(self.uNumberOfFeatures)
+        msg += "Features : {}".format(C.from_address(self.pFeatures))
+        return msg
 # =============================================================================
 class PxLapi(object):
     """
@@ -253,41 +287,7 @@ class PxLapi(object):
             msg += ' function: %s' % self.strFunctionName
             return msg
 
-    class FEATURE_PARAM(C.Structure):
-        _fields_ = [
-            ("fMinValue", C.c_float),
-            ("fMaxValue", C.c_float),
-        ]
-        def __str__(self):
-            return "Min: {:f} Max: {:f}".format(self.fMinValue, self.fMaxValue)
-        
-    class CAMERA_FEATURE(C.Structure):
-        _fields_ = [
-            ("uFeatureId", C.c_uint),#U32
-            ("uFlags", C.c_uint),#U32
-            ("uNumberOfParameters", C.c_uint),#U32
-            ("pParams", C.POINTER(FEATURE_PARAM)),
-        ]
-        def __str__(self):
-            msg = ''
-            msg += "FeatureID : {}".format(self.uFeatureId)
-            msg += "Flags : {}".format(self.uFlags)
-            msg += "NumberOfParameters : {}".format(self.uNumberOfParameters)
-            msg += "Params : {}".format(C.from_address(self.pParams))
-            return msg
-        
-    class CAMERA_FEATURES(C.Structure):
-        _fields_ = [
-            ("uSize", C.c_uint),#U32
-            ("uNumberOfFeatures", C.c_uint),#U32
-            ("pFeatures", C.POINTER(CAMERA_FEATURE)),
-        ]
-        def __str__(self):
-            msg = ''
-            msg += "Size : {}".format(self.uSize)
-            msg += "NumberOfFeatures : {}".format(self.uNumberOfFeatures)
-            msg += "Features : {}".format(C.from_address(self.pFeatures))
-            return msg
+    
     
     # -------------------------------------------------------------------------
     def __init__(self, useReturnCodes=False, libPath=DLL_PATH):
