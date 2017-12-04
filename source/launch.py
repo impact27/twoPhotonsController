@@ -22,6 +22,5 @@ from delegates.application_delegate import Application_delegate
 from PyQt5 import QtWidgets
 
 qApp = QtWidgets.QApplication(sys.argv)
-Application_delegate()
+ad = Application_delegate()
 sys.exit(qApp.exec_())
-

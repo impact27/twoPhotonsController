@@ -9,57 +9,59 @@ import numpy as np
 import re
 import matplotlib
 import sys
-cmap=matplotlib.cm.get_cmap('viridis')
+cmap = matplotlib.cm.get_cmap('viridis')
 from PyQt5 import QtCore
+
 
 class Script_delegate():
     def __init__(self, app_delegate):
         super().__init__()
 
         self._execute_thread = Parse_thread(Execute_Parser(app_delegate))
-        
+
         self._draw_thread = Parse_thread(
-                Draw_Parser(app_delegate.canvas_delegate._canvas))
-    
+            Draw_Parser(app_delegate.canvas_delegate))
+
     def execute(self, filename):
         self._execute_thread.set_filename(filename)
         self._execute_thread.start()
-        
-    
+
     def draw(self, filename):
         self._draw_thread.set_filename(filename)
         self._draw_thread.start()
-        
+
     def ESTOP(self):
         self._execute_thread.terminate()
         self._execute_thread.terminate()
-        
+
+
 class Parse_thread(QtCore.QThread):
     def __init__(self, parser):
         super().__init__()
         self._filename = ''
         self._parser = parser
-        
+
     def set_filename(self, filename):
         self._filename = filename
-        
+
     def run(self):
         try:
             self._parser.parse(self._filename)
-        except:
+        except BaseException:
             print("Error while parsing")
             print(sys.exc_info())
 
+
 class Parser():
-    
+
     def __init__(self):
         super().__init__()
-        
+
     def parse(self, filename):
         with open(filename) as f:
             for line in f.readlines():
                 self.readline(line)
-        
+
     def readline(self, line):
         line = line.strip()
         line = line.split(' ')
@@ -69,7 +71,7 @@ class Parser():
             getattr(self, command)(arg)
         elif command.lower() in ['piezzo', 'motor']:
             getattr(self, command)(*self.read_move_args(arg))
-            
+
     def laser(self, args):
         if len(args) == 0:
             print("No args for laser")
@@ -79,10 +81,10 @@ class Parser():
             self.laser_state(False)
         elif args[0].lower() == "power":
             self.laser_power(float(args[1]))
-            
+
     def read_move_args(self, args):
         pos_re = '([XYZF])([-\.\d]+)'
-        pos = np.ones(3)*np.nan
+        pos = np.ones(3) * np.nan
         speed = np.nan
         for arg in args:
             for found in re.findall(pos_re, arg):
@@ -95,42 +97,39 @@ class Parser():
                 elif found[0] == 'F':
                     speed = float(found[1])
         return pos, speed
-    
+
     def camera(self, args):
         if len(args) != 2:
             raise RuntimeError(f"{args} not understood")
         subcommand, arg = args
-        
+
         if subcommand.lower() == 'grab':
             self.camera_grab(arg)
         elif subcommand.lower() == 'exposure':
             self.camera_exposure(float(arg))
-    
+
     def camera_grab(self, fname):
         pass
-    
+
     def camera_exposure(self, exp_time):
         pass
-    
+
     def focus(self, args):
         pass
-    
+
     def motor(self, pos, speed):
         pass
-        
+
     def piezzo(self, pos, speed):
         pass
-    
+
     def laser_state(self, state):
         pass
-        
+
     def laser_power(self, power):
         pass
-    
-    
-        
 
-            
+
 class Execute_Parser(Parser):
     def __init__(self, app_delegate):
         super().__init__()
@@ -141,8 +140,8 @@ class Execute_Parser(Parser):
         self.laser_delegate = app_delegate.laser_delegate
         self.focus_delegate = app_delegate.focus_delegate
         self.lockid = None
-        self.focus_intensity = .5
-     
+        self.focus_intensity = None
+
     def parse(self, filename):
         self.lockid = self.md.lock()
         if self.lockid is None:
@@ -150,15 +149,15 @@ class Execute_Parser(Parser):
         super().parse(filename)
         self.md.unlock()
         self.lockid = None
-                
+
     def camera_grab(self, fname):
         self.camera_delegate.extShutter(True)
         im = self.camera_delegate.get_image()
         tifffile.imsave(fname, im)
-    
+
     def camera_exposure(self, exp_time):
         self.camera_delegate.set_exposure_time(exp_time)
-    
+
     def focus(self, args):
         piezzo, back, forth, step = args
         back, forth, step = float(back), float(forth), float(step)
@@ -174,7 +173,7 @@ class Execute_Parser(Parser):
                                       checkid=self.lockid)
         elif piezzo.lower() == 'both':
             self.focus_delegate.focus(back, forth, step,
-                                      self.focus_intensity, 
+                                      self.focus_intensity,
                                       Nloops=1, piezzo=False, wait=True,
                                       checkid=self.lockid)
             self.focus_delegate.focus(-2, 2, 1,
@@ -184,67 +183,66 @@ class Execute_Parser(Parser):
         else:
             self.md.unlock()
             raise RuntimeError(f"Don't know {piezzo}")
-            
+
         self.focus_intensity = self.laser_delegate.get_intensity()
-            
-        
-    
+
     def motor(self, pos, speed):
         self.motor_delegate.goto_position(pos, speed=speed, wait=True,
                                           checkid=self.lockid)
-        
+
     def piezzo(self, pos, speed):
         self.piezzo_delegate.goto_position(pos, speed=speed, wait=True,
-                                          checkid=self.lockid)
-    
+                                           checkid=self.lockid)
+
     def laser_state(self, state):
         if state:
             self.camera_delegate.extShutter(False)
         self.laser_delegate.switch(state)
-        
+
     def laser_power(self, power):
         if power > 0:
             self.camera_delegate.extShutter(False)
         self.laser_delegate.set_intensity(power)
+
 
 class Draw_Parser(Parser):
     def __init__(self, canvas):
         super().__init__()
         self.canvas = canvas
         self.writing = False
-        self.motor_position = np.zeros(3)
-        self.piezzo_position = np.zeros(3)
+        self.motor_position = np.zeros(3) * np.nan
+        self.piezzo_position = np.zeros(3) * np.nan
         self.color = cmap(0)
-        
+
     def parse(self, filename):
         self.canvas.clear()
         super().parse(filename)
         self.canvas.draw()
-    
+
     def plotto(self, pos):
         if self.writing:
             start = self.motor_position + self.piezzo_position
-            self.canvas.plot([pos[0], start[0]], 
+            self.canvas.plot([pos[0], start[0]],
                              [pos[1], start[1]],
                              c=self.color,
                              axis='equal', draw=False)
-            
+
     def piezzo(self, pos, speed):
         piezzo_to = self.move(self.piezzo_position, pos)
         self.plotto(piezzo_to + self.motor_position)
         self.piezzo_position = piezzo_to
-    
+
     def motor(self, pos, speed):
         motor_to = self.move(self.motor_position, pos)
         self.plotto(motor_to + self.piezzo_position)
         self.motor_position = motor_to
-    
+
     def move(self, start_position, pos):
         pos[np.isnan(pos)] = start_position[np.isnan(pos)]
         return pos
-    
+
     def laser_state(self, state):
         self.writing = state
-    
+
     def laser_power(self, power):
-        self.color = cmap(power/10)
+        self.color = cmap(power / 10)

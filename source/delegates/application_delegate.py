@@ -37,7 +37,7 @@ class Application_delegate(QtCore.QObject):
 
     def __init__(self):
         super().__init__()
-        
+
         # Create delegates for I/O
         self.canvas_delegate = Canvas_delegate(self)
         self.mouvment_delegate = mouvment_delegate(self)
@@ -49,7 +49,7 @@ class Application_delegate(QtCore.QObject):
         # Create delegates for actions
         self.coordinates_delegate = coordinates_delegate(self)
         self.write_delegate = write_delegate(self)
-        
+
         self.mainWindow = ApplicationWindow(self, self.canvas_delegate._canvas)
 
     def ESTOP(self):
@@ -58,4 +58,3 @@ class Application_delegate(QtCore.QObject):
         self.mouvment_delegate.ESTOP()
         self.script_delegate.ESTOP()
         self.mouvment_delegate.unlock()
-         

@@ -25,6 +25,7 @@ from serial.serialutil import SerialTimeoutException
 
 from .gcode import gcode_reader, gcode_checker, gcode_draw
 
+
 class write_delegate(QtCore.QObject):
     def __init__(self, parent):
         super().__init__()
@@ -58,26 +59,26 @@ class write_delegate(QtCore.QObject):
     def ESTOP(self):
         self.thread.terminate()
         self.parent.mouvment_delegate.unlock()
-        
+
     def draw(self, gpath, settings):
 
         greader = gcode_draw()
         greader.readFile(gpath)
 
         gwritten = greader.getDrawing()
-        
+
         xori, yori = settings['XY origin']
         Nx, Ny = settings['[X, Y] number of steps']
         dx, dy = settings['[X, Y] steps size']
-        
+
         if Nx == 1:
             dx = 1
         if Ny == 1:
             dy = 1
         for x in np.arange(xori, xori + Nx * dx, dx):
             for y in np.arange(yori, yori + Ny * dy, dy):
-                self.parent.canvas_delegate._canvas.plot(
-                        gwritten[:, 0] + x, gwritten[:, 1] + y, axis='equal')
+                self.parent.canvas_delegate.plot(
+                    gwritten[:, 0] + x, gwritten[:, 1] + y, axis='equal')
 
 
 class write_thread(QtCore.QThread):
@@ -99,13 +100,14 @@ class write_thread(QtCore.QThread):
     def run(self):
         try:
             self.lockid = self.md.lock()
+
             def goto(X):
                 self.md.motor.goto_position(X, wait=True, checkid=self.lockid)
 
             if self.lockid is None:
                 self.error = "Unable to lock the mouvment"
                 return
-            
+
             xori, yori = self.settings['XY origin']
             Nx, Ny = self.settings['[X, Y] number of steps']
             dx, dy = self.settings['[X, Y] steps size']
@@ -113,22 +115,21 @@ class write_thread(QtCore.QThread):
             focus_range = self.settings['focus range']
             focus_step = self.settings['focus step']
             move_dist = self.settings['movment retraction']
-            intensity = .5
 
             if Nx == 1:
                 dx = 1
             if Ny == 1:
                 dy = 1
-                
+
              # Focus with z stage
-            self.focus_delegate.focus(-focus_range/2, focus_range/2, focus_step, 
-                                      intensity=intensity,
-                                      Nloops=1, piezzo=False, 
+            self.focus_delegate.focus(-focus_range / 2, focus_range / 2, focus_step,
+                                      intensity=None,
+                                      Nloops=1, piezzo=False,
                                       wait=True,
                                       checkid=self.lockid)
-            
+
             intensity = self.ld.get_intensity()
-                
+
             for par, y in enumerate(np.arange(yori, yori + Ny * dy, dy)):
                 # Want to draw s
                 parity = 2 * ((par + 1) % 2) - 1
@@ -138,37 +139,37 @@ class write_thread(QtCore.QThread):
                           np.nan,
                           - move_dist])
                     # Move to pos
-                    goto([x + focus_offset[0], 
-                          y + focus_offset[1], 
+                    goto([x + focus_offset[0],
+                          y + focus_offset[1],
                           - move_dist])
-    
+
                     # approach
-                    goto([x + focus_offset[0], 
-                          y + focus_offset[1], 
+                    goto([x + focus_offset[0],
+                          y + focus_offset[1],
                           - focus_range / 2])
                     # Focus with z stage
-                    self.focus_delegate.focus(0, focus_range, focus_step, 
+                    self.focus_delegate.focus(0, focus_range, focus_step,
                                               intensity=intensity,
-                                              Nloops=1, piezzo=False, 
+                                              Nloops=1, piezzo=False,
                                               wait=True,
                                               checkid=self.lockid)
-                    
+
                     # Move to pos
                     goto([x, y, 0])
-                    
-                    #Focus with piezzo
+
+                    # Focus with piezzo
                     self.focus_delegate.focus(-5, 5, 1,
                                               intensity=intensity,
                                               Nloops=2, piezzo=True,
                                               wait=True,
                                               checkid=self.lockid)
-                    
+
                     # Write
                     self.writeGCode()
 
         except SerialTimeoutException:
             self.parent.error('Timeout')
-        except:
+        except BaseException:
             print("Unknown exception during write")
             print(sys.exc_info()[0])
             raise

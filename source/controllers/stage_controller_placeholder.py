@@ -19,23 +19,24 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 import time
 import numpy as np
+from PyQt5 import QtCore
 
 #==============================================================================
 # Stage controller
 #==============================================================================
 
 
-class stage_controller():
+class stage_controller(QtCore.QObject):
 
     def __init__(self):
-        pass
+        super().__init__()
 
     def reconnect(self):
         pass
 
     def get_position(self):
         pass
-    
+
     def stop(self):
         pass
 
@@ -68,7 +69,7 @@ class fake_controller(stage_controller):
 
     def MOVVEL(self, X, V):
         self.position = self.get_position()
-        self.V = V*np.sign(X-self.position)
+        self.V = V * np.sign(X - self.position)
         self.startTime = time.time()
         self.target = X
 
@@ -79,7 +80,7 @@ class fake_controller(stage_controller):
 
     def stop(self):
         self.ESTOP()
-    
+
     def ESTOP(self):
         self.target = self.get_position()
         self.position = self.target
@@ -128,12 +129,18 @@ class linear_controller(fake_controller):
 
 
 class cube_controller(fake_controller):
+
+    stageConnected = QtCore.pyqtSignal()
+
     def __init__(self):
         super().__init__()
         self.position = np.array([0, 0, 0])
         self.V = np.array([0, 0, 0])
         self.target = np.array([0, 0, 0])
         self.startTime = 0
+
+    def connect(self):
+        self.stageConnected.emit()
 
     def get_pos_range(self, axis):
         return np.array([0, 100])

@@ -7,6 +7,7 @@ Created on Wed Oct 25 16:51:32 2017
 from PyQt5 import QtCore, QtWidgets
 import numpy as np
 
+
 class Layout_wrapper(QtWidgets.QWidget):
     def __init__(self, layout, *args, **kwargs):
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
@@ -56,7 +57,7 @@ class Coordinates_tab(QtWidgets.QWidget):
         correction_load = QtWidgets.QPushButton('Load')
 
         save_errors = QtWidgets.QPushButton('Save Errors')
-        
+
         offset_label = QtWidgets.QLabel("Offset Position:")
         offset_input = QtWidgets.QLineEdit("0, 0, 0")
         offset_button = QtWidgets.QPushButton("Move Origin")
@@ -89,7 +90,7 @@ class Coordinates_tab(QtWidgets.QWidget):
         load_layout = QtWidgets.QHBoxLayout()
         load_layout.addWidget(correction_save)
         load_layout.addWidget(correction_load)
-        
+
         offset_layout = QtWidgets.QHBoxLayout()
         offset_layout.addWidget(offset_label)
         offset_layout.addWidget(offset_input)
@@ -142,9 +143,9 @@ class Coordinates_tab(QtWidgets.QWidget):
         correction_load.clicked.connect(md.load_corrections)
 
         save_errors.clicked.connect(cd.save_errors)
-        
-        offset_button.clicked.connect(lambda: 
-            cd.offset_origin(np.fromstring(offset_input.text(), sep=',')))
+
+        offset_button.clicked.connect(lambda:
+                                      cd.offset_origin(np.fromstring(offset_input.text(), sep=',')))
 
         #======================================================================
         #         Save variables
@@ -212,12 +213,12 @@ class Coordinates_tab(QtWidgets.QWidget):
     def updateCorrection(self, corrections):
         text = ("Offset: {}\nSlope: {:.3g}X + {:.3g}Y\nRotation angle: {:.5g}π"
                 "\nStage diff angle: {:.5g}π".format(
-                        corrections['offset'],
-                        *corrections['slope'],
-                        corrections["rotation angle"] / np.pi,
-                        corrections["stage diff angle"] / np.pi
-                        ))
-        
+                    corrections['offset'],
+                    *corrections['slope'],
+                    corrections["rotation angle"] / np.pi,
+                    corrections["stage diff angle"] / np.pi
+                ))
+
 #        text = ('{:.3e}X + {:.3e}Y\n+ {:.3f}μm\n'.format(*Zcoeffs)
 #                + 'Φ:\t{:.5g}π\nθ:\t{:.5g}π\nXo:\t[{:.3f}, {:.3f}]μm'.format(
 #                    XYcoeff[0] / np.pi, XYcoeff[1] / np.pi, *XYcoeff[2:]))

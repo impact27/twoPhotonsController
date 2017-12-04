@@ -91,21 +91,25 @@ except ImportError:
         def grab(self):
             return self._get_frame()
 
+
 class FEATURE_PARAM(C.Structure):
     _fields_ = [
         ("fMinValue", C.c_float),
         ("fMaxValue", C.c_float),
     ]
+
     def __str__(self):
         return "Min: {:f}\nMax: {:f}\n".format(self.fMinValue, self.fMaxValue)
-    
+
+
 class CAMERA_FEATURE(C.Structure):
     _fields_ = [
-        ("uFeatureId", C.c_uint),#U32
-        ("uFlags", C.c_uint),#U32
-        ("uNumberOfParameters", C.c_uint),#U32
+        ("uFeatureId", C.c_uint),  # U32
+        ("uFlags", C.c_uint),  # U32
+        ("uNumberOfParameters", C.c_uint),  # U32
         ("pParams", C.POINTER(FEATURE_PARAM)),
     ]
+
     def __str__(self):
         msg = ''
         msg += "FeatureID : {}\n".format(self.uFeatureId)
@@ -114,13 +118,15 @@ class CAMERA_FEATURE(C.Structure):
 #        for i in range(self.uNumberOfParameters):
 #            msg += str(self.pParams[i])
         return msg
-    
+
+
 class CAMERA_FEATURES(C.Structure):
     _fields_ = [
-        ("uSize", C.c_uint),#U32
-        ("uNumberOfFeatures", C.c_uint),#U32
+        ("uSize", C.c_uint),  # U32
+        ("uNumberOfFeatures", C.c_uint),  # U32
         ("pFeatures", C.POINTER(CAMERA_FEATURE)),
     ]
+
     def __str__(self):
         msg = ''
         msg += "Size : {}\n".format(self.uSize)
@@ -130,6 +136,8 @@ class CAMERA_FEATURES(C.Structure):
             msg += '\n'
         return msg
 # =============================================================================
+
+
 class PxLapi(object):
     """
     The PxLapi class is a thin wrapper around the dynamic library (.dll, .so)
@@ -290,8 +298,6 @@ class PxLapi(object):
             msg += ' function: %s' % self.strFunctionName
             return msg
 
-    
-    
     # -------------------------------------------------------------------------
     def __init__(self, useReturnCodes=False, libPath=DLL_PATH):
         self.__lib = C.windll.LoadLibrary(libPath)
@@ -475,7 +481,7 @@ class PxLapi(object):
                 return (rc, value[0])
             else:
                 return (rc, [float(v) for v in value])
-    
+
     @wrap_return_code
     def GetAllFeature(self, hCamera):
         """ Retrieve a camera setting using the feature id definitions. """
@@ -500,7 +506,6 @@ class PxLapi(object):
             else:
                 return rc, FeatureInfo
 
-    
     # -------------------------------------------------------------------------
     @wrap_return_code
     def SetFeature(self, hCamera, feature, value):
@@ -661,7 +666,7 @@ class PixeLINK(Camera):
     @shutter.setter
     def shutter(self, seconds):
         return self.set_property_value(PxLapi.FEATURE_SHUTTER, seconds)
-    
+
      # --------------------------------------------------------------------------
     @property
     def trigger(self):

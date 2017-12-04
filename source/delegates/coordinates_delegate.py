@@ -24,7 +24,6 @@ from PyQt5 import QtCore, QtWidgets
 from .coordinates_solver import Zsolver, XYsolver
 
 
-
 class coordinates_delegate(QtCore.QObject):
 
     updatelist = QtCore.pyqtSignal(list)
@@ -58,7 +57,7 @@ class coordinates_delegate(QtCore.QObject):
         pos = self._positions[row]
         if pos['im'] is None:
             return
-        self.parent.canvas_delegate.show_image(pos['im'])
+        self.parent.canvas_delegate.imshow(pos['im'])
 
     @property
     def positions(self):
@@ -123,19 +122,19 @@ class coordinates_delegate(QtCore.QObject):
         else:
             zcoeffs = np.zeros(3)
             xycoeffs = np.zeros(4)
-            
+
         Zslope = np.zeros(2)
         stage_diff_angle, rotation_angle, *XYoffset = xycoeffs
         Zslope[0], Zslope[1], Zoffset = zcoeffs
         offset = np.asarray([*XYoffset, Zoffset])
-        
+
         corrections = {
             "offset": offset,
             "slope": Zslope,
             "rotation angle": rotation_angle,
             "stage diff angle": stage_diff_angle
-            }
-        
+        }
+
         # Apply correction
         self._md.corrections = corrections
 
@@ -143,10 +142,9 @@ class coordinates_delegate(QtCore.QObject):
         # use saved info to correct coordinates
         self._updateXYZCorr()
         self.updatelist.emit(self._positions)
-        
+
     def offset_origin(self, newXm):
         corrections = self._md.corrections
         oldXm = self._md.position
         corrections['offset'] += oldXm - newXm
         self._md.corrections = corrections
-        

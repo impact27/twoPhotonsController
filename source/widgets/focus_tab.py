@@ -6,6 +6,7 @@ Created on Wed Oct 25 16:51:32 2017
 """
 from PyQt5 import QtCore, QtWidgets
 
+
 class Layout_wrapper(QtWidgets.QWidget):
     def __init__(self, layout, *args, **kwargs):
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
@@ -19,7 +20,7 @@ class Focus_tab(QtWidgets.QWidget):
 
     def __init__(self, application_delegate, *args, **kwargs):
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
-        
+
         self.fd = application_delegate.focus_delegate
 
         #======================================================================
@@ -27,16 +28,16 @@ class Focus_tab(QtWidgets.QWidget):
         #======================================================================
         back_label = QtWidgets.QLabel("Range start:")
         back_input = QtWidgets.QLineEdit('-20')
-        
+
         forth_label = QtWidgets.QLabel("Range end:")
         forth_input = QtWidgets.QLineEdit('100')
-        
+
         step_label = QtWidgets.QLabel("Range step:")
         step_input = QtWidgets.QLineEdit('1')
-        
+
         Nloops_label = QtWidgets.QLabel("Number loops:")
         Nloops_input = QtWidgets.QLineEdit('1')
-        
+
         precision_check = QtWidgets.QCheckBox("Piezzo")
 
         focus_button = QtWidgets.QPushButton("Focus")
@@ -80,10 +81,10 @@ class Focus_tab(QtWidgets.QWidget):
         #======================================================================
         #      Connections
         #======================================================================
-        
+
         self.deleterow.connect(self.fd.delete_pos)
         self.displayrow.connect(self.fd.display_pos)
-        
+
         pos_list.cellClicked.connect(self.cellClicked)
         pos_list.verticalHeader().sectionClicked.connect(self.rowClicked)
 
@@ -97,7 +98,7 @@ class Focus_tab(QtWidgets.QWidget):
 
         clear_list_button.clicked.connect(self.fd.clear)
         save_button.clicked.connect(self.fd.save)
-        
+
         self.fd.updatelist.connect(self.updateList)
 
         #======================================================================
@@ -110,9 +111,9 @@ class Focus_tab(QtWidgets.QWidget):
             self.deleterow.emit(row)
         else:
             self.displayrow.emit(row)
-            
+
     def rowClicked(self, row):
-        self.displayrow.emit(row)    
+        self.displayrow.emit(row)
 
     def updateList(self, poslist):
         self.pos_list.clearContents()

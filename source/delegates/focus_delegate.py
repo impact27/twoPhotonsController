@@ -6,33 +6,61 @@ Created on Wed Oct 25 17:25:10 2017
 """
 from PyQt5 import QtCore, QtWidgets
 import numpy as np
+import sys
+
 
 class Focus_delegate(QtCore.QObject):
-    
+
     updatelist = QtCore.pyqtSignal(list)
-    
+
     def __init__(self, app_delegate):
         super().__init__()
+        self.mutex = QtCore.QMutex()
         self._positions = []
         self.app_delegate = app_delegate
         self.md = app_delegate.mouvment_delegate
-        self.canvas = app_delegate.canvas_delegate._canvas
+        self.canvas = app_delegate.canvas_delegate
         self.thread = zThread(self.md, app_delegate.camera_delegate,
                               app_delegate.laser_delegate,
                               self.addGraph)
-        
+
     def delete_pos(self, idx):
+
+        QtCore.QMutexLocker(self.mutex)
+
         del self._positions[idx]
         self._update()
-    
+
     def display_pos(self, idx):
+
+        QtCore.QMutexLocker(self.mutex)
+
         self.app_delegate.canvas_delegate.switch_live(False)
         self.app_delegate.canvas_delegate.switch_draw(False)
-        self.canvas.plotZCorr(*self._positions[idx]["graphs"])
-    
+        self.plotZCorr(*self._positions[idx]["graphs"])
 
-    def focus(self, back, forth, step, intensity, Nloops=1, *, 
+    def plotZCorr(self, data, zBest):
+
+        QtCore.QMutexLocker(self.mutex)
+
+        try:
+            list_Z, list_I, list_size = data
+            self.canvas.clear()
+            for Z, I, size in zip(list_Z, list_I, list_size):
+                self.canvas.plot(Z, I, 'x')
+                goodsize = size < 4 * np.min(size)
+                self.canvas.plot(Z[goodsize], size[goodsize], '.', twinx=True)
+            self.canvas.plot(zBest * np.ones(2), self.canvas.get_ylim(), 'k-')
+            self.canvas.draw()
+        except BaseException:
+            print("Can't Plot!!!", sys.exc_info()[0])
+            raise
+
+    def focus(self, back, forth, step, intensity, Nloops=1, *,
               piezzo=False, wait=False, checkid=None):
+
+        QtCore.QMutexLocker(self.mutex)
+
         """
         back:
             How far back from current position
@@ -53,21 +81,34 @@ class Focus_delegate(QtCore.QObject):
             stage = self.md.piezzo
         else:
             stage = self.md.motor
-        self.thread.set_args(back, forth, step, Nloops, stage, intensity, checkid)
+        self.thread.set_args(
+            back,
+            forth,
+            step,
+            Nloops,
+            stage,
+            intensity,
+            checkid)
         self.thread.start()
-        
+
         if wait:
             self.thread.wait()
-        
+
     def addGraph(self, graphs):
+
+        QtCore.QMutexLocker(self.mutex)
+
         self._positions.append({
-                "Xs": self.md.motor.get_position(raw=True),
-                "graphs": graphs})
+            "Xs": self.md.motor.get_position(raw=True),
+            "graphs": graphs})
         self._update()
-    
+
     def save(self):
+
+        QtCore.QMutexLocker(self.mutex)
+
         fn = QtWidgets.QFileDialog.getSaveFileName(
-            QtWidgets.QApplication.topLevelWidgets()[0], 'TXT file', 
+            QtWidgets.QApplication.topLevelWidgets()[0], 'TXT file',
             QtCore.QDir.homePath(), "Text (*.txt)")[0]
         with open(fn, 'bw') as f:
             for pos in self._positions:
@@ -76,21 +117,29 @@ class Focus_delegate(QtCore.QObject):
                 for scan_idx in range(data.shape[1]):
                     f.write(('{} pass:\n').format(scan_idx).encode())
                     for line in data[:, scan_idx]:
-                       np.savetxt(f, line)
+                        np.savetxt(f, line[np.newaxis])
                 f.write(('Best: {}\n').format(pos["graphs"][1]).encode())
-                
-    
+
     def clear(self):
+
+        QtCore.QMutexLocker(self.mutex)
+
         self._positions = []
         self._update()
-    
+
     def _update(self):
+
+        QtCore.QMutexLocker(self.mutex)
+
         ret = []
         for pos in self._positions:
             ret.append(self.md.motor.XstoXm(pos["Xs"]))
         self.updatelist.emit(ret)
-        
+
     def ESTOP(self):
+
+        QtCore.QMutexLocker(self.mutex)
+
         self.thread.terminate()
 
 
@@ -102,15 +151,15 @@ class zThread(QtCore.QThread):
         self._zcorrector = Zcorrector(None, camera, laser)
         self._focus_args = None
         self._md = mouvment_delegate
-        
+
     def set_args(self, back, forth, step, Nloops, stage, intensity, checkid):
         self._zcorrector.stage = stage
         self._focus_args = (back, forth, step, Nloops, intensity, checkid)
-        
+
     def run(self):
         if self._focus_args is None:
             raise RuntimeError("args not initialised!")
-            
+
         if self._focus_args[-1] is None:
             lockid = self._md.lock()
             if lockid is None:
@@ -118,12 +167,12 @@ class zThread(QtCore.QThread):
                 return
         else:
             lockid = self._focus_args[-1]
-       
-        
+
         graphs = self._zcorrector.focus(*self._focus_args[:-1], lockid)
         self._md.unlock()
         self._focus_args = None
         self.addGraph(graphs)
+
 
 class Zcorrector():
 
@@ -133,12 +182,12 @@ class Zcorrector():
         self.camera = camera
         self.lockid = None
         self.laser = laser
-    
+
     def decrease_power(self):
         V = self.laser.get_intensity()
-        V = 0.8*V
+        V = 0.8 * V
         self.laser.set_intensity(V)
-        
+
     def startlaser(self, intensity):
         self.camera.auto_exposure_time(False)
         self.camera.set_exposure_time(self.camera.exposure_time_range()[0])
@@ -165,21 +214,22 @@ class Zcorrector():
             self.camera.restart_streaming()
             im = self.camera.get_image()
             mymax = np.amax(im)
-            size = np.sum(im>mymax/10)
+            size = np.sum(im > mymax / 10)
             intensities[i] = mymax
             sizes[i] = size
             if mymax == 255:
                 if i > 1:
-                    start = zPos[i-2]
+                    start = zPos[i - 2]
                 self.decrease_power()
                 return self.get_image_range(start, stop, step)
-            
-            if mymax < np.max(intensities)/3:
+
+            if mymax < np.max(intensities) / 3:
                 return zPos, intensities, sizes
-             
+
         return zPos, intensities, sizes
 
-    def focus(self, back, forth, step, N_loops=1, intensity=None, checkid=None):
+    def focus(self, back, forth, step, N_loops=1,
+              intensity=None, checkid=None):
         """ Go to the best focal point for the laser
         """
         self.lockid = checkid
@@ -188,9 +238,9 @@ class Zcorrector():
         Z = self.stage.get_position(raw=True)[2]
         z_start = Z + back
         z_stop = Z + forth
-        
+
         current_step = step
-        
+
         list_zpos = []
         list_int = []
         list_sizes = []
@@ -198,68 +248,66 @@ class Zcorrector():
         for i in range(N_loops):
 
             zPos, intensity, sizes = self.get_image_range(
-                        z_start, z_stop, current_step)
+                z_start, z_stop, current_step)
 
-            
             argbest = np.argmax(intensity)
-            
+
             if intensity[argbest] == 255:
                 argbest = (np.argwhere(intensity == 255)
-                    [np.argmin(sizes[intensity == 255])][0])
-                
-            current_step /=10
-            
+                           [np.argmin(sizes[intensity == 255])][0])
+
+            current_step /= 10
+
             if argbest == 0:
                 z_start = zPos[0]
             else:
-                z_start = zPos[argbest-1]
-                
+                z_start = zPos[argbest - 1]
+
             if argbest == len(intensity) - 1:
                 z_stop = zPos[argbest]
             else:
-                z_stop = zPos[argbest+1]
-            
+                z_stop = zPos[argbest + 1]
+
             list_zpos.append(zPos)
             list_int.append(intensity)
             list_sizes.append(sizes)
-                
+
         self.endlaser()
-        
+
         Y = intensity
-            
-        
-        close = intensity > .8*intensity.max()
+
+        close = intensity > .8 * intensity.max()
         if np.sum(close) < 4:
-            close = np.abs(zPos-zPos[argbest]) < 1.5*step
+            close = np.abs(zPos - zPos[argbest]) < 1.5 * step
         fit = np.polyfit(zPos[close], Y[close], 2)
-        zBest = -fit[1]/(2*fit[0])
-        if np.abs(zBest - zPos[argbest]) > 2*step:
+        zBest = -fit[1] / (2 * fit[0])
+        if np.abs(zBest - zPos[argbest]) > 2 * step:
             zBest = zPos[argbest]
-        
+
         ret = np.asarray([list_zpos, list_int, list_sizes]), zBest
-            
+
         self.stage.goto_position([np.nan, np.nan, zBest],
                                  wait=True, checkid=self.lockid, isRaw=True)
-        
+
         self.stage.set_raw_Z_zero(zBest)
-        
+
         # save result and position
         return ret
 
 #    def get_image_range_quick(self, start, stop, step):
-#        
-#        
+#
+#
 #        #Move to start
 #        self.motor.goto_position([np.nan, np.nan, start],
 #                                     wait=True, checkid=self.lockid)
-#        
+#
 #        z_array = [self.motor.position[2]]
 #        intensities = []
 #        sizes = []
-#        
+#
 #        #Compute speed assuming 5fps
 #        speed = step*5
-#        
+#
 #        #Move to finish with small speed
 #        self.motor.goto_position([np.nan, np.nan, stop], speed=speed,
 #                                     wait=False, checkid=self.lockid)
@@ -278,12 +326,9 @@ class Zcorrector():
 #                stop = True
 #            if self.motor.is_onTarget():
 #                stop =True
-#        
+#
 #        z_array = np.asarray(z_array)
 #        z_array = z_array[:-1] + np.diff(z_array)/2
-#        
+#
 #        return z_array, np.asarray(intensities), np.asarray(sizes)
-#        
-            
-        
-        
+#

@@ -23,24 +23,24 @@ import time
 
 from .HW_conf import laser_power_COM
 
+
 class laser_controller():
 
     def __init__(self):
         self.ser = None
         self.reconnect()
         self.buffer = ''
-        
-    def readline(self, timeout = 1):
+
+    def readline(self, timeout=1):
         start = time.time()
         while '\n' not in self.buffer and time.time() < start + timeout:
             self.buffer += self.ser.read_all().decode()
         if '\n' not in self.buffer:
             raise RuntimeError("Laser timeout")
-        idx = self.buffer.find('\n')+1
+        idx = self.buffer.find('\n') + 1
         ret = self.buffer[:idx]
         self.buffer = self.buffer[idx:]
         return ret
-        
 
     def reconnect(self):
         del self.ser
@@ -88,7 +88,7 @@ class laser_controller():
         else:
             print(res)
             return None
-        
+
 
 
 #%%

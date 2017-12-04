@@ -10,6 +10,7 @@ import numpy as np
 
 from .myWidgets import LightWidget, doubleSelector
 
+
 class Controls_tab(QtWidgets.QWidget):
     def __init__(self, application_delegate, *args, **kwargs):
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
@@ -240,7 +241,7 @@ class Controls_tab(QtWidgets.QWidget):
         getcurr_motor_button.clicked.connect(self.update_motor)
 
         md.updatePosition.connect(
-                self.updatePos)
+            self.updatePos)
 
         cam_autoexposure_time.toggled.connect(cd.auto_exposure_time)
         cam_extshutter.toggled.connect(cd.extShutter)
@@ -250,7 +251,7 @@ class Controls_tab(QtWidgets.QWidget):
             for s, r in zip(motor_selectors, ranges):
                 s.setRange(*r, 3)
             self.update_motor()
-        
+
         md.coordinatesCorrected.connect(setMotorRange)
         md.motor.move_signal.connect(
             self.set_target_motor)
@@ -267,12 +268,12 @@ class Controls_tab(QtWidgets.QWidget):
         self.cube_selectors = cube_selectors
         self.cam_autoexposure_time = cam_autoexposure_time
         self.steps = steps
-        
+
         # Update status
         def updateStatus():
             motor_status.setOn(md.motor.is_ready())
             cube_status.setOn(md.piezzo.is_ready())
-            
+
         self.status_timer = QtCore.QTimer()
         self.status_timer.timeout.connect(updateStatus)
         self.status_timer.start(1000)

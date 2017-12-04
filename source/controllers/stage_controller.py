@@ -43,17 +43,17 @@ from Thorlabs.MotionControl.KCube.DCServoCLI import KCubeDCServo
 #==============================================================================
 
 
-class stage_controller():
+class stage_controller(QtCore.QObject):
 
     def __init__(self):
-        pass
+        super().__init__()
 
     def reconnect(self):
         pass
 
     def get_position(self):
         pass
-    
+
     def stop(self):
         pass
 
@@ -79,16 +79,21 @@ class stage_controller():
 # Linear stages controller
 #==============================================================================
 
+
 class linear_controller(stage_controller):
     def __init__(self):
         super().__init__()
         self.lines = [None, None]
-        self.threads = [linethread(sn, partial(self.set_stage, i))
-                        for i, sn in enumerate([HW_conf.XStageName,
-                                                HW_conf.YStageName])]
+        self.threads = []
+        for i, sn in enumerate([HW_conf.XStageName, HW_conf.YStageName]):
+            self.threads.append(linethread(sn))
+            self.threads[i].finished.connect(partial(self.set_stage, i))
         self.reconnect()
 
-    def set_stage(self, axis, stage):
+    def set_stage(self, axis):
+        stage = self.threads[axis].stage
+        if stage is None:
+            raise RuntimeError("Stage is None")
         self.lines[axis] = stage
 
     @property
@@ -122,30 +127,29 @@ class linear_controller(stage_controller):
     def get_position(self):
         return np.asarray([l.qPOS()['1'] for l in self.lines],
                           dtype=float) * 1000
-                           
-    
+
     def stop(self):
         for l in self.lines:
             try:
                 l.HLT()
-            except:
+            except BaseException:
                 pass
-        
+
     def ESTOP(self):
         for l in self.lines:
             try:
                 l.HLT()
-            except:
+            except BaseException:
                 pass
 
     def is_onTarget(self):
         return np.all([l.qONT()['1'] for l in self.lines])
 
     def get_pos_range(self, axis):
-        return np.array([0, 50.]) * 1000
+        return np.array([0, 50.]) * 1000.
 
     def get_vel_range(self, axis):
-        return np.array([0, 1.5]) * 1000
+        return np.array([0, 1.5]) * 1000.
 
     def is_ready(self):
         if np.any([l is None for l in self.lines]):
@@ -154,10 +158,10 @@ class linear_controller(stage_controller):
 
 
 class linethread(QtCore.QThread):
-    def __init__(self, StageName, callback):
+    def __init__(self, StageName):
         super().__init__()
         self.StageName = StageName
-        self.callback = callback
+        self.stage = None
 
     def run(self):
         stage = GCSDevice(HW_conf.GCS_lin_controller_name)
@@ -167,30 +171,33 @@ class linethread(QtCore.QThread):
             raise RuntimeError("Incorrect stage connected")
         print('Connected', stage.qIDN())
         stage.SVO(1, True)
-        # time.sleep(1)
         if not stage.qFRF()['1']:
             print("Reference move")
             stage.FRF(1)
-        self.callback(stage)
+        self.stage = stage
 #==============================================================================
 # Cube Controller
 #==============================================================================
 
 
-
-
-
 class cube_controller(stage_controller):
+
+    stageConnected = QtCore.pyqtSignal()
+
     def __init__(self):
         super().__init__()
         self.cube = None
-        self.thread = cubethread(HW_conf.cubeName, self.set_stage)
-        self.reconnect()
+        self.thread = cubethread(HW_conf.cubeName)
+        self.thread.finished.connect(lambda: self.set_stage())
 
-    def set_stage(self, stage):
+    def set_stage(self):
+        stage = self.thread.stage
+        if stage is None:
+            raise RuntimeError("Stage is None")
         self.cube = stage
+        self.stageConnected.emit()
 
-    def reconnect(self):
+    def connect(self):
         if self.cube is not None:
             self.cube.CloseConnection()
             del self.cube
@@ -211,23 +218,23 @@ class cube_controller(stage_controller):
     def stop(self):
         try:
             self.cube.HLT()
-        except:
+        except BaseException:
             pass
-            
+
     def ESTOP(self):
         try:
             self.cube.HLT()
-        except:
+        except BaseException:
             pass
 
     def is_onTarget(self):
         return np.all(self.cube.qONT([1, 2, 3]).values())
 
     def get_pos_range(self, axis):
-        return np.array([0, 100])
+        return np.array([0., 100.])
 
     def get_vel_range(self, axis):
-        return np.array([0, 4000])
+        return np.array([0., 4000.])
 
     def is_ready(self):
         if self.cube is None:
@@ -236,10 +243,10 @@ class cube_controller(stage_controller):
 
 
 class cubethread(QtCore.QThread):
-    def __init__(self, StageName, callback):
+    def __init__(self, StageName):
         super().__init__()
         self.StageName = StageName
-        self.callback = callback
+        self.stage = None
 
     def run(self):
         stage = GCSDevice(HW_conf.GCS_cube_controller_name)
@@ -250,13 +257,19 @@ class cubethread(QtCore.QThread):
         print('Connected', stage.qIDN())
         stage.SVO([1, 2, 3], [True, True, True])
         stage.ATZ([1, 2, 3], [0, 0, 0])
-        self.callback(stage)
+        self.stage = stage
+
+# =============================================================================
+# Z Controller
+# =============================================================================
+
 
 class z_controller(stage_controller):
     def __init__(self, serial=HW_conf.kinesis_cube_serial):
         super().__init__()
         self._kCubeDCServoMotor = None
-        self.thread = Zthread(serial, self.set_stage)
+        self.thread = Zthread(serial)
+        self.thread.finished.connect(lambda: self.set_stage())
         if serial is not None:
             self.connect(serial)
 
@@ -271,7 +284,7 @@ class z_controller(stage_controller):
     def ESTOP(self):
         try:
             self.stop()
-        except:
+        except BaseException:
             pass
 
     def is_onTarget(self):
@@ -293,11 +306,9 @@ class z_controller(stage_controller):
     def MOVVEL(self, X, V):
         if V[0] < 1:
             V[0] = 1
-        else:
-            print("Ajusting speed")
+            print("Speed too small")
         self.set_velocity(V[0])
         self.move_to(X[0])
-        
 
     def is_ready(self):
         return not self._kCubeDCServoMotor.IsDeviceBusy
@@ -328,7 +339,7 @@ class z_controller(stage_controller):
             self._kCubeDCServoMotor.ShutDown()
 
             self._kCubeDCServoMotor = None
-        except:
+        except BaseException:
             print("Can't disconnect")
             raise
 
@@ -338,7 +349,7 @@ class z_controller(stage_controller):
             # long it takes to perform the home operation.
             self._kCubeDCServoMotor.Home(0)
 
-        except:
+        except BaseException:
             print("Unable to return device to home position\n")
             raise
 
@@ -350,7 +361,7 @@ class z_controller(stage_controller):
             self._kCubeDCServoMotor.MoveTo(Decimal(float(pos)), timeout)
         except Thorlabs.MotionControl.DeviceManagerCLI.DeviceMovingException:
             print("Ignored, Already moving")
-        except:
+        except BaseException:
             print("Unable to move to position\n", sys.exc_info()[0])
             raise
 
@@ -362,22 +373,25 @@ class z_controller(stage_controller):
 
 #        except Thorlabs.MotionControl.GenericMotorCLI.MoveTimeoutException:
 #            pass  # that is what stop does
-        except:
+        except BaseException:
             print("Unable to stop\n", sys.exc_info()[0])
             raise
 
     def is_homing(self):
         return self._kCubeDCServoMotor.Status.IsHoming
 
-    def set_stage(self, stage):
+    def set_stage(self):
+        stage = self.thread.stage
+        if stage is None:
+            raise RuntimeError("Stage is None")
         self._kCubeDCServoMotor = stage
 
 
 class Zthread(QtCore.QThread):
-    def __init__(self, SN, callback):
+    def __init__(self, SN):
         super().__init__()
         self.SN = SN
-        self.callback = callback
+        self.stage = None
 
     def run(self):
         # Instructs the DeviceManager to build and maintain the list of
@@ -414,7 +428,7 @@ class Zthread(QtCore.QThread):
         if not kCubeDCServoMotor.Status.IsHomed:
             kCubeDCServoMotor.Home(0)
 
-        self.callback(kCubeDCServoMotor)
+        self.stage = kCubeDCServoMotor
 
 #==============================================================================
 # Helper functions

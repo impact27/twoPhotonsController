@@ -41,6 +41,3 @@ class XYcorrector():
         dy, dx = ir.find_shift_cc(refim, curim)
         dX = np.multiply([dx, dy, 0], self.camera.pixelSize)
         return dX
-
-
-

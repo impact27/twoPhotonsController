@@ -7,12 +7,12 @@ Created on Fri Nov 10 10:49:39 2017
 
 from PyQt5 import QtCore, QtWidgets
 
-class Script_tab(QtWidgets.QWidget):
 
+class Script_tab(QtWidgets.QWidget):
 
     def __init__(self, application_delegate, *args, **kwargs):
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
-        
+
         self.sd = application_delegate.script_delegate
 
         #======================================================================
@@ -23,7 +23,7 @@ class Script_tab(QtWidgets.QWidget):
         browse_button = QtWidgets.QPushButton('Browse')
         run_button = QtWidgets.QPushButton('Run')
         draw_button = QtWidgets.QPushButton('Draw')
-        
+
         #======================================================================
         #     Layout
         #======================================================================
@@ -34,6 +34,7 @@ class Script_tab(QtWidgets.QWidget):
         main_layout.addWidget(browse_button)
         main_layout.addWidget(run_button)
         main_layout.addWidget(draw_button)
+        main_layout.addStretch()
         self.setLayout(main_layout)
 
         #======================================================================

@@ -27,6 +27,7 @@ from widgets.focus_tab import Focus_tab
 from widgets.script_tab import Script_tab
 from widgets.canvas_tab import Canvas_widget
 
+
 class ApplicationWindow(QtWidgets.QMainWindow):
     def __init__(self, application_delegate, imCanvas):
 
@@ -95,7 +96,7 @@ class ApplicationWindow(QtWidgets.QMainWindow):
 
         self.activateWindow()
         self.setFocus()
-        
+
         progname = 'Two Photons Controller'
         self.setWindowTitle("%s" % progname)
         self.show()

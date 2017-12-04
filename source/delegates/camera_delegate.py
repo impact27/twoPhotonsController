@@ -21,15 +21,22 @@ class camera_delegate(QtCore.QObject):
 
     def __init__(self):
         super().__init__()
+        self.mutex = QtCore.QMutex()
         self.controller = camera_controller()
         self.isAuto = False
         self.pixelSize = 1 / 20  # TODO: check that
         self.reset_bg()
 
     def reconnect(self):
+
+        QtCore.QMutexLocker(self.mutex)
+
         self.controller.reconnect()
 
     def get_image(self, rmbg=True):
+
+        QtCore.QMutexLocker(self.mutex)
+
         im = self.controller.get_image()
         if self.isAuto:
             self.correct_exposure_time(im)
@@ -38,26 +45,44 @@ class camera_delegate(QtCore.QObject):
         return im
 
     def exposure_time_range(self):
+
+        QtCore.QMutexLocker(self.mutex)
+
         return self.controller.exposure_time_range()
 
     def set_exposure_time(self, time):
+
+        QtCore.QMutexLocker(self.mutex)
+
         self.new_exposure_time.emit(time)
         self.controller.set_exposure_time(time)
 
     def get_exposure_time(self):
+
+        QtCore.QMutexLocker(self.mutex)
+
         return self.controller.get_exposure_time()
 
     exposure_time = property(get_exposure_time, set_exposure_time)
 
     def auto_exposure_time(self, on):
+
+        QtCore.QMutexLocker(self.mutex)
+
         self.state_auto_exposure_time.emit(on)
         self.isAuto = on
 
     def extShutter(self, on):
+
+        QtCore.QMutexLocker(self.mutex)
+
         self.ext_shutterState.emit(on)
         self.controller.ext_shutter(on)
 
     def correct_exposure_time(self, im):
+
+        QtCore.QMutexLocker(self.mutex)
+
         amax = np.max(im)
         time = self.controller.get_exposure_time()
         if amax < 200:  # 4/5 of the intensity
@@ -69,10 +94,19 @@ class camera_delegate(QtCore.QObject):
                 self.set_exposure_time(time / 2)
 
     def reset_bg(self):
+
+        QtCore.QMutexLocker(self.mutex)
+
         self._bg = 0
 
     def set_bg(self):
+
+        QtCore.QMutexLocker(self.mutex)
+
         self._bg = self.controller.get_image()
-        
+
     def restart_streaming(self):
+
+        QtCore.QMutexLocker(self.mutex)
+
         self.controller.restart_streaming()

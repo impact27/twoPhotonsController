@@ -87,7 +87,7 @@ class doubleSelector(QtWidgets.QWidget):
         self.setLayout(layout)
 
         def updateLineInput(value):
-            if value == int(getValue()*self.factor):
+            if value == int(getValue() * self.factor):
                 return
             value = value / self.factor
             if self.isLog:

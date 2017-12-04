@@ -9,74 +9,93 @@ import numpy as np
 import cv2
 import tifffile
 import matplotlib
+import sys
 cmap = matplotlib.cm.get_cmap('plasma')
 
-from widgets.canvas import Canvas
+from widgets.canvas import MyMplCanvas
+
 
 class Canvas_delegate(QtCore.QObject):
     newrange = QtCore.pyqtSignal(float, float)
     liveSwitched = QtCore.pyqtSignal(bool)
     drawSwitched = QtCore.pyqtSignal(bool)
-    
+    newclick = QtCore.pyqtSignal(np.ndarray)
+
     def __init__(self, parent):
         super().__init__()
+        self.mutex = QtCore.QMutex()
         self._parent = parent
-        self._canvas = Canvas()
-        
+        self._canvas = MyMplCanvas()
+
         # Create timers
         self.live_timer = QtCore.QTimer()
         self.live_timer.timeout.connect(self.show_frame)
 
         self.draw_timer = QtCore.QTimer()
         self.draw_timer.timeout.connect(self.draw_current_position)
-        
-        #draw memory
+
+        # draw memory
         self.lastpos = [np.nan, np.nan]
         self.lastFracIntensity = np.nan
-        
+
         self._pixelSize = 1
         self._vmin = 0
         self._vmax = 255
-        
+
+        self.clear()
+        self._lastim = np.zeros((2, 2))
+        self._canvas.figure.canvas.mpl_connect(
+            'button_press_event', self.onImageClick)
+        self._click_pos = np.array([[np.nan, np.nan], [np.nan, np.nan]])
+
     def show_frame(self, frame=None):
+
+        QtCore.QMutexLocker(self.mutex)
+
         try:
             if frame is None:
                 frame = self._parent.camera_delegate.get_image()
-                frame = cv2.resize(frame, (frame.shape[1]//2, frame.shape[0]//2), 
-                               interpolation=cv2.INTER_AREA)
-    
-            extent = (0, frame.shape[1]*self._pixelSize,
-                      0, frame.shape[0]*self._pixelSize)
-            
-            self._canvas.update_image(
-                    frame, vmin=self._vmin, vmax=self._vmax, extent=extent)
-        except:
-            print("Can't show frame")
-        
-    def show_image(self, image):
-        self._canvas.imshow(image)
-        
+                frame = cv2.resize(frame, (frame.shape[1] // 2, frame.shape[0] // 2),
+                                   interpolation=cv2.INTER_AREA)
+
+            extent = (0, frame.shape[1] * self._pixelSize,
+                      0, frame.shape[0] * self._pixelSize)
+
+            self.update_image(
+                frame, vmin=self._vmin, vmax=self._vmax, extent=extent)
+        except BaseException:
+            print("Can't show frame", sys.exc_info())
+
     def draw_current_position(self):
+
+        QtCore.QMutexLocker(self.mutex)
+
         newpos = self._parent.mouvment_delegate.position
-        laserI = 0#self._parent.laser_delegate.get_intensity()
+        laserI = 0  # self._parent.laser_delegate.get_intensity()
         lRange = self._parent.laser_delegate.get_range()
         f = (laserI - lRange[0]) / (lRange[1] - lRange[0])
         color = cmap(np.min((f, self.lastFracIntensity)))
 
-        self._canvas.plot([self.lastpos[0], newpos[0]],
-                          [self.lastpos[1], newpos[1]],
-                          axis='equal', c=color)
+        self.plot([self.lastpos[0], newpos[0]],
+                  [self.lastpos[1], newpos[1]],
+                  axis='equal', c=color)
         self.lastpos = newpos
         self.lastFracIntensity = f
-        
+
     def save_im(self):
+
+        QtCore.QMutexLocker(self.mutex)
+
         fn = QtWidgets.QFileDialog.getSaveFileName(
             self._canvas, 'TIFF file', QtCore.QDir.homePath(),
             "Images (*.tif)")
-        im = self._canvas.get_last_im()
+        im = self.get_last_im()
         tifffile.imsave(fn[0], np.asarray(im, dtype='float32'))
-        
+
     def switch_live(self, on):
+
+        QtCore.QMutexLocker(self.mutex)
+
         if on:
             self.switch_draw(False)
             self.live_timer.start(33)
@@ -85,6 +104,9 @@ class Canvas_delegate(QtCore.QObject):
         self.liveSwitched.emit(on)
 
     def switch_draw(self, on):
+
+        QtCore.QMutexLocker(self.mutex)
+
         if on:
             self.switch_live(False)
             self.draw_timer.start(100)
@@ -93,29 +115,184 @@ class Canvas_delegate(QtCore.QObject):
             self.lastpos = [np.nan, np.nan]
             self.lastFracIntensity = np.nan
         self.drawSwitched.emit(on)
-        
+
     def set_pixel_size(self, pxsize):
-        factor = pxsize/self._pixelSize
-        self._canvas.set_click_pos(self._canvas.click_pos*factor)
+
+        QtCore.QMutexLocker(self.mutex)
+
+        factor = pxsize / self._pixelSize
+        self.set_click_pos(self.click_pos * factor)
         self._pixelSize = pxsize
         self.update_im()
-            
+
     def set_range(self, vmin=0, vmax=255):
+
+        QtCore.QMutexLocker(self.mutex)
+
         self.newrange.emit(vmin, vmax)
         self._vmin = vmin
         self._vmax = vmax
         self.update_im()
 
     def auto_range(self):
-        im = self._canvas.get_last_im()
-        vmin = np.percentile(im,1)
-        vmax = np.percentile(im,99)
+
+        QtCore.QMutexLocker(self.mutex)
+
+        im = self.get_last_im()
+        vmin = np.percentile(im, 1)
+        vmax = np.percentile(im, 99)
         self.set_range(vmin=vmin, vmax=vmax)
-        
-    def clear(self):
-        self._canvas.clear()
-        
+
     def update_im(self):
-        if self._canvas.is_showing_image():
+
+        QtCore.QMutexLocker(self.mutex)
+
+        if self.is_showing_image():
             self.clear()
-            self.show_frame(self._canvas.get_last_im())
+            self.show_frame(self.get_last_im())
+
+# =============================================================================
+#     Moved
+# =============================================================================
+
+    def clear(self):
+
+        QtCore.QMutexLocker(self.mutex)
+
+        self._imhandle = None
+        self._crosshandle = None
+        self._twinx = None
+        self._canvas.figure.clear()
+        self._axes = self._canvas.figure.add_subplot(111)
+        self._canvas.draw()
+
+    def get_last_im(self):
+
+        QtCore.QMutexLocker(self.mutex)
+
+        return self._lastim
+
+    def imshow(self, im, *args, **kwargs):
+
+        QtCore.QMutexLocker(self.mutex)
+
+        self._lastim = im
+        self.clear()
+
+        self._imhandle = self._axes.imshow(im, *args, **kwargs)
+
+        self._axes.axis('image')
+        self._canvas.figure.colorbar(self._imhandle)
+
+        if not np.all(np.isnan(self._click_pos)):
+            self._crosshandle = self._axes.plot(
+                self._click_pos[:, 1], self._click_pos[:, 0], 'r-x')
+
+        self._canvas.draw()
+
+    def update_image(self, im, *args, **kwargs):
+
+        QtCore.QMutexLocker(self.mutex)
+
+        self._lastim = im
+        if self._imhandle is not None:
+
+            self._imhandle.set_data(im)
+            self._axes.draw_artist(self._imhandle)
+
+            if self._crosshandle is not None:
+                self._axes.draw_artist(self._crosshandle[0])
+
+            self._canvas.blit(self._axes.bbox)
+        else:
+            self.imshow(im, *args, **kwargs)
+
+    def plot(self, X, Y, fmt='-', axis='normal',
+             twinx=False, draw=True, **kwargs):
+
+        QtCore.QMutexLocker(self.mutex)
+
+        if self._imhandle is not None:
+            self.clear()
+
+        if twinx:
+            if self._twinx is None:
+                self._twinx = self._axes.twinx()
+            ax = self._twinx
+        else:
+            ax = self._axes
+
+        ax.plot(X, Y, fmt, **kwargs)
+        self._axes.axis(axis)
+        if draw:
+            self._canvas.draw()
+
+    def draw(self):
+
+        QtCore.QMutexLocker(self.mutex)
+
+        self._canvas.draw()
+
+    def get_ylim(self):
+
+        QtCore.QMutexLocker(self.mutex)
+
+        return self._axes.get_ylim()
+
+    def onImageClick(self, event):
+
+        QtCore.QMutexLocker(self.mutex)
+
+        """A CLICK!!!!!!!!"""
+        # Are we displaying an image?
+        if self._imhandle is None or event.ydata is None or event.xdata is None:
+            return
+        if QtWidgets.QApplication.keyboardModifiers() != QtCore.Qt.ControlModifier:
+            return
+        # What button was that?
+        if event.button == 1:
+            idx = 0
+        elif event.button == 3:
+            idx = 1
+        else:
+            return
+
+        self._click_pos[idx, :] = [float(event.ydata), float(event.xdata)]
+
+        if self._crosshandle is not None:
+            self._crosshandle[0].set_data(
+                self._click_pos[:, 1], self._click_pos[:, 0])
+        else:
+            self._crosshandle = self._axes.plot(
+                self._click_pos[:, 1], self._click_pos[:, 0], 'r-x')
+        self.update_image(self.get_last_im())
+        self.newclick.emit(self._click_pos)
+
+    def clear_click(self):
+
+        QtCore.QMutexLocker(self.mutex)
+
+        self.set_click_pos(np.array([[np.nan, np.nan], [np.nan, np.nan]]))
+        self._crosshandle[0].set_data(np.nan, np.nan)
+        if self._imhandle is not None:
+            self.update_image(self.get_last_im())
+
+    @property
+    def click_pos(self):
+
+        QtCore.QMutexLocker(self.mutex)
+
+        return self._click_pos
+
+    def set_click_pos(self, pos):
+
+        QtCore.QMutexLocker(self.mutex)
+
+        self._click_pos = pos
+        self.newclick.emit(self._click_pos)
+
+    def is_showing_image(self):
+
+        QtCore.QMutexLocker(self.mutex)
+
+        return self._imhandle is not None

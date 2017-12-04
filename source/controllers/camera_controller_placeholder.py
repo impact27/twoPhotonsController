@@ -42,9 +42,9 @@ class camera_controller():
 
     def get_exposure_time(self):
         return self.exposure_time
-    
+
     def ext_shutter(self, Open):
         pass
-    
+
     def restart_streaming(self):
         pass

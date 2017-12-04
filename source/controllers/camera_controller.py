@@ -23,7 +23,6 @@ import serial
 from .HW_conf import camera_shutter_COM, pixeLINK_SN
 
 
-
 class camera_controller():
     def __init__(self):
         self.cam = None
@@ -54,16 +53,15 @@ class camera_controller():
             time = amax
         try:
             self.cam.shutter = time
-        except:
+        except BaseException:
             print(f"Unable to set shutter time {time}")
 
     def get_exposure_time(self):
         return self.cam.shutter
-    
+
     def restart_streaming(self):
         self.cam.streaming = False
         self.cam.streaming = True
-        
 
     def ext_shutter(self, Open):
         if Open:
