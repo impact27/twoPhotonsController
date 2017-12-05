@@ -12,7 +12,7 @@ z_offsets = np.arange(-1.8, 2, .2)  # um
 off_speed = 1000
 
 motor_step = 125
-motor_origin = [25000, 15000]
+motor_origin = [0, 0]
 
 lines = []
 lines.append("laser ON")

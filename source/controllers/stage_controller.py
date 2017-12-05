@@ -86,12 +86,10 @@ class linear_controller(stage_controller):
         self.lines = [None, None]
         self.threads = []
         for i, sn in enumerate([HW_conf.XStageName, HW_conf.YStageName]):
-            self.threads.append(linethread(sn))
-            self.threads[i].finished.connect(partial(self.set_stage, i))
+            self.threads.append(linethread(sn, partial(self.set_stage, i)))
         self.reconnect()
 
-    def set_stage(self, axis):
-        stage = self.threads[axis].stage
+    def set_stage(self, axis, stage):
         if stage is None:
             raise RuntimeError("Stage is None")
         self.lines[axis] = stage
@@ -111,6 +109,7 @@ class linear_controller(stage_controller):
         [l.CloseConnection() for l in self.lines]
 
     def waitState(self, timeout=30):
+        self.is_ready()
         startt = time.time()
         while not self.is_ready():
             time.sleep(.1)
@@ -158,10 +157,10 @@ class linear_controller(stage_controller):
 
 
 class linethread(QtCore.QThread):
-    def __init__(self, StageName):
+    def __init__(self, StageName, stage_callback):
         super().__init__()
         self.StageName = StageName
-        self.stage = None
+        self.stage_callback = stage_callback
 
     def run(self):
         stage = GCSDevice(HW_conf.GCS_lin_controller_name)
@@ -174,7 +173,7 @@ class linethread(QtCore.QThread):
         if not stage.qFRF()['1']:
             print("Reference move")
             stage.FRF(1)
-        self.stage = stage
+        self.stage_callback(stage)
 #==============================================================================
 # Cube Controller
 #==============================================================================
@@ -187,11 +186,9 @@ class cube_controller(stage_controller):
     def __init__(self):
         super().__init__()
         self.cube = None
-        self.thread = cubethread(HW_conf.cubeName)
-        self.thread.finished.connect(lambda: self.set_stage())
+        self.thread = cubethread(HW_conf.cubeName, self.set_stage)
 
-    def set_stage(self):
-        stage = self.thread.stage
+    def set_stage(self, stage):
         if stage is None:
             raise RuntimeError("Stage is None")
         self.cube = stage
@@ -243,11 +240,10 @@ class cube_controller(stage_controller):
 
 
 class cubethread(QtCore.QThread):
-    def __init__(self, StageName):
+    def __init__(self, StageName, stage_callback):
         super().__init__()
         self.StageName = StageName
-        self.stage = None
-
+        self.stage_callback = stage_callback
     def run(self):
         stage = GCSDevice(HW_conf.GCS_cube_controller_name)
         stage.ConnectUSB(self.StageName)
@@ -257,7 +253,7 @@ class cubethread(QtCore.QThread):
         print('Connected', stage.qIDN())
         stage.SVO([1, 2, 3], [True, True, True])
         stage.ATZ([1, 2, 3], [0, 0, 0])
-        self.stage = stage
+        self.stage_callback(stage)
 
 # =============================================================================
 # Z Controller
@@ -268,8 +264,7 @@ class z_controller(stage_controller):
     def __init__(self, serial=HW_conf.kinesis_cube_serial):
         super().__init__()
         self._kCubeDCServoMotor = None
-        self.thread = Zthread(serial)
-        self.thread.finished.connect(lambda: self.set_stage())
+        self.thread = Zthread(serial, self.set_stage)
         if serial is not None:
             self.connect(serial)
 
@@ -380,18 +375,17 @@ class z_controller(stage_controller):
     def is_homing(self):
         return self._kCubeDCServoMotor.Status.IsHoming
 
-    def set_stage(self):
-        stage = self.thread.stage
+    def set_stage(self, stage):
         if stage is None:
             raise RuntimeError("Stage is None")
         self._kCubeDCServoMotor = stage
 
 
 class Zthread(QtCore.QThread):
-    def __init__(self, SN):
+    def __init__(self, SN, stage_callback):
         super().__init__()
         self.SN = SN
-        self.stage = None
+        self.stage_callback = stage_callback
 
     def run(self):
         # Instructs the DeviceManager to build and maintain the list of
@@ -428,7 +422,7 @@ class Zthread(QtCore.QThread):
         if not kCubeDCServoMotor.Status.IsHomed:
             kCubeDCServoMotor.Home(0)
 
-        self.stage = kCubeDCServoMotor
+        self.stage_callback(kCubeDCServoMotor)
 
 #==============================================================================
 # Helper functions
