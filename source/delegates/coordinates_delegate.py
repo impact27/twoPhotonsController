@@ -144,7 +144,8 @@ class coordinates_delegate(QtCore.QObject):
         self.updatelist.emit(self._positions)
 
     def offset_origin(self, newXm):
-        corrections = self._md.corrections
+        offset = self._md.corrections['offset']
+        offset = np.asarray(offset, float)
         oldXm = self._md.position
-        corrections['offset'] += oldXm - newXm
-        self._md.corrections = corrections
+        offset += oldXm - newXm
+        self._md.corrections['offset'] = offset

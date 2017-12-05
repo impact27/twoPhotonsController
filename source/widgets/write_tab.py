@@ -15,7 +15,7 @@ class Write_tab(QtWidgets.QWidget):
         #       Create Widgets
         #======================================================================
 
-        gcode_label = QtWidgets.QLabel("GCode Path:")
+        gcode_label = QtWidgets.QLabel("GCode:")
         path_field = QtWidgets.QLineEdit()
         browse_button = QtWidgets.QPushButton('Browse')
 
@@ -77,10 +77,14 @@ class Write_tab(QtWidgets.QWidget):
         main_layout = QtWidgets.QVBoxLayout(self)
         main_layout.addLayout(path_layout)
         main_layout.addLayout(settings_layout)
-        main_layout.addWidget(draw_button)
-        main_layout.addWidget(write_button)
+        
+        
+        buttons_layout = QtWidgets.QHBoxLayout()
+        buttons_layout.addWidget(draw_button)
+        buttons_layout.addWidget(write_button)
+        main_layout.addLayout(buttons_layout)
 
-        main_layout.addStretch()
+#        main_layout.addStretch()
         self.setLayout(main_layout)
 
         #======================================================================

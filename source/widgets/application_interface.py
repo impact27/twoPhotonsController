@@ -68,13 +68,21 @@ class ApplicationWindow(QtWidgets.QMainWindow):
 
         tabs_widget.addTab(Coordinates_tab(self.application_delegate),
                            'Coordinates')
-        tabs_widget.addTab(Write_tab(self.application_delegate),
-                           'Write')
         tabs_widget.addTab(Focus_tab(self.application_delegate),
                            'Focus')
-        tabs_widget.addTab(Script_tab(self.application_delegate),
-                           'Script')
-
+        write_widget = QtWidgets.QWidget()
+        write_layout = QtWidgets.QVBoxLayout()
+        write_layout.addWidget(Write_tab(self.application_delegate))
+        
+        line = QtWidgets.QFrame()
+        line.setFrameShape(QtWidgets.QFrame.HLine)
+        line.setFrameShadow(QtWidgets.QFrame.Sunken)
+        write_layout.addWidget(line)
+        write_layout.addWidget(Script_tab(self.application_delegate))
+        write_layout.addStretch()
+        write_widget.setLayout(write_layout)
+        tabs_widget.addTab(write_widget, 'Write')
+        
         tabs_widget.setMaximumWidth(300)
 
         control_widget = Controls_tab(self.application_delegate)

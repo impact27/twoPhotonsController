@@ -8,7 +8,7 @@ import numpy as np
 
 powers = np.array([2.14, 2.76, 3.43, 4.38])  # mW
 speeds = np.arange(20, 201, 20)  # umps
-z_offsets = np.arange(-1.8, 2, .3)  # um
+z_offsets = np.arange(-1.8, 2, .2)  # um
 off_speed = 1000
 
 motor_step = 125

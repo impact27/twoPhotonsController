@@ -381,9 +381,9 @@ class controller(QtCore.QObject):
         QtCore.QMutexLocker(self.mutex)
 
         actualZ = self.XmtoXs([*self.position[:2], 0])[2]
-        self.corrections["offset"] = np.asarray(self.corrections["offset"],
-                                                float)
-        self.corrections["offset"][2] += Zzero - actualZ
+        offset = np.asarray(self.corrections["offset"], float)
+        offset[2] += Zzero - actualZ
+        self.corrections["offset"] = offset
 
     def is_ready(self):
         pass

@@ -239,7 +239,7 @@ class Zcorrector():
         z_start = Z + back
         z_stop = Z + forth
 
-        current_step = step
+        current_step = float(step)
 
         list_zpos = []
         list_int = []

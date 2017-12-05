@@ -18,7 +18,7 @@ class Script_tab(QtWidgets.QWidget):
         #======================================================================
         #       Create Widgets
         #======================================================================
-        script_label = QtWidgets.QLabel("GCode Path:")
+        script_label = QtWidgets.QLabel("Script")
         path_field = QtWidgets.QLineEdit()
         browse_button = QtWidgets.QPushButton('Browse')
         run_button = QtWidgets.QPushButton('Run')
@@ -30,11 +30,15 @@ class Script_tab(QtWidgets.QWidget):
 
         main_layout = QtWidgets.QVBoxLayout()
         main_layout.addWidget(script_label)
-        main_layout.addWidget(path_field)
-        main_layout.addWidget(browse_button)
-        main_layout.addWidget(run_button)
-        main_layout.addWidget(draw_button)
-        main_layout.addStretch()
+        path_layout = QtWidgets.QHBoxLayout()
+        path_layout.addWidget(path_field)
+        path_layout.addWidget(browse_button)
+        main_layout.addLayout(path_layout)
+        buttons_layout = QtWidgets.QHBoxLayout()
+        buttons_layout.addWidget(draw_button)
+        buttons_layout.addWidget(run_button)
+        main_layout.addLayout(buttons_layout)
+#        main_layout.addStretch()
         self.setLayout(main_layout)
 
         #======================================================================
