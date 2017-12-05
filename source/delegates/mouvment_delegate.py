@@ -159,6 +159,15 @@ class mouvment_delegate(QtCore.QObject):
 
         self.motor.corrections = corrections
         self.piezzo.corrections['rotation angle'] = corrections['rotation angle']
+        
+    def offset_origin(self, newXm):
+        corrections = self.motor.corrections
+        offset = corrections["offset"]
+        offset = np.asarray(offset, float)
+        oldXm = self.position
+        offset += oldXm - newXm
+        corrections["offset"] = offset
+        self.motor.corrections = corrections
 
 
 class controller(QtCore.QObject):
@@ -384,6 +393,7 @@ class controller(QtCore.QObject):
         offset = np.asarray(self.corrections["offset"], float)
         offset[2] += Zzero - actualZ
         self.corrections["offset"] = offset
+        self.coordinatesCorrected.emit(self.corrections)
 
     def is_ready(self):
         pass
@@ -504,6 +514,7 @@ class piezzo(controller):
 
         self._corrections['offset'][2] = 25.
         self._corrections["slope"] = np.zeros(2)
+        self.coordinatesCorrected.emit(self.corrections)
         self.goto_position([0, 0, 0], checkid=checkid)
 
     def _XSPOS(self):

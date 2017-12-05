@@ -142,10 +142,3 @@ class coordinates_delegate(QtCore.QObject):
         # use saved info to correct coordinates
         self._updateXYZCorr()
         self.updatelist.emit(self._positions)
-
-    def offset_origin(self, newXm):
-        offset = self._md.corrections['offset']
-        offset = np.asarray(offset, float)
-        oldXm = self._md.position
-        offset += oldXm - newXm
-        self._md.corrections['offset'] = offset

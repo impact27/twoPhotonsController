@@ -145,7 +145,8 @@ class Coordinates_tab(QtWidgets.QWidget):
         save_errors.clicked.connect(cd.save_errors)
 
         offset_button.clicked.connect(lambda:
-                                      cd.offset_origin(np.fromstring(offset_input.text(), sep=',')))
+            application_delegate.mouvment_delegate.offset_origin(
+                    np.fromstring(offset_input.text(), sep=',')))
 
         #======================================================================
         #         Save variables
