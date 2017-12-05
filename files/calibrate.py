@@ -8,7 +8,7 @@ import numpy as np
 
 powers = np.array([2.14, 2.76, 3.43, 4.38])  # mW
 speeds = np.arange(20, 201, 20)  # umps
-z_offsets = np.arange(-1.8, 2, .2)  # um
+z_offsets = np.arange(1, 3.1, .2)  # um
 off_speed = 1000
 
 motor_step = 125
@@ -52,5 +52,5 @@ for xpos, power in enumerate(powers):
                 speed))
             lines.append("laser power 0")
 
-with open('instructions.txt', 'w') as f:
+with open('instructions1-4.txt', 'w') as f:
     f.write('\n'.join(lines))
