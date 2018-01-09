@@ -570,6 +570,7 @@ motor X375.00 Y-100.00 F20
 motor X325.00 Y-100.00 F20
 laser power 0.000000
 motor X325.00 Y-200.00 F1000
+laser power 0
 laser ON
 motor X500.00 Y0.00
 piezzo X50 Y50 F1000
@@ -580,60 +581,49 @@ laser power 3.430000
 piezzo X-50 Y-50 Z0 F20
 piezzo X50 Y-50 Z0 F20
 laser power 0
-piezzo X-50 Y-50 Z0.000 F1000
-motor X500.00 Y8.20 F1000
+motor X450.00 Y-41.80 F1000
 laser power 2.760000
-motor X550.00 Y8.20 F20
+motor X500.00 Y-41.80 F20
 laser power 0
-piezzo X-50 Y-50 Z0.500 F1000
-motor X500.00 Y16.41 F1000
+motor X450.00 Y-33.59 F1000
 laser power 2.760000
-motor X551.82 Y16.41 F20
+motor X501.82 Y-33.59 F20
 laser power 0
-piezzo X-50 Y-50 Z1.000 F1000
-motor X500.00 Y24.61 F1000
+motor X450.00 Y-25.39 F1000
 laser power 2.760000
-motor X553.64 Y24.61 F20
+motor X503.64 Y-25.39 F20
 laser power 0
-piezzo X-50 Y-50 Z1.500 F1000
-motor X500.00 Y32.81 F1000
+motor X450.00 Y-17.19 F1000
 laser power 2.760000
-motor X555.45 Y32.81 F20
+motor X505.45 Y-17.19 F20
 laser power 0
-piezzo X-50 Y-50 Z2.000 F1000
-motor X500.00 Y41.02 F1000
+motor X450.00 Y-8.98 F1000
 laser power 2.760000
-motor X557.27 Y41.02 F20
+motor X507.27 Y-8.98 F20
 laser power 0
-piezzo X-50 Y-50 Z2.500 F1000
-motor X500.00 Y49.22 F1000
+motor X450.00 Y-0.78 F1000
 laser power 2.760000
-motor X559.09 Y49.22 F20
+motor X509.09 Y-0.78 F20
 laser power 0
-piezzo X-50 Y-50 Z3.000 F1000
-motor X500.00 Y57.42 F1000
+motor X450.00 Y7.42 F1000
 laser power 2.760000
-motor X560.91 Y57.42 F20
+motor X510.91 Y7.42 F20
 laser power 0
-piezzo X-50 Y-50 Z3.500 F1000
-motor X500.00 Y65.62 F1000
+motor X450.00 Y15.62 F1000
 laser power 2.760000
-motor X562.73 Y65.62 F20
+motor X512.73 Y15.62 F20
 laser power 0
-piezzo X-50 Y-50 Z4.000 F1000
-motor X500.00 Y73.83 F1000
+motor X450.00 Y23.83 F1000
 laser power 2.760000
-motor X564.55 Y73.83 F20
+motor X514.55 Y23.83 F20
 laser power 0
-piezzo X-50 Y-50 Z4.500 F1000
-motor X500.00 Y82.03 F1000
+motor X450.00 Y32.03 F1000
 laser power 2.760000
-motor X566.36 Y82.03 F20
+motor X516.36 Y32.03 F20
 laser power 0
-piezzo X-50 Y-50 Z5.000 F1000
-motor X500.00 Y90.23 F1000
+motor X450.00 Y40.23 F1000
 laser power 2.760000
-motor X568.18 Y90.23 F20
+motor X518.18 Y40.23 F20
 laser power 0
 motor X500.00 Y125.00
 piezzo X50 Y50 F1000
@@ -644,60 +634,49 @@ laser power 3.430000
 piezzo X-50 Y-50 Z0 F20
 piezzo X50 Y-50 Z0 F20
 laser power 0
-piezzo X-50 Y-50 Z0.000 F1000
-motor X500.00 Y133.20 F1000
+motor X450.00 Y83.20 F1000
 laser power 2.760000
-motor X555.00 Y133.20 F50
+motor X505.00 Y83.20 F50
 laser power 0
-piezzo X-50 Y-50 Z0.500 F1000
-motor X500.00 Y141.41 F1000
+motor X450.00 Y91.41 F1000
 laser power 2.760000
-motor X556.82 Y141.41 F50
+motor X506.82 Y91.41 F50
 laser power 0
-piezzo X-50 Y-50 Z1.000 F1000
-motor X500.00 Y149.61 F1000
+motor X450.00 Y99.61 F1000
 laser power 2.760000
-motor X558.64 Y149.61 F50
+motor X508.64 Y99.61 F50
 laser power 0
-piezzo X-50 Y-50 Z1.500 F1000
-motor X500.00 Y157.81 F1000
+motor X450.00 Y107.81 F1000
 laser power 2.760000
-motor X560.45 Y157.81 F50
+motor X510.45 Y107.81 F50
 laser power 0
-piezzo X-50 Y-50 Z2.000 F1000
-motor X500.00 Y166.02 F1000
+motor X450.00 Y116.02 F1000
 laser power 2.760000
-motor X562.27 Y166.02 F50
+motor X512.27 Y116.02 F50
 laser power 0
-piezzo X-50 Y-50 Z2.500 F1000
-motor X500.00 Y174.22 F1000
+motor X450.00 Y124.22 F1000
 laser power 2.760000
-motor X564.09 Y174.22 F50
+motor X514.09 Y124.22 F50
 laser power 0
-piezzo X-50 Y-50 Z3.000 F1000
-motor X500.00 Y182.42 F1000
+motor X450.00 Y132.42 F1000
 laser power 2.760000
-motor X565.91 Y182.42 F50
+motor X515.91 Y132.42 F50
 laser power 0
-piezzo X-50 Y-50 Z3.500 F1000
-motor X500.00 Y190.62 F1000
+motor X450.00 Y140.62 F1000
 laser power 2.760000
-motor X567.73 Y190.62 F50
+motor X517.73 Y140.62 F50
 laser power 0
-piezzo X-50 Y-50 Z4.000 F1000
-motor X500.00 Y198.83 F1000
+motor X450.00 Y148.83 F1000
 laser power 2.760000
-motor X569.55 Y198.83 F50
+motor X519.55 Y148.83 F50
 laser power 0
-piezzo X-50 Y-50 Z4.500 F1000
-motor X500.00 Y207.03 F1000
+motor X450.00 Y157.03 F1000
 laser power 2.760000
-motor X571.36 Y207.03 F50
+motor X521.36 Y157.03 F50
 laser power 0
-piezzo X-50 Y-50 Z5.000 F1000
-motor X500.00 Y215.23 F1000
+motor X450.00 Y165.23 F1000
 laser power 2.760000
-motor X573.18 Y215.23 F50
+motor X523.18 Y165.23 F50
 laser power 0
 motor X500.00 Y250.00
 piezzo X50 Y50 F1000
@@ -708,60 +687,49 @@ laser power 3.430000
 piezzo X-50 Y-50 Z0 F20
 piezzo X50 Y-50 Z0 F20
 laser power 0
-piezzo X-50 Y-50 Z0.000 F1000
-motor X500.00 Y258.20 F1000
+motor X450.00 Y208.20 F1000
 laser power 2.760000
-motor X563.33 Y258.20 F100
+motor X513.33 Y208.20 F100
 laser power 0
-piezzo X-50 Y-50 Z0.500 F1000
-motor X500.00 Y266.41 F1000
+motor X450.00 Y216.41 F1000
 laser power 2.760000
-motor X565.15 Y266.41 F100
+motor X515.15 Y216.41 F100
 laser power 0
-piezzo X-50 Y-50 Z1.000 F1000
-motor X500.00 Y274.61 F1000
+motor X450.00 Y224.61 F1000
 laser power 2.760000
-motor X566.97 Y274.61 F100
+motor X516.97 Y224.61 F100
 laser power 0
-piezzo X-50 Y-50 Z1.500 F1000
-motor X500.00 Y282.81 F1000
+motor X450.00 Y232.81 F1000
 laser power 2.760000
-motor X568.79 Y282.81 F100
+motor X518.79 Y232.81 F100
 laser power 0
-piezzo X-50 Y-50 Z2.000 F1000
-motor X500.00 Y291.02 F1000
+motor X450.00 Y241.02 F1000
 laser power 2.760000
-motor X570.61 Y291.02 F100
+motor X520.61 Y241.02 F100
 laser power 0
-piezzo X-50 Y-50 Z2.500 F1000
-motor X500.00 Y299.22 F1000
+motor X450.00 Y249.22 F1000
 laser power 2.760000
-motor X572.42 Y299.22 F100
+motor X522.42 Y249.22 F100
 laser power 0
-piezzo X-50 Y-50 Z3.000 F1000
-motor X500.00 Y307.42 F1000
+motor X450.00 Y257.42 F1000
 laser power 2.760000
-motor X574.24 Y307.42 F100
+motor X524.24 Y257.42 F100
 laser power 0
-piezzo X-50 Y-50 Z3.500 F1000
-motor X500.00 Y315.62 F1000
+motor X450.00 Y265.62 F1000
 laser power 2.760000
-motor X576.06 Y315.62 F100
+motor X526.06 Y265.62 F100
 laser power 0
-piezzo X-50 Y-50 Z4.000 F1000
-motor X500.00 Y323.83 F1000
+motor X450.00 Y273.83 F1000
 laser power 2.760000
-motor X577.88 Y323.83 F100
+motor X527.88 Y273.83 F100
 laser power 0
-piezzo X-50 Y-50 Z4.500 F1000
-motor X500.00 Y332.03 F1000
+motor X450.00 Y282.03 F1000
 laser power 2.760000
-motor X579.70 Y332.03 F100
+motor X529.70 Y282.03 F100
 laser power 0
-piezzo X-50 Y-50 Z5.000 F1000
-motor X500.00 Y340.23 F1000
+motor X450.00 Y290.23 F1000
 laser power 2.760000
-motor X581.52 Y340.23 F100
+motor X531.52 Y290.23 F100
 laser power 0
 motor X500.00 Y375.00
 piezzo X50 Y50 F1000
@@ -772,60 +740,49 @@ laser power 3.430000
 piezzo X-50 Y-50 Z0 F20
 piezzo X50 Y-50 Z0 F20
 laser power 0
-piezzo X-50 Y-50 Z0.000 F1000
-motor X500.00 Y383.20 F1000
+motor X450.00 Y333.20 F1000
 laser power 2.760000
-motor X580.00 Y383.20 F200
+motor X530.00 Y333.20 F200
 laser power 0
-piezzo X-50 Y-50 Z0.500 F1000
-motor X500.00 Y391.41 F1000
+motor X450.00 Y341.41 F1000
 laser power 2.760000
-motor X581.82 Y391.41 F200
+motor X531.82 Y341.41 F200
 laser power 0
-piezzo X-50 Y-50 Z1.000 F1000
-motor X500.00 Y399.61 F1000
+motor X450.00 Y349.61 F1000
 laser power 2.760000
-motor X583.64 Y399.61 F200
+motor X533.64 Y349.61 F200
 laser power 0
-piezzo X-50 Y-50 Z1.500 F1000
-motor X500.00 Y407.81 F1000
+motor X450.00 Y357.81 F1000
 laser power 2.760000
-motor X585.45 Y407.81 F200
+motor X535.45 Y357.81 F200
 laser power 0
-piezzo X-50 Y-50 Z2.000 F1000
-motor X500.00 Y416.02 F1000
+motor X450.00 Y366.02 F1000
 laser power 2.760000
-motor X587.27 Y416.02 F200
+motor X537.27 Y366.02 F200
 laser power 0
-piezzo X-50 Y-50 Z2.500 F1000
-motor X500.00 Y424.22 F1000
+motor X450.00 Y374.22 F1000
 laser power 2.760000
-motor X589.09 Y424.22 F200
+motor X539.09 Y374.22 F200
 laser power 0
-piezzo X-50 Y-50 Z3.000 F1000
-motor X500.00 Y432.42 F1000
+motor X450.00 Y382.42 F1000
 laser power 2.760000
-motor X590.91 Y432.42 F200
+motor X540.91 Y382.42 F200
 laser power 0
-piezzo X-50 Y-50 Z3.500 F1000
-motor X500.00 Y440.62 F1000
+motor X450.00 Y390.62 F1000
 laser power 2.760000
-motor X592.73 Y440.62 F200
+motor X542.73 Y390.62 F200
 laser power 0
-piezzo X-50 Y-50 Z4.000 F1000
-motor X500.00 Y448.83 F1000
+motor X450.00 Y398.83 F1000
 laser power 2.760000
-motor X594.55 Y448.83 F200
+motor X544.55 Y398.83 F200
 laser power 0
-piezzo X-50 Y-50 Z4.500 F1000
-motor X500.00 Y457.03 F1000
+motor X450.00 Y407.03 F1000
 laser power 2.760000
-motor X596.36 Y457.03 F200
+motor X546.36 Y407.03 F200
 laser power 0
-piezzo X-50 Y-50 Z5.000 F1000
-motor X500.00 Y465.23 F1000
+motor X450.00 Y415.23 F1000
 laser power 2.760000
-motor X598.18 Y465.23 F200
+motor X548.18 Y415.23 F200
 laser power 0
 motor X625.00 Y0.00
 piezzo X50 Y50 F1000
@@ -836,60 +793,49 @@ laser power 3.430000
 piezzo X-50 Y-50 Z0 F20
 piezzo X50 Y-50 Z0 F20
 laser power 0
-piezzo X-50 Y-50 Z0.000 F1000
-motor X625.00 Y9.09 F1000
+motor X575.00 Y-40.91 F1000
 laser power 3.430000
-motor X675.00 Y9.09 F20
+motor X625.00 Y-40.91 F20
 laser power 0
-piezzo X-50 Y-50 Z0.500 F1000
-motor X625.00 Y18.18 F1000
+motor X575.00 Y-31.82 F1000
 laser power 3.430000
-motor X676.82 Y18.18 F20
+motor X626.82 Y-31.82 F20
 laser power 0
-piezzo X-50 Y-50 Z1.000 F1000
-motor X625.00 Y27.27 F1000
+motor X575.00 Y-22.73 F1000
 laser power 3.430000
-motor X678.64 Y27.27 F20
+motor X628.64 Y-22.73 F20
 laser power 0
-piezzo X-50 Y-50 Z1.500 F1000
-motor X625.00 Y36.36 F1000
+motor X575.00 Y-13.64 F1000
 laser power 3.430000
-motor X680.45 Y36.36 F20
+motor X630.45 Y-13.64 F20
 laser power 0
-piezzo X-50 Y-50 Z2.000 F1000
-motor X625.00 Y45.45 F1000
+motor X575.00 Y-4.55 F1000
 laser power 3.430000
-motor X682.27 Y45.45 F20
+motor X632.27 Y-4.55 F20
 laser power 0
-piezzo X-50 Y-50 Z2.500 F1000
-motor X625.00 Y54.55 F1000
+motor X575.00 Y4.55 F1000
 laser power 3.430000
-motor X684.09 Y54.55 F20
+motor X634.09 Y4.55 F20
 laser power 0
-piezzo X-50 Y-50 Z3.000 F1000
-motor X625.00 Y63.64 F1000
+motor X575.00 Y13.64 F1000
 laser power 3.430000
-motor X685.91 Y63.64 F20
+motor X635.91 Y13.64 F20
 laser power 0
-piezzo X-50 Y-50 Z3.500 F1000
-motor X625.00 Y72.73 F1000
+motor X575.00 Y22.73 F1000
 laser power 3.430000
-motor X687.73 Y72.73 F20
+motor X637.73 Y22.73 F20
 laser power 0
-piezzo X-50 Y-50 Z4.000 F1000
-motor X625.00 Y81.82 F1000
+motor X575.00 Y31.82 F1000
 laser power 3.430000
-motor X689.55 Y81.82 F20
+motor X639.55 Y31.82 F20
 laser power 0
-piezzo X-50 Y-50 Z4.500 F1000
-motor X625.00 Y90.91 F1000
+motor X575.00 Y40.91 F1000
 laser power 3.430000
-motor X691.36 Y90.91 F20
+motor X641.36 Y40.91 F20
 laser power 0
-piezzo X-50 Y-50 Z5.000 F1000
-motor X625.00 Y100.00 F1000
+motor X575.00 Y50.00 F1000
 laser power 3.430000
-motor X693.18 Y100.00 F20
+motor X643.18 Y50.00 F20
 laser power 0
 motor X625.00 Y125.00
 piezzo X50 Y50 F1000
@@ -900,60 +846,49 @@ laser power 3.430000
 piezzo X-50 Y-50 Z0 F20
 piezzo X50 Y-50 Z0 F20
 laser power 0
-piezzo X-50 Y-50 Z0.000 F1000
-motor X625.00 Y134.09 F1000
+motor X575.00 Y84.09 F1000
 laser power 3.430000
-motor X680.00 Y134.09 F50
+motor X630.00 Y84.09 F50
 laser power 0
-piezzo X-50 Y-50 Z0.500 F1000
-motor X625.00 Y143.18 F1000
+motor X575.00 Y93.18 F1000
 laser power 3.430000
-motor X681.82 Y143.18 F50
+motor X631.82 Y93.18 F50
 laser power 0
-piezzo X-50 Y-50 Z1.000 F1000
-motor X625.00 Y152.27 F1000
+motor X575.00 Y102.27 F1000
 laser power 3.430000
-motor X683.64 Y152.27 F50
+motor X633.64 Y102.27 F50
 laser power 0
-piezzo X-50 Y-50 Z1.500 F1000
-motor X625.00 Y161.36 F1000
+motor X575.00 Y111.36 F1000
 laser power 3.430000
-motor X685.45 Y161.36 F50
+motor X635.45 Y111.36 F50
 laser power 0
-piezzo X-50 Y-50 Z2.000 F1000
-motor X625.00 Y170.45 F1000
+motor X575.00 Y120.45 F1000
 laser power 3.430000
-motor X687.27 Y170.45 F50
+motor X637.27 Y120.45 F50
 laser power 0
-piezzo X-50 Y-50 Z2.500 F1000
-motor X625.00 Y179.55 F1000
+motor X575.00 Y129.55 F1000
 laser power 3.430000
-motor X689.09 Y179.55 F50
+motor X639.09 Y129.55 F50
 laser power 0
-piezzo X-50 Y-50 Z3.000 F1000
-motor X625.00 Y188.64 F1000
+motor X575.00 Y138.64 F1000
 laser power 3.430000
-motor X690.91 Y188.64 F50
+motor X640.91 Y138.64 F50
 laser power 0
-piezzo X-50 Y-50 Z3.500 F1000
-motor X625.00 Y197.73 F1000
+motor X575.00 Y147.73 F1000
 laser power 3.430000
-motor X692.73 Y197.73 F50
+motor X642.73 Y147.73 F50
 laser power 0
-piezzo X-50 Y-50 Z4.000 F1000
-motor X625.00 Y206.82 F1000
+motor X575.00 Y156.82 F1000
 laser power 3.430000
-motor X694.55 Y206.82 F50
+motor X644.55 Y156.82 F50
 laser power 0
-piezzo X-50 Y-50 Z4.500 F1000
-motor X625.00 Y215.91 F1000
+motor X575.00 Y165.91 F1000
 laser power 3.430000
-motor X696.36 Y215.91 F50
+motor X646.36 Y165.91 F50
 laser power 0
-piezzo X-50 Y-50 Z5.000 F1000
-motor X625.00 Y225.00 F1000
+motor X575.00 Y175.00 F1000
 laser power 3.430000
-motor X698.18 Y225.00 F50
+motor X648.18 Y175.00 F50
 laser power 0
 motor X625.00 Y250.00
 piezzo X50 Y50 F1000
@@ -964,60 +899,49 @@ laser power 3.430000
 piezzo X-50 Y-50 Z0 F20
 piezzo X50 Y-50 Z0 F20
 laser power 0
-piezzo X-50 Y-50 Z0.000 F1000
-motor X625.00 Y259.09 F1000
+motor X575.00 Y209.09 F1000
 laser power 3.430000
-motor X688.33 Y259.09 F100
+motor X638.33 Y209.09 F100
 laser power 0
-piezzo X-50 Y-50 Z0.500 F1000
-motor X625.00 Y268.18 F1000
+motor X575.00 Y218.18 F1000
 laser power 3.430000
-motor X690.15 Y268.18 F100
+motor X640.15 Y218.18 F100
 laser power 0
-piezzo X-50 Y-50 Z1.000 F1000
-motor X625.00 Y277.27 F1000
+motor X575.00 Y227.27 F1000
 laser power 3.430000
-motor X691.97 Y277.27 F100
+motor X641.97 Y227.27 F100
 laser power 0
-piezzo X-50 Y-50 Z1.500 F1000
-motor X625.00 Y286.36 F1000
+motor X575.00 Y236.36 F1000
 laser power 3.430000
-motor X693.79 Y286.36 F100
+motor X643.79 Y236.36 F100
 laser power 0
-piezzo X-50 Y-50 Z2.000 F1000
-motor X625.00 Y295.45 F1000
+motor X575.00 Y245.45 F1000
 laser power 3.430000
-motor X695.61 Y295.45 F100
+motor X645.61 Y245.45 F100
 laser power 0
-piezzo X-50 Y-50 Z2.500 F1000
-motor X625.00 Y304.55 F1000
+motor X575.00 Y254.55 F1000
 laser power 3.430000
-motor X697.42 Y304.55 F100
+motor X647.42 Y254.55 F100
 laser power 0
-piezzo X-50 Y-50 Z3.000 F1000
-motor X625.00 Y313.64 F1000
+motor X575.00 Y263.64 F1000
 laser power 3.430000
-motor X699.24 Y313.64 F100
+motor X649.24 Y263.64 F100
 laser power 0
-piezzo X-50 Y-50 Z3.500 F1000
-motor X625.00 Y322.73 F1000
+motor X575.00 Y272.73 F1000
 laser power 3.430000
-motor X701.06 Y322.73 F100
+motor X651.06 Y272.73 F100
 laser power 0
-piezzo X-50 Y-50 Z4.000 F1000
-motor X625.00 Y331.82 F1000
+motor X575.00 Y281.82 F1000
 laser power 3.430000
-motor X702.88 Y331.82 F100
+motor X652.88 Y281.82 F100
 laser power 0
-piezzo X-50 Y-50 Z4.500 F1000
-motor X625.00 Y340.91 F1000
+motor X575.00 Y290.91 F1000
 laser power 3.430000
-motor X704.70 Y340.91 F100
+motor X654.70 Y290.91 F100
 laser power 0
-piezzo X-50 Y-50 Z5.000 F1000
-motor X625.00 Y350.00 F1000
+motor X575.00 Y300.00 F1000
 laser power 3.430000
-motor X706.52 Y350.00 F100
+motor X656.52 Y300.00 F100
 laser power 0
 motor X625.00 Y375.00
 piezzo X50 Y50 F1000
@@ -1028,60 +952,49 @@ laser power 3.430000
 piezzo X-50 Y-50 Z0 F20
 piezzo X50 Y-50 Z0 F20
 laser power 0
-piezzo X-50 Y-50 Z0.000 F1000
-motor X625.00 Y384.09 F1000
+motor X575.00 Y334.09 F1000
 laser power 3.430000
-motor X705.00 Y384.09 F200
+motor X655.00 Y334.09 F200
 laser power 0
-piezzo X-50 Y-50 Z0.500 F1000
-motor X625.00 Y393.18 F1000
+motor X575.00 Y343.18 F1000
 laser power 3.430000
-motor X706.82 Y393.18 F200
+motor X656.82 Y343.18 F200
 laser power 0
-piezzo X-50 Y-50 Z1.000 F1000
-motor X625.00 Y402.27 F1000
+motor X575.00 Y352.27 F1000
 laser power 3.430000
-motor X708.64 Y402.27 F200
+motor X658.64 Y352.27 F200
 laser power 0
-piezzo X-50 Y-50 Z1.500 F1000
-motor X625.00 Y411.36 F1000
+motor X575.00 Y361.36 F1000
 laser power 3.430000
-motor X710.45 Y411.36 F200
+motor X660.45 Y361.36 F200
 laser power 0
-piezzo X-50 Y-50 Z2.000 F1000
-motor X625.00 Y420.45 F1000
+motor X575.00 Y370.45 F1000
 laser power 3.430000
-motor X712.27 Y420.45 F200
+motor X662.27 Y370.45 F200
 laser power 0
-piezzo X-50 Y-50 Z2.500 F1000
-motor X625.00 Y429.55 F1000
+motor X575.00 Y379.55 F1000
 laser power 3.430000
-motor X714.09 Y429.55 F200
+motor X664.09 Y379.55 F200
 laser power 0
-piezzo X-50 Y-50 Z3.000 F1000
-motor X625.00 Y438.64 F1000
+motor X575.00 Y388.64 F1000
 laser power 3.430000
-motor X715.91 Y438.64 F200
+motor X665.91 Y388.64 F200
 laser power 0
-piezzo X-50 Y-50 Z3.500 F1000
-motor X625.00 Y447.73 F1000
+motor X575.00 Y397.73 F1000
 laser power 3.430000
-motor X717.73 Y447.73 F200
+motor X667.73 Y397.73 F200
 laser power 0
-piezzo X-50 Y-50 Z4.000 F1000
-motor X625.00 Y456.82 F1000
+motor X575.00 Y406.82 F1000
 laser power 3.430000
-motor X719.55 Y456.82 F200
+motor X669.55 Y406.82 F200
 laser power 0
-piezzo X-50 Y-50 Z4.500 F1000
-motor X625.00 Y465.91 F1000
+motor X575.00 Y415.91 F1000
 laser power 3.430000
-motor X721.36 Y465.91 F200
+motor X671.36 Y415.91 F200
 laser power 0
-piezzo X-50 Y-50 Z5.000 F1000
-motor X625.00 Y475.00 F1000
+motor X575.00 Y425.00 F1000
 laser power 3.430000
-motor X723.18 Y475.00 F200
+motor X673.18 Y425.00 F200
 laser power 0
 laser power 0
 piezzo X0 Y0 F1000
@@ -1138,3 +1051,4 @@ laser power 0.000000
 motor X775.00 Y-150.00 F1000
 laser power 3.430000
 motor X800.00 Y-200.00 F20
+laser power 0

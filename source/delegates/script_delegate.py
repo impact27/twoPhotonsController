@@ -236,6 +236,7 @@ class Draw_Parser(Parser):
         motor_to = self.move(self.motor_position, pos)
         self.plotto(motor_to + self.piezzo_position)
         self.motor_position = motor_to
+        self.piezzo_position = np.zeros(3)
 
     def move(self, start_position, pos):
         pos[np.isnan(pos)] = start_position[np.isnan(pos)]

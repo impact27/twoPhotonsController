@@ -34,18 +34,16 @@ def write_lines_piezzo(lines, yPos, z_offset, off_speed, power, length, speed):
     return lines
     
 def write_lines_motor(lines, motor_X, motor_Y, yPos, z_offset, off_speed, power, 
-                      length, speed):         
-    lines.append("piezzo X-50 Y-50 Z{:.3f} F{:d}".format(
-            z_offset, off_speed))
+                      length, speed):  
     lines.append("motor X{:.2f} Y{:.2f} F{:d}".format(
-        motor_X,
-        motor_Y + yPos,
+        motor_X - 50,
+        motor_Y + yPos - 50,
         off_speed))
 
     lines.append("laser power {:f}".format(power))
     lines.append("motor X{:.2f} Y{:.2f} F{:d}".format(
-        motor_X + length,
-        motor_Y + yPos,
+        motor_X + length - 50,
+        motor_Y + yPos - 50,
         speed))
     return lines
 

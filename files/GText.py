@@ -70,5 +70,6 @@ def get_gtext(lines, text, origin, height, power, speed):
                     position[1]*height/2 + offset[1],
                     cur_speed))
         offset[0] += height*3/4
+    lines.append("laser power 0")
     return lines
             
