@@ -158,7 +158,9 @@ class mouvment_delegate(QtCore.QObject):
         QtCore.QMutexLocker(self.mutex)
 
         self.motor.corrections = corrections
-        self.piezzo.corrections['rotation angle'] = corrections['rotation angle']
+        
+        self.piezzo.set_correction_key('rotation angle', 
+                                       corrections['rotation angle'])
         
     def offset_origin(self, newXm):
         corrections = self.motor.corrections
@@ -337,6 +339,10 @@ class controller(QtCore.QObject):
 
         self._corrections = corrections
         self.coordinatesCorrected.emit(corrections)
+        
+    def set_correction_key(self, key, value):
+        self._corrections[key] = value
+        self.coordinatesCorrected.emit(self._corrections)
 
     def _get_angle_matrices(self):
 
@@ -503,7 +509,7 @@ class piezzo(controller):
     def __init__(self, parent):
         super().__init__(1000, parent)
         self.mutex = QtCore.QMutex()
-        self._corrections['offset'] = np.array([50., 50., 25.])
+        self.set_correction_key('offset', np.array([50., 50., 25.]))
         self.XYZ_c = cube_controller()
         self.XYZ_c.stageConnected.connect(lambda: self.motorMove())
         self.XYZ_c.connect()
