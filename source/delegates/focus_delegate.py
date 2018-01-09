@@ -194,7 +194,6 @@ class Zcorrector():
         self.laser.set_intensity(intensity)
         self.laser.switch(True)
         self.camera.extShutter(True)
-#         self.laser.open_shutter()
 
     def endlaser(self):
         pass
