@@ -53,9 +53,7 @@ def get_gtext(lines, text, origin, height, power, speed):
     
     lines.append("laser power 0")
     for char in text.lower():
-        lines.append("piezzo X0 Y0 F{:d}".format(1000))
         lines.append("focus motor -20 21 1")
-        lines.append("focus piezzo -2 3 1")
         letter = letters_dict[char]
         for position in letter:
             if position[2]!=current_power:
