@@ -180,7 +180,7 @@ class linethread(QtCore.QThread):
 
 
 class cube_controller(stage_controller):
-
+    # Reverse y and z
     stageConnected = QtCore.pyqtSignal()
 
     def __init__(self):
@@ -205,12 +205,16 @@ class cube_controller(stage_controller):
         self.cube.CloseConnection()
 
     def MOVVEL(self, X, V):
+        # Reverse y and z
+        X[1:] = 100 - X[1:]
         self.cube.VEL([1, 2, 3], list(np.abs(V)))
         self.cube.MOV([1, 2, 3], list(X))
 
     def get_position(self):
-        return (np.asarray(
-            list(self.cube.qPOS([1, 2, 3]).values()), dtype=float))
+        X = np.asarray(list(self.cube.qPOS([1, 2, 3]).values()), dtype=float)
+        # Reverse y and z
+        X[1:] = 100 - X[1:]
+        return X
 
     def stop(self):
         try:
@@ -261,12 +265,15 @@ class cubethread(QtCore.QThread):
 
 
 class z_controller(stage_controller):
+    # Reverse z
     def __init__(self, serial=HW_conf.kinesis_cube_serial):
         super().__init__()
         self._kCubeDCServoMotor = None
         self.thread = Zthread(serial, self.set_stage)
         if serial is not None:
             self.connect(serial)
+        self.posmin = 0
+        self.posmax = 12000
 
     def reconnect(self):
         if self._kCubeDCServoMotor is not None:
@@ -274,7 +281,10 @@ class z_controller(stage_controller):
         self.connect()
 
     def get_position(self):
-        return float(str(self._kCubeDCServoMotor.Position)) * 1e3
+        Z = float(str(self._kCubeDCServoMotor.Position)) * 1e3
+        # Reverse z
+        Z = self.posmin + self.posmax - Z
+        return Z
 
     def ESTOP(self):
         try:
@@ -288,10 +298,7 @@ class z_controller(stage_controller):
                 < 1e-6) and not self._kCubeDCServoMotor.IsDeviceBusy
 
     def get_pos_range(self, axis):
-        return [float(str(self._kCubeDCServoMotor.AdvancedMotorLimits
-                          .LengthMinimum)) * 1e3,
-                float(str(self._kCubeDCServoMotor.AdvancedMotorLimits
-                          .LengthMaximum)) * 1e3]
+        return [self.posmin, self.posmax]
 
     def get_vel_range(self, axis):
         return [
@@ -302,8 +309,10 @@ class z_controller(stage_controller):
         if V[0] < 1:
             V[0] = 1
             print("Speed too small")
+        # Reverse z
+        Z = self.posmin + self.posmax - X[0]
         self.set_velocity(V[0])
-        self.move_to(X[0])
+        self._move_to(Z)
 
     def is_ready(self):
         return not self._kCubeDCServoMotor.IsDeviceBusy
@@ -348,7 +357,7 @@ class z_controller(stage_controller):
             print("Unable to return device to home position\n")
             raise
 
-    def move_to(self, pos, timeout=0):
+    def _move_to(self, pos, timeout=0):
         try:
             pos = pos / 1000
             # Move the device to position 0. We specify 0 as the wait timeout
@@ -379,6 +388,10 @@ class z_controller(stage_controller):
         if stage is None:
             raise RuntimeError("Stage is None")
         self._kCubeDCServoMotor = stage
+        self.posmin = float(str(self._kCubeDCServoMotor.AdvancedMotorLimits
+                          .LengthMinimum)) * 1e3
+        self.posmax = float(str(self._kCubeDCServoMotor.AdvancedMotorLimits
+                          .LengthMaximum)) * 1e3
 
 
 class Zthread(QtCore.QThread):

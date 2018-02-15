@@ -159,20 +159,20 @@ class Execute_Parser(Parser):
         self.camera_delegate.set_exposure_time(exp_time)
 
     def focus(self, args):
-        piezzo, back, forth, step = args
-        back, forth, step = float(back), float(forth), float(step)
+        piezzo, start_offset, stop_offset, step = args
+        start_offset, stop_offset, step = float(start_offset), float(stop_offset), float(step)
         if piezzo.lower() == 'piezzo':
-            self.focus_delegate.focus(back, forth, step,
+            self.focus_delegate.focus(start_offset, stop_offset, step,
                                       self.focus_intensity,
                                       Nloops=2, piezzo=True, wait=True,
                                       checkid=self.lockid)
         elif piezzo.lower() == 'motor':
-            self.focus_delegate.focus(back, forth, step,
+            self.focus_delegate.focus(start_offset, stop_offset, step,
                                       self.focus_intensity,
                                       Nloops=1, piezzo=False, wait=True,
                                       checkid=self.lockid)
         elif piezzo.lower() == 'both':
-            self.focus_delegate.focus(back, forth, step,
+            self.focus_delegate.focus(start_offset, stop_offsetew, step,
                                       self.focus_intensity,
                                       Nloops=1, piezzo=False, wait=True,
                                       checkid=self.lockid)

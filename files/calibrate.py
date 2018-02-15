@@ -19,31 +19,32 @@ text_height = 100
 
 
 def write_lines_piezzo(lines, yPos, z_offset, off_speed, power, length, speed):
-    lines.append("piezzo X{:.2f} Y{:.2f} Z{:.3f} F{:d}".format(
-        -50,
-        yPos - 50,
-        z_offset,
-        off_speed))
+    lines.append("piezzo X{x:.2f} Y{y:.2f} Z{z:.3f} F{f:d}".format(
+        x=-50,
+        y=yPos - 50,
+        z=z_offset,
+        f=off_speed))
 
     lines.append("laser power {:f}".format(power))
-    lines.append("piezzo X{:.2f} Y{:.2f} F{:d}".format(
-        length - 50,
-        yPos - 50,
-        speed))
+    lines.append("piezzo X{x:.2f} Y{y:.2f} F{f:d}".format(
+        x=length - 50,
+        y=yPos - 50,
+        f=speed))
     return lines
     
 def write_lines_motor(lines, motor_X, motor_Y, yPos, z_offset, off_speed, power, 
                       length, speed):  
-    lines.append("motor X{:.2f} Y{:.2f} F{:d}".format(
-        motor_X - 50,
-        motor_Y + yPos - 50,
-        off_speed))
+    lines.append("motor X{x:.2f} Y{y:.2f} Z{z:.2f} F{f:d}".format(
+        x=motor_X - 50,
+        y=motor_Y + yPos - 50,
+        z=z_offset,
+        f=off_speed))
 
     lines.append("laser power {:f}".format(power))
-    lines.append("motor X{:.2f} Y{:.2f} F{:d}".format(
-        motor_X + length - 50,
-        motor_Y + yPos - 50,
-        speed))
+    lines.append("motor X{x:.2f} Y{y:.2f} F{f:d}".format(
+        x=motor_X + length - 50,
+        y=motor_Y + yPos - 50,
+        f=speed))
     return lines
 
 def calibrate(lines, powers, speeds, z_offsets, off_speed, motor_step, motor_origin, piezzo):
@@ -57,8 +58,8 @@ def calibrate(lines, powers, speeds, z_offsets, off_speed, motor_step, motor_ori
             line_length = (2 + speed / np.max(speeds)) / 3 * 100
             lines.append("motor X{:.2f} Y{:.2f}".format(motor_X, motor_Y))
             lines.append("piezzo X50 Y50 F{:d}".format(off_speed))
-            lines.append("focus motor -20 21 1")
-            lines.append("focus piezzo -2 3 1")
+            lines.append("focus motor 20 -21 -1")
+            lines.append("focus piezzo 2 -3 -1")
     
             # Write top line
             lines.append("piezzo X-50 Y{:.2f} Z0 F{:d}".format(

@@ -26,16 +26,16 @@ class Focus_tab(QtWidgets.QWidget):
         #======================================================================
         #       Create Widgets
         #======================================================================
-        back_label = QtWidgets.QLabel("Range start:")
-        back_input = QtWidgets.QLineEdit('-20')
+        back_label = QtWidgets.QLabel("Start: Pos +")
+        back_input = QtWidgets.QLineEdit('20')
 
-        forth_label = QtWidgets.QLabel("Range end:")
-        forth_input = QtWidgets.QLineEdit('100')
+        forth_label = QtWidgets.QLabel("End: Pos +")
+        forth_input = QtWidgets.QLineEdit('-20')
 
-        step_label = QtWidgets.QLabel("Range step:")
-        step_input = QtWidgets.QLineEdit('1')
+        step_label = QtWidgets.QLabel("Step:")
+        step_input = QtWidgets.QLineEdit('-1')
 
-        Nloops_label = QtWidgets.QLabel("Number loops:")
+        Nloops_label = QtWidgets.QLabel("Loops:")
         Nloops_input = QtWidgets.QLineEdit('1')
 
         precision_check = QtWidgets.QCheckBox("Piezzo")

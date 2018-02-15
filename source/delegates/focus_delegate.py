@@ -56,15 +56,15 @@ class Focus_delegate(QtCore.QObject):
             print("Can't Plot!!!", sys.exc_info()[0])
             raise
 
-    def focus(self, back, forth, step, intensity, Nloops=1, *,
+    def focus(self, start_offset, stop_offset, step, intensity, Nloops=1, *,
               piezzo=False, wait=False, checkid=None):
 
         QtCore.QMutexLocker(self.mutex)
 
         """
-        back:
+        start_offset:
             How far back from current position
-        forth:
+        stop_offset:
             How far forth from surrent position
         step:
             Step size
@@ -82,8 +82,8 @@ class Focus_delegate(QtCore.QObject):
         else:
             stage = self.md.motor
         self.thread.set_args(
-            back,
-            forth,
+            start_offset,
+            stop_offset,
             step,
             Nloops,
             stage,
@@ -152,9 +152,11 @@ class zThread(QtCore.QThread):
         self._focus_args = None
         self._md = mouvment_delegate
 
-    def set_args(self, back, forth, step, Nloops, stage, intensity, checkid):
+    def set_args(self, start_offset, stop_offset, step, Nloops, stage,
+                 intensity, checkid):
         self._zcorrector.stage = stage
-        self._focus_args = (back, forth, step, Nloops, intensity, checkid)
+        self._focus_args = (start_offset, stop_offset, step, Nloops,
+                            intensity, checkid)
 
     def run(self):
         if self._focus_args is None:
@@ -227,7 +229,7 @@ class Zcorrector():
 
         return zPos, intensities, sizes
 
-    def focus(self, back, forth, step, N_loops=1,
+    def focus(self, start_offset, stop_offset, step, N_loops=1,
               intensity=None, checkid=None):
         """ Go to the best focal point for the laser
         """
@@ -235,8 +237,8 @@ class Zcorrector():
         self.startlaser(intensity)
 
         Z = self.stage.get_position(raw=True)[2]
-        z_start = Z + back
-        z_stop = Z + forth
+        z_start = Z + start_offset
+        z_stop = Z + stop_offset
 
         current_step = float(step)
 

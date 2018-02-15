@@ -38,7 +38,7 @@ class Write_tab(QtWidgets.QWidget):
         focus_range_input = QtWidgets.QLineEdit('100')
 
         focus_step_label = QtWidgets.QLabel('focus step:')
-        focus_step_input = QtWidgets.QLineEdit('1')
+        focus_step_input = QtWidgets.QLineEdit('-1')
 
         draw_button = QtWidgets.QPushButton('Draw')
         write_button = QtWidgets.QPushButton('Write')
