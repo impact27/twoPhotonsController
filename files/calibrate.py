@@ -6,10 +6,10 @@ Created on Thu Nov  2 15:18:13 2017
 """
 import numpy as np
 from GText import get_gtext
-
+fn = '20180215_cal.txt'
 powers = np.array([2.76, 3.43])  # mW
 speeds = np.array([20, 50, 100, 200])  # umps
-z_offsets = np.arange(0, 5.1, .5)  # um
+z_offsets = np.arange(0, 2.1, .2)  # um
 off_speed = 1000
 
 motor_step = 125
@@ -56,9 +56,9 @@ def calibrate(lines, powers, speeds, z_offsets, off_speed, motor_step, motor_ori
         for ypos, speed in enumerate(speeds):
             motor_Y = ypos * motor_step + motor_origin[1]
             line_length = (2 + speed / np.max(speeds)) / 3 * 100
-            lines.append("motor X{:.2f} Y{:.2f}".format(motor_X, motor_Y))
+            lines.append("motor X{:.2f} Y{:.2f} Z20".format(motor_X, motor_Y))
             lines.append("piezzo X50 Y50 F{:d}".format(off_speed))
-            lines.append("focus motor 20 -21 -1")
+            lines.append("focus motor 0 -41 -1")
             lines.append("focus piezzo 2 -3 -1")
     
             # Write top line
@@ -89,9 +89,9 @@ def calibrate(lines, powers, speeds, z_offsets, off_speed, motor_step, motor_ori
 motor_origin = [0, 0]
 piezzo = True
 text = 'piezzo'
-fn = '20180109_cal.txt'
 
-lines = []
+
+lines = ['focusint 0.5']
 calibrate(lines, powers, speeds, z_offsets, off_speed, motor_step, motor_origin, piezzo)     
 get_gtext(lines, text, [-50, -200], text_height, np.max(powers), np.min(speeds)) 
 
