@@ -80,6 +80,7 @@ class Focus_delegate(QtCore.QObject):
         if piezzo:
             stage = self.md.piezzo
         else:
+            self.md.piezzo.reset()
             stage = self.md.motor
         self.thread.set_args(
             start_offset,

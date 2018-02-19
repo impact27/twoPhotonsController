@@ -138,6 +138,7 @@ class write_thread(QtCore.QThread):
                     goto([np.nan,
                           np.nan,
                           move_dist])
+                    self.md.piezzo.reset()
                     # Move to pos
                     goto([x + focus_offset[0],
                           y + focus_offset[1],
