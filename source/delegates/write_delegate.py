@@ -137,18 +137,19 @@ class write_thread(QtCore.QThread):
                     # Retract
                     goto([np.nan,
                           np.nan,
-                          - move_dist])
+                          move_dist])
+                    self.md.piezzo.reset()
                     # Move to pos
                     goto([x + focus_offset[0],
                           y + focus_offset[1],
-                          - move_dist])
+                          move_dist])
 
                     # approach
                     goto([x + focus_offset[0],
                           y + focus_offset[1],
-                          - focus_range / 2])
+                          focus_range / 2])
                     # Focus with z stage
-                    self.focus_delegate.focus(0, focus_range, focus_step,
+                    self.focus_delegate.focus(0, -focus_range, focus_step,
                                               intensity=intensity,
                                               Nloops=1, piezzo=False,
                                               wait=True,

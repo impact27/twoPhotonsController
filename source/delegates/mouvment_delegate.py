@@ -450,7 +450,6 @@ class motor(controller):
 
         QtCore.QMutexLocker(self.mutex)
 
-        self.parent.piezzo.motorMove(checkid=checkid)
         self.XY_c.MOVVEL(Xs[:2], V[:2])
         self.Z_c.MOVVEL(Xs[2:], V[2:])
 
@@ -511,10 +510,10 @@ class piezzo(controller):
         self.mutex = QtCore.QMutex()
         self.set_correction_key('offset', np.array([50., 50., 25.]))
         self.XYZ_c = cube_controller()
-        self.XYZ_c.stageConnected.connect(lambda: self.motorMove())
+        self.XYZ_c.stageConnected.connect(lambda: self.reset())
         self.XYZ_c.connect()
 
-    def motorMove(self, checkid=None):
+    def reset(self, checkid=None):
 
         QtCore.QMutexLocker(self.mutex)
 

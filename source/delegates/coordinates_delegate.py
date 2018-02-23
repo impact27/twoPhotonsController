@@ -78,6 +78,7 @@ class coordinates_delegate(QtCore.QObject):
         # if still positions in the list & position is reachable:
         if self._load_next():
                 # go to position
+            self.piezzo.reset()
             self.motor.goto_position(self._current_pos['Xm'])
 
     def save_errors(self):

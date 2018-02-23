@@ -22,7 +22,7 @@ letters_dict = {
         [1, 0, 1],
         [1, 2, 1],
         [0, 2, 1],
-        [0, 0, 0]],
+        [0, 0, 1]],
     'p':[[0, 0, 0],
         [0, 2, 1],
         [1, 2, 1],
@@ -53,7 +53,12 @@ def get_gtext(lines, text, origin, height, power, speed):
     
     lines.append("laser power 0")
     for char in text.lower():
-        lines.append("focus motor -20 21 1")
+        lines.append("motor X{x:.2f} Y{y:.2f} Z{z:.2f} F{f:d}".format(
+                    x=offset[0],
+                    y=offset[1],
+                    z=20,
+                    f=1000))
+        lines.append("focus motor 0 -41 -1")
         letter = letters_dict[char]
         for position in letter:
             if position[2]!=current_power:
@@ -67,6 +72,7 @@ def get_gtext(lines, text, origin, height, power, speed):
                     position[0]*height/2 + offset[0],
                     position[1]*height/2 + offset[1],
                     cur_speed))
+        lines.append("laser power 0")
         offset[0] += height*3/4
     lines.append("laser power 0")
     return lines

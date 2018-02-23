@@ -67,11 +67,14 @@ class Parser():
         line = line.split(' ')
         command = line[0]
         arg = line[1:]
-        if command.lower() in ['laser', 'focus', 'camera']:
+        if command.lower() in ['laser', 'focus', 'camera', 'focusint']:
             getattr(self, command)(arg)
         elif command.lower() in ['piezzo', 'motor']:
             getattr(self, command)(*self.read_move_args(arg))
 
+    def focusint(self, args):
+        pass
+    
     def laser(self, args):
         if len(args) == 0:
             print("No args for laser")
@@ -159,20 +162,20 @@ class Execute_Parser(Parser):
         self.camera_delegate.set_exposure_time(exp_time)
 
     def focus(self, args):
-        piezzo, back, forth, step = args
-        back, forth, step = float(back), float(forth), float(step)
+        piezzo, start_offset, stop_offset, step = args
+        start_offset, stop_offset, step = float(start_offset), float(stop_offset), float(step)
         if piezzo.lower() == 'piezzo':
-            self.focus_delegate.focus(back, forth, step,
+            self.focus_delegate.focus(start_offset, stop_offset, step,
                                       self.focus_intensity,
                                       Nloops=2, piezzo=True, wait=True,
                                       checkid=self.lockid)
         elif piezzo.lower() == 'motor':
-            self.focus_delegate.focus(back, forth, step,
+            self.focus_delegate.focus(start_offset, stop_offset, step,
                                       self.focus_intensity,
                                       Nloops=1, piezzo=False, wait=True,
                                       checkid=self.lockid)
         elif piezzo.lower() == 'both':
-            self.focus_delegate.focus(back, forth, step,
+            self.focus_delegate.focus(start_offset, stop_offset, step,
                                       self.focus_intensity,
                                       Nloops=1, piezzo=False, wait=True,
                                       checkid=self.lockid)
@@ -186,6 +189,9 @@ class Execute_Parser(Parser):
 
         self.focus_intensity = self.laser_delegate.get_intensity()
 
+    def focusint(self, args):
+        self.focus_intensity = float(args[0])
+        
     def motor(self, pos, speed):
         self.motor_delegate.goto_position(pos, speed=speed, wait=True,
                                           checkid=self.lockid)
