@@ -6,17 +6,12 @@ Created on Thu Nov  2 15:18:13 2017
 """
 import numpy as np
 from GText import get_gtext
-<<<<<<< HEAD
 
 powers = np.array([2.46, 3.3, 4.68])  # V
 speeds = np.array([50, 100, 200, 300])  # umps
 z_offsets = np.arange(0, 5.1, .5)  # um
-=======
 fn = '20180215_cal.txt'
-powers = np.array([2.76, 3.43])  # mW
-speeds = np.array([20, 50, 100, 200])  # umps
-z_offsets = np.arange(0, 2.1, .2)  # um
->>>>>>> d7f9b96bb5daecee16b85bcfab19c09d6ea74113
+
 off_speed = 1000
 
 motor_step = 125
@@ -96,7 +91,6 @@ def calibrate(lines, powers, speeds, z_offsets, off_speed, motor_step, motor_ori
 motor_origin = [0, 0]
 piezzo = True
 text = 'piezzo'
-fn = '20180213_cal.txt'
 
 
 lines = ['focusint 0.5']
