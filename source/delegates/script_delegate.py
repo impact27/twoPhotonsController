@@ -140,7 +140,7 @@ class Execute_Parser(Parser):
         self.laser_delegate = app_delegate.laser_delegate
         self.focus_delegate = app_delegate.focus_delegate
         self.lockid = None
-        self.focus_intensity = None
+        self.focus_intensity = .5
 
     def parse(self, filename):
         self.lockid = self.md.lock()
