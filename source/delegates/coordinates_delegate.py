@@ -159,7 +159,7 @@ class piezzo_plane_thread(QtCore.QThread):
         self._md = application_delegate.mouvment_delegate
         self._fd = application_delegate.focus_delegate
         self.laser_delegate = application_delegate.laser_delegate
-        self._corners = ([5, 5, 0], [5, 95, 0], [95, 95, 0], [95, 5, 0])
+        self._corners = ([-45, -45, 0], [-45, 45, 0], [45, 45, 0], [45, -45, 0])
         self.focus_intensity = 0.5
         self._checkid = checkid
         self.Zsolver = Zsolver()
@@ -169,7 +169,7 @@ class piezzo_plane_thread(QtCore.QThread):
         for i, corner in enumerate(self._corners):
             self._md.piezzo.goto_position(corner, speed=1000, wait=True, 
                                           checkid=self._checkid)
-            self._fd.focus(2, -2.1, -1, self.focus_intensity, Nloops=2,
+            self._fd.focus(2, -2.1, -1, intensity=self.focus_intensity, Nloops=2,
                            piezzo=True, wait=True, checkid=self._checkid)
             self.focus_intensity = self.laser_delegate.get_intensity()
             

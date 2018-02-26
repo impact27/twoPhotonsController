@@ -214,8 +214,11 @@ class Coordinates_tab(QtWidgets.QWidget):
         self.pos_list.setCellWidget(row, 2, Delete)
 
     def updateCorrection(self, corrections):
-        text = ("Offset: {}\nSlope: {:.3g}X + {:.3g}Y\nRotation angle: {:.5g}π"
-                "\nStage diff angle: {:.5g}π".format(
+        text = (""
+                "Offset: {}\n"
+                "Slope: {:.3g}X + {:.3g}Y\n"
+                "Rotation angle: {:.5g}π\n"
+                "Stage diff angle: {:.5g}π".format(
                     corrections['offset'],
                     *corrections['slope'],
                     corrections["rotation angle"] / np.pi,

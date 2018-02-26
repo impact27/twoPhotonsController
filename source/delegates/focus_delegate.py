@@ -101,7 +101,8 @@ class Focus_delegate(QtCore.QObject):
         QtCore.QMutexLocker(self.mutex)
 
         self._positions.append({
-            "Xs": self.md.get_position(raw=True),
+            "motor_Xs": self.md.motor.get_position(raw=True),
+            "piezzo_Xs": self.md.piezzo.get_position(raw=True),
             "graphs": graphs,
             "time": time.time()
             })
@@ -116,7 +117,7 @@ class Focus_delegate(QtCore.QObject):
             QtCore.QDir.homePath(), "Text (*.txt)")[0]
         with open(fn, 'bw') as f:
             for pos in self._positions:
-                f.write((str(pos["Xs"]) + '\n').encode())
+                f.write((str(pos["motor_Xs"]) + '\n').encode())
                 data = pos["graphs"][0]
                 for scan_idx in range(data.shape[1]):
                     f.write(('{} pass:\n').format(scan_idx).encode())
@@ -125,8 +126,9 @@ class Focus_delegate(QtCore.QObject):
                 f.write(('Best: {}\n').format(pos["graphs"][1]).encode())
         with open(fn[:-4]+'_times.txt', 'w') as f:
             for pos in self._positions:
-                f.write("{time}, {position}\n".format(
-                        time=pos["time"], position=pos["Xs"]))
+                f.write("{time}, {position_motor}, {position_piezzo}\n".format(
+                        time=pos["time"], position_motor=pos["c"],
+                        position_piezzo=pos["piezzo_Xs"]))
                 
 
     def clear(self):
@@ -142,7 +144,8 @@ class Focus_delegate(QtCore.QObject):
 
         ret = []
         for pos in self._positions:
-            ret.append(self.md.motor.XstoXm(pos["Xs"]))
+            ret.append(self.md.motor.XstoXm(pos["motor_Xs"]) 
+                     + self.md.piezzo.XstoXm(pos["piezzo_Xs"]))
         self.updatelist.emit(ret)
 
     def ESTOP(self):
