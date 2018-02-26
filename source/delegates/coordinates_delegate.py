@@ -38,7 +38,14 @@ class coordinates_delegate(QtCore.QObject):
         self.motor = application_delegate.mouvment_delegate.motor
         self.Zsolver = Zsolver()
         self.XYsolver = XYsolver()
+        self.piezzo_plane_thread = piezzo_plane_thread(application_delegate)
 
+    def piezzo_plane(self):
+        self.piezzo_plane_thread.start()
+        
+    def ESTOP(self):
+        self.piezzo_plane_thread.terminate()
+        
     def add_position(self, Xm):
         self._positions.append(
             {'Xm': Xm,
@@ -143,3 +150,33 @@ class coordinates_delegate(QtCore.QObject):
         # use saved info to correct coordinates
         self._updateXYZCorr()
         self.updatelist.emit(self._positions)
+
+
+class piezzo_plane_thread(QtCore.QThread):
+
+    def __init__(self, application_delegate, checkid=None):
+        super().__init__()
+        self._md = application_delegate.mouvment_delegate
+        self._fd = application_delegate.focus_delegate
+        self.laser_delegate = application_delegate.laser_delegate
+        self._corners = ([5, 5, 0], [5, 95, 0], [95, 95, 0], [95, 5, 0])
+        self.focus_intensity = 0.5
+        self._checkid = checkid
+        self.Zsolver = Zsolver()
+        
+    def run(self):
+        positions = np.zeros((len(self._corners), 3))
+        for i, corner in enumerate(self._corners):
+            self._md.piezzo.goto_position(corner, speed=1000, wait=True, 
+                                          checkid=self._checkid)
+            self._fd.focus(2, -2.1, -1, self.focus_intensity, Nloops=2,
+                           piezzo=True, wait=True, checkid=self._checkid)
+            self.focus_intensity = self.laser_delegate.get_intensity()
+            
+            positions[i] = self._md.piezzo.get_position(raw=True)
+            
+        slope_x, slope_y, offset_z = self.Zsolver.solve(positions)
+        corrections = self._md.piezzo.corrections
+        corrections["slope"] = [slope_x, slope_y]
+        corrections["offset"][-1] = offset_z
+        self._md.piezzo.corrections = corrections

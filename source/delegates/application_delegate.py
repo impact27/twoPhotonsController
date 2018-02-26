@@ -57,4 +57,5 @@ class Application_delegate(QtCore.QObject):
         self.write_delegate.ESTOP()
         self.mouvment_delegate.ESTOP()
         self.script_delegate.ESTOP()
+        self.coordinates_delegate.ESTOP()
         self.mouvment_delegate.unlock()

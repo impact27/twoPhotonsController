@@ -8,7 +8,7 @@ from PyQt5 import QtCore, QtWidgets
 import numpy as np
 import sys
 import time
-
+from .coordinates_solver import Zsolver, XYsolver
 
 class Focus_delegate(QtCore.QObject):
 
@@ -57,7 +57,7 @@ class Focus_delegate(QtCore.QObject):
             print("Can't Plot!!!", sys.exc_info()[0])
             raise
 
-    def focus(self, start_offset, stop_offset, step, intensity, Nloops=1, *,
+    def focus(self, start_offset, stop_offset, step, *, intensity=None, Nloops=1,
               piezzo=False, wait=False, checkid=None):
 
         QtCore.QMutexLocker(self.mutex)

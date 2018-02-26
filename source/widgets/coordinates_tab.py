@@ -29,7 +29,7 @@ class Coordinates_tab(QtWidgets.QWidget):
         Xinput = QtWidgets.QLineEdit('0, 0, 0')
 #         X_validator = QtGui.QDoubleValidator(-1,100,3)
 #         Xinput.setValidator(X_validator)
-
+        piezzo_plane_button = QtWidgets.QPushButton('Piezzo Plane')
         newpos_button = QtWidgets.QPushButton("New Reference Position")
 
         path_field = QtWidgets.QLineEdit()
@@ -107,6 +107,7 @@ class Coordinates_tab(QtWidgets.QWidget):
         hbuttons.addWidget(clear_list_button)
 
         main_layout = QtWidgets.QVBoxLayout(self)
+        main_layout.addWidget(piezzo_plane_button)
         main_layout.addWidget(tabs_widget)
         main_layout.addWidget(pos_list)
         main_layout.addWidget(validate_button)
@@ -119,6 +120,7 @@ class Coordinates_tab(QtWidgets.QWidget):
         #======================================================================
         cd = application_delegate.coordinates_delegate
 
+        piezzo_plane_button.clicked.connect(cd.piezzo_plane)
         pos_list.cellClicked.connect(self.cellClicked)
         pos_list.verticalHeader().sectionClicked.connect(self.rowClicked)
 
