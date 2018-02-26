@@ -47,10 +47,14 @@ class Coordinates_tab(QtWidgets.QWidget):
         clear_list_button = QtWidgets.QPushButton("Clear List")
         validate_button = QtWidgets.QPushButton("Process next Position")
 
-        correction_label = QtWidgets.QLabel('')
-        self.correction_label = correction_label
-        self.updateCorrection(
-            application_delegate.mouvment_delegate.corrections)
+        correction_label_motor = QtWidgets.QLabel('')
+        self.correction_label_motor = correction_label_motor
+        correction_label_piezzo = QtWidgets.QLabel('')
+        self.correction_label_piezzo = correction_label_piezzo
+        self.updateCorrection_motor(
+            application_delegate.mouvment_delegate.motor.corrections)
+        self.updateCorrection_piezzo(
+            application_delegate.mouvment_delegate.piezzo.corrections)
 
         correction_reset = QtWidgets.QPushButton('Reset')
         correction_save = QtWidgets.QPushButton('Save')
@@ -96,7 +100,8 @@ class Coordinates_tab(QtWidgets.QWidget):
         offset_layout.addWidget(offset_input)
 
         correction_layout = QtWidgets.QVBoxLayout()
-        correction_layout.addWidget(correction_label)
+        correction_layout.addWidget(correction_label_piezzo)
+        correction_layout.addWidget(correction_label_motor)
         correction_layout.addWidget(correction_reset)
         correction_layout.addLayout(offset_layout)
         correction_layout.addWidget(offset_button)
@@ -107,12 +112,18 @@ class Coordinates_tab(QtWidgets.QWidget):
         hbuttons.addWidget(clear_list_button)
 
         main_layout = QtWidgets.QVBoxLayout(self)
-        main_layout.addWidget(piezzo_plane_button)
         main_layout.addWidget(tabs_widget)
         main_layout.addWidget(pos_list)
         main_layout.addWidget(validate_button)
         main_layout.addLayout(hbuttons)
+        
+        line = QtWidgets.QFrame()
+        line.setFrameShape(QtWidgets.QFrame.HLine)
+        line.setFrameShadow(QtWidgets.QFrame.Sunken)
+        main_layout.addWidget(line)
+        
         main_layout.addLayout(correction_layout)
+        main_layout.addWidget(piezzo_plane_button)
         self.setLayout(main_layout)
 
         #======================================================================
@@ -136,8 +147,10 @@ class Coordinates_tab(QtWidgets.QWidget):
         self.displayrow.connect(cd.displayrow)
         cd.updatelist.connect(self.updateList)
 
-        application_delegate.mouvment_delegate.coordinatesCorrected.connect(
-            self.updateCorrection)
+        application_delegate.mouvment_delegate.motor.coordinatesCorrected.connect(
+            self.updateCorrection_motor)
+        application_delegate.mouvment_delegate.piezzo.coordinatesCorrected.connect(
+            self.updateCorrection_piezzo)
         correction_reset.clicked.connect(cd.clear_positions)
 
         md = application_delegate.mouvment_delegate
@@ -213,19 +226,23 @@ class Coordinates_tab(QtWidgets.QWidget):
         self.pos_list.setCellWidget(row, 1, Xs_label)
         self.pos_list.setCellWidget(row, 2, Delete)
 
-    def updateCorrection(self, corrections):
-        text = (""
-                "Offset: {}\n"
-                "Slope: {:.3g}X + {:.3g}Y\n"
-                "Rotation angle: {:.5g}π\n"
-                "Stage diff angle: {:.5g}π".format(
-                    corrections['offset'],
-                    *corrections['slope'],
-                    corrections["rotation angle"] / np.pi,
-                    corrections["stage diff angle"] / np.pi
+    def updateCorrection_motor(self, corrections):
+        text = ("Offset: {offset_motor}\n"
+                "Slope: {slope_x:.3g}X + {slope_y:.3g}Y\n"
+                "Rotation angle: {rotation_angle:.5g}π\n"
+                "Stage diff angle: {stage_angle:.5g}π".format(
+                        offset_motor=corrections['offset'],
+                        slope_x=corrections['slope'][0],
+                        slope_y=corrections['slope'][1],
+                        rotation_angle=corrections["rotation angle"] / np.pi,
+                        stage_angle=corrections["stage diff angle"] / np.pi
                 ))
+        self.correction_label_motor.setText(text)
+        
+    def updateCorrection_piezzo(self, corrections):
+        text = ("Offset Piezzo: {offset_piezzo}\n"
+                "Slope Piezzo: {slope_piezzo}".format(
+                        offset_piezzo=corrections['offset'],
+                        slope_piezzo=corrections['slope']))
 
-#        text = ('{:.3e}X + {:.3e}Y\n+ {:.3f}μm\n'.format(*Zcoeffs)
-#                + 'Φ:\t{:.5g}π\nθ:\t{:.5g}π\nXo:\t[{:.3f}, {:.3f}]μm'.format(
-#                    XYcoeff[0] / np.pi, XYcoeff[1] / np.pi, *XYcoeff[2:]))
-        self.correction_label.setText(text)
+        self.correction_label_piezzo.setText(text)
