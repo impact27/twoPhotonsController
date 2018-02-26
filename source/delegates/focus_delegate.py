@@ -7,6 +7,7 @@ Created on Wed Oct 25 17:25:10 2017
 from PyQt5 import QtCore, QtWidgets
 import numpy as np
 import sys
+import time
 
 
 class Focus_delegate(QtCore.QObject):
@@ -80,7 +81,7 @@ class Focus_delegate(QtCore.QObject):
         if piezzo:
             stage = self.md.piezzo
         else:
-            self.md.piezzo.reset()
+            self.md.piezzo.reset(checkid=checkid)
             stage = self.md.motor
         self.thread.set_args(
             start_offset,
@@ -100,8 +101,10 @@ class Focus_delegate(QtCore.QObject):
         QtCore.QMutexLocker(self.mutex)
 
         self._positions.append({
-            "Xs": self.md.motor.get_position(raw=True),
-            "graphs": graphs})
+            "Xs": self.md.get_position(raw=True),
+            "graphs": graphs,
+            "time": time.time()
+            })
         self._update()
 
     def save(self):
@@ -120,6 +123,11 @@ class Focus_delegate(QtCore.QObject):
                     for line in data[:, scan_idx]:
                         np.savetxt(f, line[np.newaxis])
                 f.write(('Best: {}\n').format(pos["graphs"][1]).encode())
+        with open(fn[:-4]+'_times.txt', 'w') as f:
+            for pos in self._positions:
+                f.write("{time}, {position}\n".format(
+                        time=pos["time"], position=pos["Xs"]))
+                
 
     def clear(self):
 
@@ -280,10 +288,10 @@ class Zcorrector():
 
         close = intensity > .8 * intensity.max()
         if np.sum(close) < 4:
-            close = np.abs(zPos - zPos[argbest]) < 1.5 * step
+            close = np.abs(zPos - zPos[argbest]) < 1.5 * np.abs(step)
         fit = np.polyfit(zPos[close], Y[close], 2)
         zBest = -fit[1] / (2 * fit[0])
-        if np.abs(zBest - zPos[argbest]) > 2 * step:
+        if np.abs(zBest - zPos[argbest]) > 2 * np.abs(step):
             zBest = zPos[argbest]
 
         ret = np.asarray([list_zpos, list_int, list_sizes]), zBest

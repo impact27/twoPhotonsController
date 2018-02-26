@@ -93,7 +93,7 @@ class Focus_tab(QtWidgets.QWidget):
             float(forth_input.text()),
             float(step_input.text()),
             intensity=None,
-            Nloops=int(Nloops_input.text()),
+            Nloops=int(float(Nloops_input.text())),
             piezzo=precision_check.isChecked()))
 
         clear_list_button.clicked.connect(self.fd.clear)
@@ -126,7 +126,7 @@ class Focus_tab(QtWidgets.QWidget):
         row = self.pos_list.rowCount()
         self.pos_list.insertRow(row)
 
-        Xmtext = "[{:.1f},\n {:.1f},\n {:.1f}]".format(*Xm)
+        Xmtext = "[{:.1f},\n {:.1f},\n {:.3f}]".format(*Xm)
         Xm_label = QtWidgets.QLabel(Xmtext)
         Xm_label.setAlignment(QtCore.Qt.AlignCenter)
 
