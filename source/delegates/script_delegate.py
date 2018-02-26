@@ -70,6 +70,8 @@ class Parser():
         arg = line[1:]
         if command.lower() in ['laser', 'focus', 'camera', 'focusint']:
             getattr(self, command)(arg)
+        elif command.lower() in ['piezzoslope']:
+            getattr(self, command)()
         elif command.lower() in ['piezzo', 'motor']:
             getattr(self, command)(*self.read_move_args(arg))
 
@@ -132,6 +134,9 @@ class Parser():
 
     def laser_power(self, power):
         pass
+    
+    def piezzoslope(self):
+        pass
 
 
 class Execute_Parser(Parser):
@@ -143,6 +148,7 @@ class Execute_Parser(Parser):
         self.motor_delegate = app_delegate.mouvment_delegate.motor
         self.laser_delegate = app_delegate.laser_delegate
         self.focus_delegate = app_delegate.focus_delegate
+        self.coordinates_delegate = app_delegate.coordinates_delegate
         self.lockid = None
         self.focus_intensity = None
 
@@ -189,6 +195,9 @@ class Execute_Parser(Parser):
             raise RuntimeError(f"Don't know {piezzo}")
 
         self.focus_intensity = self.laser_delegate.get_intensity()
+        
+    def piezzoslope(self):
+        self.coordinates_delegate.piezzo_plane(checkid=self.lockid)
 
     def focusint(self, args):
         self.focus_intensity = float(args[0])

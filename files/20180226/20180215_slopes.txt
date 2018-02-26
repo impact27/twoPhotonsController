@@ -1,0 +1,137 @@
+focusint 0.5
+laser ON
+motor X0.00 Y0.00 Z20
+focus motor 0 -41 -1
+piezzoslope
+piezzo X-50 Y-50 Z0 F1000
+laser power 4.680000
+piezzo X-50 Y50 Z0 F50
+laser power 0
+piezzo X-50.000 Y-50.000 Z0.000 F1000
+laser power 2.460000
+piezzo X50.000 Y-50.000 Z-3.000 F50
+laser power 0
+piezzo X-50.000 Y0.000 Z0.000 F1000
+laser power 3.300000
+piezzo X50.000 Y0.000 Z-3.000 F50
+laser power 0
+piezzo X-50.000 Y50.000 Z0.000 F1000
+laser power 4.680000
+piezzo X50.000 Y50.000 Z-3.000 F50
+laser power 0
+motor X125.00 Y0.00 Z20
+focus motor 0 -41 -1
+piezzoslope
+piezzo X-50 Y-50 Z0 F1000
+laser power 4.680000
+piezzo X-50 Y50 Z0 F50
+laser power 0
+piezzo X-50.000 Y-50.000 Z0.000 F1000
+laser power 2.460000
+piezzo X50.000 Y-50.000 Z-3.000 F100
+laser power 0
+piezzo X-50.000 Y0.000 Z0.000 F1000
+laser power 3.300000
+piezzo X50.000 Y0.000 Z-3.000 F100
+laser power 0
+piezzo X-50.000 Y50.000 Z0.000 F1000
+laser power 4.680000
+piezzo X50.000 Y50.000 Z-3.000 F100
+laser power 0
+motor X250.00 Y0.00 Z20
+focus motor 0 -41 -1
+piezzoslope
+piezzo X-50 Y-50 Z0 F1000
+laser power 4.680000
+piezzo X-50 Y50 Z0 F50
+laser power 0
+piezzo X-50.000 Y-50.000 Z0.000 F1000
+laser power 2.460000
+piezzo X50.000 Y-50.000 Z-3.000 F200
+laser power 0
+piezzo X-50.000 Y0.000 Z0.000 F1000
+laser power 3.300000
+piezzo X50.000 Y0.000 Z-3.000 F200
+laser power 0
+piezzo X-50.000 Y50.000 Z0.000 F1000
+laser power 4.680000
+piezzo X50.000 Y50.000 Z-3.000 F200
+laser power 0
+motor X375.00 Y0.00 Z20
+focus motor 0 -41 -1
+piezzoslope
+piezzo X-50 Y-50 Z0 F1000
+laser power 4.680000
+piezzo X-50 Y50 Z0 F50
+laser power 0
+piezzo X-50.000 Y-50.000 Z0.000 F1000
+laser power 2.460000
+piezzo X50.000 Y-50.000 Z-3.000 F300
+laser power 0
+piezzo X-50.000 Y0.000 Z0.000 F1000
+laser power 3.300000
+piezzo X50.000 Y0.000 Z-3.000 F300
+laser power 0
+piezzo X-50.000 Y50.000 Z0.000 F1000
+laser power 4.680000
+piezzo X50.000 Y50.000 Z-3.000 F300
+laser power 0
+laser power 0
+motor X-50.00 Y-200.00 Z20.00 F1000
+focus motor 0 -41 -1
+motor X-50.00 Y-200.00 F1000
+laser power 4.680000
+motor X-50.00 Y-100.00 F50
+motor X0.00 Y-100.00 F50
+motor X0.00 Y-150.00 F50
+motor X-50.00 Y-150.00 F50
+laser power 0
+motor X25.00 Y-200.00 Z20.00 F1000
+focus motor 0 -41 -1
+laser power 0.000000
+motor X50.00 Y-200.00 F1000
+laser power 4.680000
+motor X50.00 Y-100.00 F50
+laser power 0
+motor X100.00 Y-200.00 Z20.00 F1000
+focus motor 0 -41 -1
+laser power 0.000000
+motor X150.00 Y-200.00 F1000
+laser power 4.680000
+motor X100.00 Y-200.00 F50
+motor X100.00 Y-100.00 F50
+motor X150.00 Y-100.00 F50
+laser power 0.000000
+motor X100.00 Y-150.00 F1000
+laser power 4.680000
+motor X125.00 Y-150.00 F50
+laser power 0
+motor X175.00 Y-200.00 Z20.00 F1000
+focus motor 0 -41 -1
+laser power 0.000000
+motor X175.00 Y-100.00 F1000
+laser power 4.680000
+motor X225.00 Y-100.00 F50
+motor X175.00 Y-200.00 F50
+motor X225.00 Y-200.00 F50
+laser power 0
+motor X250.00 Y-200.00 Z20.00 F1000
+focus motor 0 -41 -1
+laser power 0.000000
+motor X250.00 Y-100.00 F1000
+laser power 4.680000
+motor X300.00 Y-100.00 F50
+motor X250.00 Y-200.00 F50
+motor X300.00 Y-200.00 F50
+laser power 0
+motor X325.00 Y-200.00 Z20.00 F1000
+focus motor 0 -41 -1
+laser power 0.000000
+motor X325.00 Y-200.00 F1000
+laser power 4.680000
+motor X375.00 Y-200.00 F50
+motor X375.00 Y-100.00 F50
+motor X325.00 Y-100.00 F50
+motor X325.00 Y-200.00 F50
+laser power 0
+laser power 0

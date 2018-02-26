@@ -40,7 +40,9 @@ class coordinates_delegate(QtCore.QObject):
         self.XYsolver = XYsolver()
         self.piezzo_plane_thread = piezzo_plane_thread(application_delegate)
 
-    def piezzo_plane(self):
+    def piezzo_plane(self, checkid=None):
+        if checkid is not None:
+            self.piezzo_plane_thread.checkid = checkid
         self.piezzo_plane_thread.start()
         
     def ESTOP(self):
@@ -154,23 +156,23 @@ class coordinates_delegate(QtCore.QObject):
 
 class piezzo_plane_thread(QtCore.QThread):
 
-    def __init__(self, application_delegate, checkid=None):
+    def __init__(self, application_delegate):
         super().__init__()
         self._md = application_delegate.mouvment_delegate
         self._fd = application_delegate.focus_delegate
         self.laser_delegate = application_delegate.laser_delegate
         self._corners = ([-45, -45, 0], [-45, 45, 0], [45, 45, 0], [45, -45, 0])
         self.focus_intensity = 0.5
-        self._checkid = checkid
+        self.checkid = None
         self.Zsolver = Zsolver()
         
     def run(self):
         positions = np.zeros((len(self._corners), 3))
         for i, corner in enumerate(self._corners):
             self._md.piezzo.goto_position(corner, speed=1000, wait=True, 
-                                          checkid=self._checkid)
+                                          checkid=self.checkid)
             self._fd.focus(2, -2.1, -1, intensity=self.focus_intensity, Nloops=2,
-                           piezzo=True, wait=True, checkid=self._checkid)
+                           piezzo=True, wait=True, checkid=self.checkid)
             self.focus_intensity = self.laser_delegate.get_intensity()
             
             positions[i] = self._md.piezzo.get_position(raw=True)

@@ -252,7 +252,7 @@ class Controls_tab(QtWidgets.QWidget):
                 s.setRange(*r, 3)
             self.update_motor()
 
-        md.coordinatesCorrected.connect(setMotorRange)
+        md.motor.coordinatesCorrected.connect(setMotorRange)
         md.motor.move_signal.connect(
             self.set_target_motor)
         md.piezzo.move_signal.connect(

@@ -523,7 +523,7 @@ class piezzo(controller):
 
         QtCore.QMutexLocker(self.mutex)
 
-        self._corrections['offset'][2] = 25.
+        self._corrections['offset'] = np.array([50., 50., 25.])
         self._corrections["slope"] = np.zeros(2)
         self.coordinatesCorrected.emit(self.corrections)
         self.goto_position([0, 0, 0], checkid=checkid)
