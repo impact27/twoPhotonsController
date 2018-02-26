@@ -7,11 +7,11 @@ Created on Thu Nov  2 15:18:13 2017
 import numpy as np
 from GText import get_gtext
 
-powers = np.array([2.46, 3.3, 4.68])  # V
-speeds = np.array([50, 100, 200, 300])  # umps
-z_offsets = np.arange(0, 5.1, .5)  # um
-fn = '20180215_cal.txt'
-
+powers = np.array([1.7])  # V
+speeds = np.array([100, 200, 400, 800])  # umps
+z_offsets = np.arange(-1, -3.1, -.2)  # um
+#fn = '20180223_cal2.txt'
+fn= 'olli_test.txt'
 off_speed = 1000
 
 motor_step = 125
@@ -29,6 +29,14 @@ def write_lines_piezzo(lines, yPos, z_offset, off_speed, power, length, speed):
 
     lines.append("laser power {:f}".format(power))
     lines.append("piezzo X{x:.2f} Y{y:.2f} F{f:d}".format(
+        x=length -7 - 50,
+        y=yPos - 50,
+        f=speed))
+    lines.append("piezzo X{x:.2f} Y{y:.2f} F{f:d}".format(
+        x=length -2 - 50,
+        y=yPos - 50,
+        f=speed))
+    lines.append("piezzo X{x:.2f} Y{y:.2f} F{f:d}".format(
         x=length - 50,
         y=yPos - 50,
         f=speed))
@@ -43,6 +51,14 @@ def write_lines_motor(lines, motor_X, motor_Y, yPos, z_offset, off_speed, power,
         f=off_speed))
 
     lines.append("laser power {:f}".format(power))
+    lines.append("motor X{x:.2f} Y{y:.2f} F{f:d}".format(
+        x=motor_X + length - 7 - 50,
+        y=motor_Y + yPos - 50,
+        f=speed))
+    lines.append("motor X{x:.2f} Y{y:.2f} F{f:d}".format(
+        x=motor_X + length - 2 - 50,
+        y=motor_Y + yPos - 50,
+        f=speed))
     lines.append("motor X{x:.2f} Y{y:.2f} F{f:d}".format(
         x=motor_X + length - 50,
         y=motor_Y + yPos - 50,

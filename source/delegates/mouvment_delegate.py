@@ -120,6 +120,12 @@ class mouvment_delegate(QtCore.QObject):
         QtCore.QMutexLocker(self.mutex)
 
         return self.motor.is_ready() and self.piezzo.is_ready()
+    
+    def get_position(self, raw=False):
+
+        QtCore.QMutexLocker(self.mutex)
+
+        return self.motor.get_position(raw) + self.piezzo.get_position(raw)
 
     #==========================================================================
     #     Corrections

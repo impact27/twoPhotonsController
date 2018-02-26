@@ -45,6 +45,7 @@ class Parse_thread(QtCore.QThread):
         self._filename = filename
 
     def run(self):
+#        self._parser.parse(self._filename)
         try:
             self._parser.parse(self._filename)
         except BaseException:
@@ -143,7 +144,7 @@ class Execute_Parser(Parser):
         self.laser_delegate = app_delegate.laser_delegate
         self.focus_delegate = app_delegate.focus_delegate
         self.lockid = None
-        self.focus_intensity = .5
+        self.focus_intensity = None
 
     def parse(self, filename):
         self.lockid = self.md.lock()
