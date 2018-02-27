@@ -52,8 +52,6 @@ class XYsolver():
         """
 
         N = len(XYstage)
-#         XYstage=np.array([pos['XYstage'] for pos in self.positions])
-#         XYmaster=np.array([pos['XYmaster'] for pos in self.positions])
         if N == 0:
             return np.zeros(4)
         elif N == 1:

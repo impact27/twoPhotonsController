@@ -50,13 +50,21 @@ class mouvment_delegate(QtCore.QObject):
 
         self.parent = parent
 
-        self.piezzo = piezzo(self)
-        self.motor = motor(self)
+        self._piezzo = piezzo(self)
+        self._motor = motor(self)
 
         self.error = self.parent.error
 
         self.coordinatesCorrected = self.motor.coordinatesCorrected
 
+    @property
+    def piezzo(self):
+        return self._piezzo
+    
+    @property
+    def motor(self):
+        return self._motor
+    
     def _checklock(self, lockid=None):
 
         QtCore.QMutexLocker(self.mutex)
@@ -106,26 +114,12 @@ class mouvment_delegate(QtCore.QObject):
 
         return (self.piezzo.is_onTarget()
                 and self.motor.is_onTarget())
-
-    @property
-    def position(self):
-
-        QtCore.QMutexLocker(self.mutex)
-
-        return self.motor.position + self.piezzo.position
-
     @property
     def is_ready(self):
 
         QtCore.QMutexLocker(self.mutex)
 
         return self.motor.is_ready() and self.piezzo.is_ready()
-    
-    def get_position(self, raw=False):
-
-        QtCore.QMutexLocker(self.mutex)
-
-        return self.motor.get_position(raw) + self.piezzo.get_position(raw)
 
     #==========================================================================
     #     Corrections
@@ -137,7 +131,15 @@ class mouvment_delegate(QtCore.QObject):
 
         fn = 'corrections.txt'
         with open(fn, 'w') as f:
-            json.dump(self.corrections, f, indent=4)
+            mydict = {'motor': self.motor.corrections,
+                      'piezzo': self.piezzo.corrections}
+            
+            def ndtolist(array):
+                if isinstance(array, np.ndarray):
+                    return list(array)
+                raise TypeError("Unknown Type")
+            
+            json.dump(mydict, f, indent=4, default=ndtolist)
 
     def load_corrections(self):
 
@@ -149,33 +151,8 @@ class mouvment_delegate(QtCore.QObject):
                 corrections = json.load(f)
         except FileNotFoundError:
             self.parent.error.emit('No saved correction')
-        self.corrections = corrections
-
-    @property
-    def corrections(self):
-
-        QtCore.QMutexLocker(self.mutex)
-
-        return self.motor.corrections
-
-    @corrections.setter
-    def corrections(self, corrections):
-
-        QtCore.QMutexLocker(self.mutex)
-
-        self.motor.corrections = corrections
-        
-        self.piezzo.set_correction_key('rotation angle', 
-                                       corrections['rotation angle'])
-        
-    def offset_origin(self, newXm):
-        corrections = self.motor.corrections
-        offset = corrections["offset"]
-        offset = np.asarray(offset, float)
-        oldXm = self.position
-        offset += oldXm - newXm
-        corrections["offset"] = offset
-        self.motor.corrections = corrections
+        self.motor.corrections = corrections['motor']
+        self.piezzo.corrections = corrections['piezzo']
 
 
 class controller(QtCore.QObject):
@@ -342,9 +319,11 @@ class controller(QtCore.QObject):
     def corrections(self, corrections):
 
         QtCore.QMutexLocker(self.mutex)
-
-        self._corrections = corrections
-        self.coordinatesCorrected.emit(corrections)
+        self._corrections["offset"] = np.asarray(corrections["offset"])
+        self._corrections["slope"] = np.asarray(corrections["slope"])
+        self._corrections["rotation angle"] = float(corrections["rotation angle"])
+        self._corrections["stage diff angle"] = float(corrections["stage diff angle"])
+        self.coordinatesCorrected.emit(self._corrections)
         
     def set_correction_key(self, key, value):
         self._corrections[key] = value
@@ -406,6 +385,15 @@ class controller(QtCore.QObject):
         offset[2] += Zzero - actualZ
         self.corrections["offset"] = offset
         self.coordinatesCorrected.emit(self.corrections)
+        
+    def offset_origin(self, newXm):
+        corrections = self.corrections
+        offset = corrections["offset"]
+        offset = np.asarray(offset, float)
+        oldXm = self.position
+        offset += oldXm - newXm
+        corrections["offset"] = offset
+        self.corrections = corrections
 
     def is_ready(self):
         pass

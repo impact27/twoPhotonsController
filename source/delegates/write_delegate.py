@@ -30,6 +30,9 @@ class write_delegate(QtCore.QObject):
     def __init__(self, parent):
         super().__init__()
         self.parent = parent
+        self.init_thread()
+        
+    def init_thread(self):
         self.thread = write_thread(self.parent)
         self.thread.finished.connect(self.endwrite)
 
@@ -58,7 +61,7 @@ class write_delegate(QtCore.QObject):
 
     def ESTOP(self):
         self.thread.terminate()
-        self.parent.mouvment_delegate.unlock()
+        self.init_thread()
 
     def draw(self, gpath, settings):
 

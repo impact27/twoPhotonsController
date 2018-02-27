@@ -43,10 +43,11 @@ class Focus_tab(QtWidgets.QWidget):
         focus_button = QtWidgets.QPushButton("Focus")
 
         pos_list = QtWidgets.QTableWidget()
-        pos_list.setColumnCount(2)
-        pos_list.setHorizontalHeaderLabels(['Xm', 'Delete'])
+        pos_list.setColumnCount(3)
+        pos_list.setHorizontalHeaderLabels(['X motor', 'X piezzo', 'Delete'])
         pos_list.setColumnWidth(0, 90)
-        pos_list.setColumnWidth(1, 40)
+        pos_list.setColumnWidth(1, 90)
+        pos_list.setColumnWidth(2, 40)
         pos_list.horizontalHeader().setStretchLastSection(True)
         pos_list.verticalHeader().setDefaultSectionSize(48)
 
@@ -107,7 +108,7 @@ class Focus_tab(QtWidgets.QWidget):
         self.pos_list = pos_list
 
     def cellClicked(self, row, column):
-        if column == 1:
+        if column == 2:
             self.deleterow.emit(row)
         else:
             self.displayrow.emit(row)
@@ -121,18 +122,22 @@ class Focus_tab(QtWidgets.QWidget):
         for d in poslist:
             self.addRow(d)
 
-    def addRow(self, Xm):
-        """Assume X are [x,y]"""
+    def addRow(self, Xms):
         row = self.pos_list.rowCount()
         self.pos_list.insertRow(row)
 
-        Xmtext = "[{:.1f},\n {:.1f},\n {:.3f}]".format(*Xm)
-        Xm_label = QtWidgets.QLabel(Xmtext)
-        Xm_label.setAlignment(QtCore.Qt.AlignCenter)
+        Xmtext = "[{:.1f},\n {:.1f},\n {:.3f}]".format(*Xms[0])
+        Xm_motor_label = QtWidgets.QLabel(Xmtext)
+        Xm_motor_label.setAlignment(QtCore.Qt.AlignCenter)
+        
+        Xmtext = "[{:.1f},\n {:.1f},\n {:.3f}]".format(*Xms[1])
+        Xm_piezzo_label = QtWidgets.QLabel(Xmtext)
+        Xm_piezzo_label.setAlignment(QtCore.Qt.AlignCenter)
 
-        Delete = QtWidgets.QLabel('Delete')
+        Delete = QtWidgets.QLabel('X')
         Delete.setStyleSheet("background-color: red")
         Delete.setAlignment(QtCore.Qt.AlignCenter)
 
-        self.pos_list.setCellWidget(row, 0, Xm_label)
-        self.pos_list.setCellWidget(row, 1, Delete)
+        self.pos_list.setCellWidget(row, 0, Xm_motor_label)
+        self.pos_list.setCellWidget(row, 1, Xm_piezzo_label)
+        self.pos_list.setCellWidget(row, 2, Delete)
