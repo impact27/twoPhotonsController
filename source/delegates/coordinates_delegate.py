@@ -40,10 +40,13 @@ class coordinates_delegate(QtCore.QObject):
         self.XYsolver = XYsolver()
         self.piezzo_plane_thread = piezzo_plane_thread(application_delegate)
 
-    def piezzo_plane(self, checkid=None):
+    def piezzo_plane(self, checkid=None, wait=False):
         if checkid is not None:
             self.piezzo_plane_thread.checkid = checkid
         self.piezzo_plane_thread.start()
+        
+        if wait:
+            self.piezzo_plane_thread.wait()
         
     def ESTOP(self):
         self.piezzo_plane_thread.terminate()
