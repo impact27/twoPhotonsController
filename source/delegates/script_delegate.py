@@ -16,11 +16,14 @@ from PyQt5 import QtCore
 class Script_delegate():
     def __init__(self, app_delegate):
         super().__init__()
-
-        self._execute_thread = Parse_thread(Execute_Parser(app_delegate))
+        self.app_delegate = app_delegate
+        self.init_threads()
+        
+    def init_threads(self):
+        self._execute_thread = Parse_thread(Execute_Parser(self.app_delegate))
 
         self._draw_thread = Parse_thread(
-            Draw_Parser(app_delegate.canvas_delegate))
+            Draw_Parser(self.app_delegate.canvas_delegate))
 
     def execute(self, filename):
         self._execute_thread.set_filename(filename)
@@ -32,7 +35,8 @@ class Script_delegate():
 
     def ESTOP(self):
         self._execute_thread.terminate()
-        self._execute_thread.terminate()
+        self._draw_thread.terminate()
+        self.init_threads()
 
 
 class Parse_thread(QtCore.QThread):

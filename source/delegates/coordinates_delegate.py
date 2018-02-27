@@ -35,10 +35,12 @@ class coordinates_delegate(QtCore.QObject):
         self.parent = application_delegate
         self.camera = application_delegate.camera_delegate
         self._md = application_delegate.mouvment_delegate
-        self.motor = application_delegate.mouvment_delegate.motor
         self.Zsolver = Zsolver()
         self.XYsolver = XYsolver()
-        self.piezzo_plane_thread = piezzo_plane_thread(application_delegate)
+        self.init_thread()
+        
+    def init_thread(self):
+        self.piezzo_plane_thread = piezzo_plane_thread(self.parent)
 
     def piezzo_plane(self, checkid=None, wait=False):
         if checkid is not None:
@@ -50,6 +52,7 @@ class coordinates_delegate(QtCore.QObject):
         
     def ESTOP(self):
         self.piezzo_plane_thread.terminate()
+        self.init_thread()
         
     def add_position(self, Xm):
         self._positions.append(
@@ -90,8 +93,8 @@ class coordinates_delegate(QtCore.QObject):
         # if still positions in the list & position is reachable:
         if self._load_next():
                 # go to position
-            self.piezzo.reset()
-            self.motor.goto_position(self._current_pos['Xm'])
+            self._md.piezzo.reset()
+            self._md.motor.goto_position(self._current_pos['Xm'])
 
     def save_errors(self):
         fn = QtWidgets.QFileDialog.getSaveFileName(
@@ -116,7 +119,7 @@ class coordinates_delegate(QtCore.QObject):
         if not self._md.is_onTarget():
             raise RuntimeError("Stage is moving!")
         # Save XYZ as new value
-        self._current_pos['Xs'] = self.motor.get_position(raw=True)
+        self._current_pos['Xs'] = self._md.motor.get_position(raw=True)
         self._current_pos['im'] = self.camera.get_image()
         self._update()
 
@@ -149,7 +152,9 @@ class coordinates_delegate(QtCore.QObject):
         }
 
         # Apply correction
-        self._md.corrections = corrections
+        self._md.motor.corrections = corrections
+        self._md.piezzo.set_correction_key('rotation angle', 
+                                       corrections['rotation angle'])
 
     def _update(self):
         # use saved info to correct coordinates

@@ -8,7 +8,6 @@ from PyQt5 import QtCore, QtWidgets
 import numpy as np
 import sys
 import time
-from .coordinates_solver import Zsolver, XYsolver
 
 class Focus_delegate(QtCore.QObject):
 
@@ -21,8 +20,16 @@ class Focus_delegate(QtCore.QObject):
         self.app_delegate = app_delegate
         self.md = app_delegate.mouvment_delegate
         self.canvas = app_delegate.canvas_delegate
-        self.thread = zThread(self.md, app_delegate.camera_delegate,
-                              app_delegate.laser_delegate,
+        self.app_delegate = app_delegate
+        self.init_thread()
+        
+        self.md.motor.coordinatesCorrected.connect(lambda x: self._update())
+        self.md.piezzo.coordinatesCorrected.connect(lambda x: self._update())
+        
+    def init_thread(self):
+        self.thread = zThread(self.md, 
+                              self.app_delegate.camera_delegate,
+                              self.app_delegate.laser_delegate,
                               self.addGraph)
 
     def delete_pos(self, idx):
@@ -139,13 +146,12 @@ class Focus_delegate(QtCore.QObject):
         self._update()
 
     def _update(self):
-
         QtCore.QMutexLocker(self.mutex)
-
+        
         ret = []
         for pos in self._positions:
-            ret.append(self.md.motor.XstoXm(pos["motor_Xs"]) 
-                     + self.md.piezzo.XstoXm(pos["piezzo_Xs"]))
+            ret.append((self.md.motor.XstoXm(pos["motor_Xs"]) 
+                     , self.md.piezzo.XstoXm(pos["piezzo_Xs"])))
         self.updatelist.emit(ret)
 
     def ESTOP(self):
@@ -153,6 +159,7 @@ class Focus_delegate(QtCore.QObject):
         QtCore.QMutexLocker(self.mutex)
 
         self.thread.terminate()
+        self.init_thread()
 
 
 class zThread(QtCore.QThread):
