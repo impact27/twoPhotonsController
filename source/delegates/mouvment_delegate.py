@@ -167,8 +167,11 @@ class controller(QtCore.QObject):
         self.parent = parent
         self._lastXs = None
         self._ndim = 3
+        self._corrections = {}
+        self.reset_corrections()
 
-        self._corrections = {
+    def reset_corrections(self):
+        self.corrections = {
             "offset": np.zeros(3, float),
             "slope": np.zeros(2, float),
             "rotation angle": 0.,
@@ -502,18 +505,19 @@ class piezzo(controller):
     def __init__(self, parent):
         super().__init__(1000, parent)
         self.mutex = QtCore.QMutex()
-        self.set_correction_key('offset', np.array([50., 50., 25.]))
         self.XYZ_c = cube_controller()
         self.XYZ_c.stageConnected.connect(lambda: self.reset())
         self.XYZ_c.connect()
 
+    def reset_corrections(self):
+        super().reset_corrections()
+        self.set_correction_key('offset', np.array([50., 50., 25.]))
+        
     def reset(self, checkid=None):
 
         QtCore.QMutexLocker(self.mutex)
 
-        self._corrections['offset'] = np.array([50., 50., 25.])
-        self._corrections["slope"] = np.zeros(2)
-        self.coordinatesCorrected.emit(self.corrections)
+        self.reset_corrections()
         self.goto_position([0, 0, 0], checkid=checkid)
 
     def _XSPOS(self):

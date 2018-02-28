@@ -58,7 +58,8 @@ class Coordinates_tab(QtWidgets.QWidget):
         correction_label_motor = QtWidgets.QLabel('')
         self.correction_label_motor = correction_label_motor
         
-        correction_reset = QtWidgets.QPushButton('Reset')
+        correction_reset_motor = QtWidgets.QPushButton('Reset')
+        correction_reset_piezzo = QtWidgets.QPushButton('Reset')
         correction_save = QtWidgets.QPushButton('Save')
         correction_load = QtWidgets.QPushButton('Load')
         
@@ -117,19 +118,15 @@ class Coordinates_tab(QtWidgets.QWidget):
         main_layout.addWidget(validate_button)
         main_layout.addLayout(hbuttons)
         
-        load_layout = QtWidgets.QHBoxLayout()
-        load_layout.addWidget(correction_save)
-        load_layout.addWidget(correction_load)
-        load_layout.addWidget(correction_reset)
-        
         correction_layout = QtWidgets.QVBoxLayout()
         correction_layout.addLayout(offset_layout)
         correction_layout.addWidget(offset_button)
-        
-        correction_layout.addWidget(correction_label_motor)
-        correction_layout.addLayout(load_layout)
-        
         main_layout.addLayout(correction_layout)
+        
+        main_layout.addWidget(correction_label_motor)
+        main_layout.addWidget(correction_reset_motor)
+        
+        
         
         
         line = QtWidgets.QFrame()
@@ -140,17 +137,28 @@ class Coordinates_tab(QtWidgets.QWidget):
         main_layout.addWidget(piezzo_label)
         main_layout.addWidget(piezzo_plane_button)
         main_layout.addWidget(correction_label_piezzo)
+        main_layout.addWidget(correction_reset_piezzo)
+        
+        line = QtWidgets.QFrame()
+        line.setFrameShape(QtWidgets.QFrame.HLine)
+        line.setFrameShadow(QtWidgets.QFrame.Sunken)
+        main_layout.addWidget(line)
+        
+        load_layout = QtWidgets.QHBoxLayout()
+        load_layout.addWidget(correction_save)
+        load_layout.addWidget(correction_load)
+        main_layout.addLayout(load_layout)
+        
         self.setLayout(main_layout)
 
         #======================================================================
         #      Connections
         #======================================================================
         cd = application_delegate.coordinates_delegate
+        md = application_delegate.mouvment_delegate
 
-        self.updateCorrection_motor(
-            application_delegate.mouvment_delegate.motor.corrections)
-        self.updateCorrection_piezzo(
-            application_delegate.mouvment_delegate.piezzo.corrections)
+        self.updateCorrection_motor(md.motor.corrections)
+        self.updateCorrection_piezzo(md.piezzo.corrections)
 
         piezzo_plane_button.clicked.connect(cd.piezzo_plane)
         pos_list.cellClicked.connect(self.cellClicked)
@@ -168,11 +176,11 @@ class Coordinates_tab(QtWidgets.QWidget):
         self.displayrow.connect(cd.displayrow)
         cd.updatelist.connect(self.updateList)
 
-        application_delegate.mouvment_delegate.motor.coordinatesCorrected.connect(
-            self.updateCorrection_motor)
-        application_delegate.mouvment_delegate.piezzo.coordinatesCorrected.connect(
-            self.updateCorrection_piezzo)
-        correction_reset.clicked.connect(cd.clear_positions)
+        md.motor.coordinatesCorrected.connect(self.updateCorrection_motor)
+        md.piezzo.coordinatesCorrected.connect(self.updateCorrection_piezzo)
+        
+        correction_reset_motor.clicked.connect(md.motor.reset_corrections)
+        correction_reset_piezzo.clicked.connect(md.piezzo.reset_corrections)
 
         md = application_delegate.mouvment_delegate
         correction_save.clicked.connect(md.save_corrections)

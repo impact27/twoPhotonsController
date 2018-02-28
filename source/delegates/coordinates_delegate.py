@@ -158,7 +158,6 @@ class coordinates_delegate(QtCore.QObject):
         self._updateXYZCorr()
         self.updatelist.emit(self._positions)
 
-
 class piezzo_plane_thread(QtCore.QThread):
 
     def __init__(self, application_delegate):
