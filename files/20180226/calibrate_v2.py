@@ -7,11 +7,11 @@ Created on Thu Nov  2 15:18:13 2017
 import numpy as np
 from GText import get_gtext
 
-powers = np.array([2.46, 3.3, 4.68])  # V
-write_power = 4.68
-speeds = np.array([50, 100, 200, 300])  # umps
+powers = np.exp(np.linspace(np.log(1.95), np.log(4), 21))  # V
+write_power = 468
+speeds = np.array([50, 100, 200, 400, 800])  # umps
 z_offsets = np.arange(0, 5.1, .5)  # um
-fn = '20180215_slopes.txt'
+fn = '20180226_slopes.txt'
 
 off_speed = 1000
 
