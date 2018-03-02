@@ -38,18 +38,36 @@ class coordinates_delegate(QtCore.QObject):
         self.init_thread()
 
     def init_thread(self):
-        self.piezzo_plane_thread = piezzo_plane_thread(self.parent)
+        self.plane_thread = plane_thread(self.parent)
 
     def piezzo_plane(self, checkid=None, wait=False):
+        stage = self._md.piezzo
+        XYs = ([-45, -45], [-45, 45],
+               [45, 45], [45, -45])
+        intensity = 0.5
+        self.plane_thread.settings(stage, intensity, XYs, 2, -2.1, -1, 2)
         if checkid is not None:
-            self.piezzo_plane_thread.checkid = checkid
-        self.piezzo_plane_thread.start()
+            self.plane_thread.checkid = checkid
+        self.plane_thread.start()
 
         if wait:
-            self.piezzo_plane_thread.wait()
+            self.plane_thread.wait()
+            
+    def motor_plane(self, checkid=None, wait=False):
+        if len(self._positions) < 3:
+            return
+        stage = self._md.motor
+        Xms = np.asarray([p['Xm'] for p in self._positions])
+        Xms = Xms[:, :2]
+        intensity = 0.5
+        self.plane_thread.settings(stage, intensity, Xms, 20, -20, -1, 1)
+        if checkid is not None:
+            self.plane_thread.checkid = checkid
+        self.plane_thread.start()
+        
 
     def ESTOP(self):
-        self.piezzo_plane_thread.terminate()
+        self.plane_thread.terminate()
         self.init_thread()
 
     def add_position(self, Xm):
@@ -154,34 +172,47 @@ class coordinates_delegate(QtCore.QObject):
         self._updateXYZCorr()
         self.updatelist.emit(self._positions)
 
-
-class piezzo_plane_thread(QtCore.QThread):
+class plane_thread(QtCore.QThread):
 
     def __init__(self, application_delegate):
         super().__init__()
         self._md = application_delegate.mouvment_delegate
         self._fd = application_delegate.focus_delegate
         self.laser_delegate = application_delegate.laser_delegate
-        self._corners = ([-45, -45, 0], [-45, 45, 0],
-                         [45, 45, 0], [45, -45, 0])
-        self.focus_intensity = 0.5
         self.checkid = None
+        
+        
+    def settings(self, stage, laser_intensity, XYpos, start, stop, step, Nloops):
+        self.focus_intensity = laser_intensity
+        
+        XYpos = np.asarray(XYpos)
+        self._pos = np.zeros((len(XYpos), 3))
+        self._pos[:, :2] = XYpos
+        
+        self._stage = stage
+        self.range = (start, stop, step)
+        self.Nloops = Nloops
 
     def run(self):
-        positions = np.zeros((len(self._corners), 3))
-        for i, corner in enumerate(self._corners):
-            self._md.piezzo.goto_position(corner, speed=1000, wait=True,
+        positions = np.zeros((len(self._pos), 3))
+        for i, corner in enumerate(self._pos):
+            corner[2] = self.range[0]
+            self._stage.goto_position(corner, speed=1000, wait=True,
                                           checkid=self.checkid)
-            self._fd.focus(2, -2.1, -1, intensity=self.focus_intensity, Nloops=2,
-                           piezzo=True, wait=True, checkid=self.checkid)
+            self._fd.focus(0, self.range[1] - self.range[0], self.range[2],
+                           Nloops=self.Nloops,
+                           stage=self._stage,
+                           intensity=self.focus_intensity,
+                           wait=True, checkid=self.checkid)
+            
             self.focus_intensity = self.laser_delegate.get_intensity()
 
-            positions[i] = self._md.piezzo.get_position(raw=True)
+            positions[i] = self._stage.get_position(raw=True)
 
-        corrections = self._md.piezzo.corrections
+        corrections = self._stage.corrections
         offset, rotation_angles = solve_z(
             positions, offset=corrections["offset"],
             rotation_angles=corrections["rotation angles"])
         corrections["offset"] = offset
         corrections["rotation angles"] = rotation_angles
-        self._md.piezzo.corrections = corrections
+        self._stage.corrections = corrections

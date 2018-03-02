@@ -88,14 +88,22 @@ class Focus_tab(QtWidgets.QWidget):
 
         pos_list.cellClicked.connect(self.cellClicked)
         pos_list.verticalHeader().sectionClicked.connect(self.rowClicked)
+        
+        def focus():
+            if precision_check.isChecked():
+                stage = application_delegate.mouvement_delegate.piezzo
+            else:
+                stage = application_delegate.mouvement_delegate.motor
+                
+            self.fd.focus(
+                float(back_input.text()),
+                float(forth_input.text()),
+                float(step_input.text()),
+                stage=stage,
+                intensity=None,
+                Nloops=int(float(Nloops_input.text())))
 
-        focus_button.clicked.connect(lambda: self.fd.focus(
-            float(back_input.text()),
-            float(forth_input.text()),
-            float(step_input.text()),
-            intensity=None,
-            Nloops=int(float(Nloops_input.text())),
-            piezzo=precision_check.isChecked()))
+        focus_button.clicked.connect(focus) 
 
         clear_list_button.clicked.connect(self.fd.clear)
         save_button.clicked.connect(self.fd.save)

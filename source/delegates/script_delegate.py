@@ -178,22 +178,26 @@ class Execute_Parser(Parser):
             start_offset), float(stop_offset), float(step)
         if piezzo.lower() == 'piezzo':
             self.focus_delegate.focus(start_offset, stop_offset, step,
+                                      stage=self.md.piezzo,
                                       intensity=self.focus_intensity,
-                                      Nloops=2, piezzo=True, wait=True,
+                                      Nloops=2, wait=True,
                                       checkid=self.lockid)
         elif piezzo.lower() == 'motor':
             self.focus_delegate.focus(start_offset, stop_offset, step,
+                                      stage=self.md.motor,
                                       intensity=self.focus_intensity,
-                                      Nloops=1, piezzo=False, wait=True,
+                                      Nloops=1, wait=True,
                                       checkid=self.lockid)
         elif piezzo.lower() == 'both':
             self.focus_delegate.focus(start_offset, stop_offset, step,
+                                      stage=self.md.motor,
                                       intensity=self.focus_intensity,
-                                      Nloops=1, piezzo=False, wait=True,
+                                      Nloops=1, wait=True,
                                       checkid=self.lockid)
             self.focus_delegate.focus(-2, 2, 1,
+                                      stage=self.md.piezzo,
                                       intensity=self.focus_intensity,
-                                      Nloops=2, piezzo=True, wait=True,
+                                      Nloops=2, wait=True,
                                       checkid=self.lockid)
         else:
             self.md.unlock()

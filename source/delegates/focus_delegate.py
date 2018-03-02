@@ -65,7 +65,8 @@ class Focus_delegate(QtCore.QObject):
             print("Can't Plot!!!", sys.exc_info()[0])
             raise
 
-    def focus(self, start_offset, stop_offset, step, *, intensity=None, Nloops=1,
+    def focus(self, start_offset, stop_offset, step, stage, *,
+              intensity=None, Nloops=1,
               piezzo=False, wait=False, checkid=None):
 
         QtCore.QMutexLocker(self.mutex)
@@ -86,11 +87,7 @@ class Focus_delegate(QtCore.QObject):
         """
         if intensity is None:
             intensity = self.app_delegate.laser_delegate.get_intensity()
-        if piezzo:
-            stage = self.md.piezzo
-        else:
-            self.md.piezzo.reset(checkid=checkid)
-            stage = self.md.motor
+            
         self.thread.set_args(
             start_offset,
             stop_offset,

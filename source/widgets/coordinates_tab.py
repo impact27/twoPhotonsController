@@ -66,6 +66,7 @@ class Coordinates_tab(QtWidgets.QWidget):
         piezzo_label.setStyleSheet("font: bold large")
 
         piezzo_plane_button = QtWidgets.QPushButton('Piezzo Plane')
+        motor_plane_button = QtWidgets.QPushButton('Motor Plane')
 
         correction_label_piezzo = QtWidgets.QLabel('')
         self.correction_label_piezzo = correction_label_piezzo
@@ -110,6 +111,7 @@ class Coordinates_tab(QtWidgets.QWidget):
         main_layout.addWidget(pos_list)
         main_layout.addWidget(validate_button)
         main_layout.addLayout(hbuttons)
+        main_layout.addWidget(motor_plane_button)
 
         correction_layout = QtWidgets.QVBoxLayout()
         correction_layout.addLayout(offset_layout)
@@ -150,6 +152,7 @@ class Coordinates_tab(QtWidgets.QWidget):
         self.updateCorrection_motor(md.motor.corrections)
         self.updateCorrection_piezzo(md.piezzo.corrections)
 
+        motor_plane_button.clicked.connect(cd.motor_plane)
         piezzo_plane_button.clicked.connect(cd.piezzo_plane)
         pos_list.cellClicked.connect(self.cellClicked)
         pos_list.verticalHeader().sectionClicked.connect(self.rowClicked)
@@ -265,3 +268,4 @@ class Coordinates_tab(QtWidgets.QWidget):
 
     def updateCorrection_piezzo(self, corrections):
         self._updateCorrection(corrections, self.correction_label_piezzo)
+        
