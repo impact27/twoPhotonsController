@@ -73,7 +73,7 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         write_widget = QtWidgets.QWidget()
         write_layout = QtWidgets.QVBoxLayout()
         write_layout.addWidget(Write_tab(self.application_delegate))
-        
+
         line = QtWidgets.QFrame()
         line.setFrameShape(QtWidgets.QFrame.HLine)
         line.setFrameShadow(QtWidgets.QFrame.Sunken)
@@ -82,7 +82,7 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         write_layout.addStretch()
         write_widget.setLayout(write_layout)
         tabs_widget.addTab(write_widget, 'Write')
-        
+
         tabs_widget.setMaximumWidth(300)
 
         control_widget = Controls_tab(self.application_delegate)

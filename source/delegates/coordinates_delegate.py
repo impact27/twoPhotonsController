@@ -21,7 +21,7 @@ import numpy as np
 from PyQt5 import QtCore, QtWidgets
 
 #from position_correctors import XYcorrector
-from .coordinates_solver import Zsolver, XYsolver
+from .coordinates_solver import solve_z, solve_xyz
 
 
 class coordinates_delegate(QtCore.QObject):
@@ -35,10 +35,8 @@ class coordinates_delegate(QtCore.QObject):
         self.parent = application_delegate
         self.camera = application_delegate.camera_delegate
         self._md = application_delegate.mouvment_delegate
-        self.Zsolver = Zsolver()
-        self.XYsolver = XYsolver()
         self.init_thread()
-        
+
     def init_thread(self):
         self.piezzo_plane_thread = piezzo_plane_thread(self.parent)
 
@@ -46,14 +44,14 @@ class coordinates_delegate(QtCore.QObject):
         if checkid is not None:
             self.piezzo_plane_thread.checkid = checkid
         self.piezzo_plane_thread.start()
-        
+
         if wait:
             self.piezzo_plane_thread.wait()
-        
+
     def ESTOP(self):
         self.piezzo_plane_thread.terminate()
         self.init_thread()
-        
+
     def add_position(self, Xm):
         self._positions.append(
             {'Xm': Xm,
@@ -133,33 +131,29 @@ class coordinates_delegate(QtCore.QObject):
             Xms = Xms[valid]
             Xss = np.asarray(list(Xss[valid]))
             # Get coeffs
-            zcoeffs = self.Zsolver.solve(Xss)
-            xycoeffs = self.XYsolver.solve(Xss[:, :2], Xms[:, :2])
+            offset, rot_angles = solve_xyz(Xss, Xms)
         else:
-            zcoeffs = np.zeros(3)
-            xycoeffs = np.zeros(4)
-
-        Zslope = np.zeros(2)
-        stage_diff_angle, rotation_angle, *XYoffset = xycoeffs
-        Zslope[0], Zslope[1], Zoffset = zcoeffs
-        offset = np.asarray([*XYoffset, Zoffset])
+            offset = np.zeros(3)
+            rot_angles = np.zeros(4)
 
         corrections = {
             "offset": offset,
-            "slope": Zslope,
-            "rotation angle": rotation_angle,
-            "stage diff angle": stage_diff_angle
+            "rotation angles": rot_angles
         }
 
         # Apply correction
         self._md.motor.corrections = corrections
-        self._md.piezzo.set_correction_key('rotation angle', 
-                                       corrections['rotation angle'])
+
+        # Propagate Z cirrection to piezzo
+        piezzo_corr = self._md.piezzo.corrections
+        piezzo_corr["rotation angles"][2] = rot_angles[2]
+        self._md.piezzo.corrections = piezzo_corr
 
     def _update(self):
         # use saved info to correct coordinates
         self._updateXYZCorr()
         self.updatelist.emit(self._positions)
+
 
 class piezzo_plane_thread(QtCore.QThread):
 
@@ -168,24 +162,26 @@ class piezzo_plane_thread(QtCore.QThread):
         self._md = application_delegate.mouvment_delegate
         self._fd = application_delegate.focus_delegate
         self.laser_delegate = application_delegate.laser_delegate
-        self._corners = ([-45, -45, 0], [-45, 45, 0], [45, 45, 0], [45, -45, 0])
+        self._corners = ([-45, -45, 0], [-45, 45, 0],
+                         [45, 45, 0], [45, -45, 0])
         self.focus_intensity = 0.5
         self.checkid = None
-        self.Zsolver = Zsolver()
-        
+
     def run(self):
         positions = np.zeros((len(self._corners), 3))
         for i, corner in enumerate(self._corners):
-            self._md.piezzo.goto_position(corner, speed=1000, wait=True, 
+            self._md.piezzo.goto_position(corner, speed=1000, wait=True,
                                           checkid=self.checkid)
             self._fd.focus(2, -2.1, -1, intensity=self.focus_intensity, Nloops=2,
                            piezzo=True, wait=True, checkid=self.checkid)
             self.focus_intensity = self.laser_delegate.get_intensity()
-            
+
             positions[i] = self._md.piezzo.get_position(raw=True)
-            
-        slope_x, slope_y, offset_z = self.Zsolver.solve(positions)
+
         corrections = self._md.piezzo.corrections
-        corrections["slope"] = [slope_x, slope_y]
-        corrections["offset"][-1] = offset_z
+        offset, rotation_angles = solve_z(
+            positions, offset=corrections["offset"],
+            rotation_angles=corrections["rotation angles"])
+        corrections["offset"] = offset
+        corrections["rotation angles"] = rotation_angles
         self._md.piezzo.corrections = corrections

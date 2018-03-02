@@ -31,7 +31,7 @@ class write_delegate(QtCore.QObject):
         super().__init__()
         self.parent = parent
         self.init_thread()
-        
+
     def init_thread(self):
         self.thread = write_thread(self.parent)
         self.thread.finished.connect(self.endwrite)

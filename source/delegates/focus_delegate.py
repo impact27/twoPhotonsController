@@ -9,6 +9,7 @@ import numpy as np
 import sys
 import time
 
+
 class Focus_delegate(QtCore.QObject):
 
     updatelist = QtCore.pyqtSignal(list)
@@ -22,12 +23,12 @@ class Focus_delegate(QtCore.QObject):
         self.canvas = app_delegate.canvas_delegate
         self.app_delegate = app_delegate
         self.init_thread()
-        
+
         self.md.motor.coordinatesCorrected.connect(lambda x: self._update())
         self.md.piezzo.coordinatesCorrected.connect(lambda x: self._update())
-        
+
     def init_thread(self):
-        self.thread = zThread(self.md, 
+        self.thread = zThread(self.md,
                               self.app_delegate.camera_delegate,
                               self.app_delegate.laser_delegate,
                               self.addGraph)
@@ -112,7 +113,7 @@ class Focus_delegate(QtCore.QObject):
             "piezzo_Xs": self.md.piezzo.get_position(raw=True),
             "graphs": graphs,
             "time": time.time()
-            })
+        })
         self._update()
 
     def save(self):
@@ -131,12 +132,11 @@ class Focus_delegate(QtCore.QObject):
                     for line in data[:, scan_idx]:
                         np.savetxt(f, line[np.newaxis])
                 f.write(('Best: {}\n').format(pos["graphs"][1]).encode())
-        with open(fn[:-4]+'_times.txt', 'w') as f:
+        with open(fn[:-4] + '_times.txt', 'w') as f:
             for pos in self._positions:
                 f.write("{time}, {position_motor}, {position_piezzo}\n".format(
                         time=pos["time"], position_motor=pos["c"],
                         position_piezzo=pos["piezzo_Xs"]))
-                
 
     def clear(self):
 
@@ -147,11 +147,11 @@ class Focus_delegate(QtCore.QObject):
 
     def _update(self):
         QtCore.QMutexLocker(self.mutex)
-        
+
         ret = []
         for pos in self._positions:
-            ret.append((self.md.motor.XstoXm(pos["motor_Xs"]) 
-                     , self.md.piezzo.XstoXm(pos["piezzo_Xs"])))
+            ret.append((self.md.motor.XstoXm(
+                pos["motor_Xs"]), self.md.piezzo.XstoXm(pos["piezzo_Xs"])))
         self.updatelist.emit(ret)
 
     def ESTOP(self):

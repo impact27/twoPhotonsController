@@ -129,7 +129,7 @@ class Focus_tab(QtWidgets.QWidget):
         Xmtext = "[{:.1f},\n {:.1f},\n {:.3f}]".format(*Xms[0])
         Xm_motor_label = QtWidgets.QLabel(Xmtext)
         Xm_motor_label.setAlignment(QtCore.Qt.AlignCenter)
-        
+
         Xmtext = "[{:.1f},\n {:.1f},\n {:.3f}]".format(*Xms[1])
         Xm_piezzo_label = QtWidgets.QLabel(Xmtext)
         Xm_piezzo_label.setAlignment(QtCore.Qt.AlignCenter)
