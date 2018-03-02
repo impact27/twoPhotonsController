@@ -91,9 +91,9 @@ class Focus_tab(QtWidgets.QWidget):
         
         def focus():
             if precision_check.isChecked():
-                stage = application_delegate.mouvement_delegate.piezzo
+                stage = application_delegate.movement_delegate.piezzo
             else:
-                stage = application_delegate.mouvement_delegate.motor
+                stage = application_delegate.movement_delegate.motor
                 
             self.fd.focus(
                 float(back_input.text()),

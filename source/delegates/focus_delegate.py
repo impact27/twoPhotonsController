@@ -19,7 +19,7 @@ class Focus_delegate(QtCore.QObject):
         self.mutex = QtCore.QMutex()
         self._positions = []
         self.app_delegate = app_delegate
-        self.md = app_delegate.mouvment_delegate
+        self.md = app_delegate.movement_delegate
         self.canvas = app_delegate.canvas_delegate
         self.app_delegate = app_delegate
         self.init_thread()
@@ -161,12 +161,12 @@ class Focus_delegate(QtCore.QObject):
 
 class zThread(QtCore.QThread):
 
-    def __init__(self, mouvment_delegate, camera, laser, addGraph):
+    def __init__(self, movement_delegate, camera, laser, addGraph):
         super().__init__()
         self.addGraph = addGraph
         self._zcorrector = Zcorrector(None, camera, laser)
         self._focus_args = None
-        self._md = mouvment_delegate
+        self._md = movement_delegate
 
     def set_args(self, start_offset, stop_offset, step, Nloops, stage,
                  intensity, checkid):
@@ -181,7 +181,7 @@ class zThread(QtCore.QThread):
         if self._focus_args[-1] is None:
             lockid = self._md.lock()
             if lockid is None:
-                self.error = "Unable to lock the mouvment"
+                self.error = "Unable to lock the movement"
                 return
         else:
             lockid = self._focus_args[-1]

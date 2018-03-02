@@ -70,8 +70,8 @@ class Canvas_delegate(QtCore.QObject):
 
         QtCore.QMutexLocker(self.mutex)
 
-        newpos = (self._parent.mouvment_delegate.motor.position
-                  + self._parent.mouvment_delegate.piezzo.position)
+        newpos = (self._parent.movement_delegate.motor.position
+                  + self._parent.movement_delegate.piezzo.position)
         laserI = 0  # self._parent.laser_delegate.get_intensity()
         lRange = self._parent.laser_delegate.get_range()
         f = (laserI - lRange[0]) / (lRange[1] - lRange[0])

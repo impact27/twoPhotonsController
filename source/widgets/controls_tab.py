@@ -15,7 +15,7 @@ class Controls_tab(QtWidgets.QWidget):
     def __init__(self, application_delegate, *args, **kwargs):
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
 
-        md = application_delegate.mouvment_delegate
+        md = application_delegate.movement_delegate
         ld = application_delegate.laser_delegate
         cd = application_delegate.camera_delegate
         #======================================================================
@@ -298,7 +298,7 @@ class Controls_tab(QtWidgets.QWidget):
         self.cam_autoexposure_time.setText(txt)
 
     def goto_motor(self):
-        self.application_delegate.mouvment_delegate.motor.goto_position(
+        self.application_delegate.movement_delegate.motor.goto_position(
             [s.getValue() for s in self.motor_selectors])
 
     def step(self, axis, d):
@@ -309,13 +309,13 @@ class Controls_tab(QtWidgets.QWidget):
         self.goto_motor()
 
     def update_motor(self):
-        V = self.application_delegate.mouvment_delegate.motor.velocity
-        Pos = self.application_delegate.mouvment_delegate.motor.position
+        V = self.application_delegate.movement_delegate.motor.velocity
+        Pos = self.application_delegate.movement_delegate.motor.position
         self.vel_motor_selector.setValue(V)
         [s.setValue(x) for s, x in zip(self.motor_selectors, Pos)]
 
     def updateCube(self):
-        md = self.application_delegate.mouvment_delegate
+        md = self.application_delegate.movement_delegate
         V = md.piezzo.velocity
         Pos = md.piezzo.position
         self.vel_cube_selector.setValue(V)

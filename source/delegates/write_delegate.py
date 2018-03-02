@@ -41,11 +41,11 @@ class write_delegate(QtCore.QObject):
             gcommands = f.read()
         intensityRange = self.parent.laser_delegate.get_range()
         posRange = np.asarray([
-            self.parent.mouvment_delegate.piezzo.get_positionRange(0),
-            self.parent.mouvment_delegate.piezzo.get_positionRange(1),
-            self.parent.mouvment_delegate.piezzo.get_positionRange(2)
+            self.parent.movement_delegate.piezzo.get_positionRange(0),
+            self.parent.movement_delegate.piezzo.get_positionRange(1),
+            self.parent.movement_delegate.piezzo.get_positionRange(2)
         ])
-        speedRange = self.parent.mouvment_delegate.piezzo.get_velocityRange(0)
+        speedRange = self.parent.movement_delegate.piezzo.get_velocityRange(0)
 
         checker = gcode_checker(intensityRange, posRange, speedRange)
 
@@ -57,7 +57,7 @@ class write_delegate(QtCore.QObject):
         self.thread.start()
 
     def endwrite(self):
-        self.parent.mouvment_delegate.updatePosition.emit()
+        self.parent.movement_delegate.updatePosition.emit()
 
     def ESTOP(self):
         self.thread.terminate()
@@ -87,7 +87,7 @@ class write_delegate(QtCore.QObject):
 class write_thread(QtCore.QThread):
     def __init__(self, parent):
         super().__init__()
-        self.md = parent.mouvment_delegate
+        self.md = parent.movement_delegate
         self.ld = parent.laser_delegate
         self.error = None
         self.args = None
@@ -108,7 +108,7 @@ class write_thread(QtCore.QThread):
                 self.md.motor.goto_position(X, wait=True, checkid=self.lockid)
 
             if self.lockid is None:
-                self.error = "Unable to lock the mouvment"
+                self.error = "Unable to lock the movement"
                 return
 
             xori, yori = self.settings['XY origin']
