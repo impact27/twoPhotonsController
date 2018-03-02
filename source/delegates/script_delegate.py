@@ -18,7 +18,7 @@ class Script_delegate():
         super().__init__()
         self.app_delegate = app_delegate
         self.init_threads()
-        
+
     def init_threads(self):
         self._execute_thread = Parse_thread(Execute_Parser(self.app_delegate))
 
@@ -49,7 +49,7 @@ class Parse_thread(QtCore.QThread):
         self._filename = filename
 
     def run(self):
-#        self._parser.parse(self._filename)
+        #        self._parser.parse(self._filename)
         try:
             self._parser.parse(self._filename)
         except BaseException:
@@ -81,7 +81,7 @@ class Parser():
 
     def focusint(self, args):
         pass
-    
+
     def laser(self, args):
         if len(args) == 0:
             print("No args for laser")
@@ -138,7 +138,7 @@ class Parser():
 
     def laser_power(self, power):
         pass
-    
+
     def piezzoslope(self):
         pass
 
@@ -174,38 +174,43 @@ class Execute_Parser(Parser):
 
     def focus(self, args):
         piezzo, start_offset, stop_offset, step = args
-        start_offset, stop_offset, step = float(start_offset), float(stop_offset), float(step)
+        start_offset, stop_offset, step = float(
+            start_offset), float(stop_offset), float(step)
         if piezzo.lower() == 'piezzo':
             self.focus_delegate.focus(start_offset, stop_offset, step,
+                                      stage=self.md.piezzo,
                                       intensity=self.focus_intensity,
-                                      Nloops=2, piezzo=True, wait=True,
+                                      Nloops=2, wait=True,
                                       checkid=self.lockid)
         elif piezzo.lower() == 'motor':
             self.focus_delegate.focus(start_offset, stop_offset, step,
+                                      stage=self.md.motor,
                                       intensity=self.focus_intensity,
-                                      Nloops=1, piezzo=False, wait=True,
+                                      Nloops=1, wait=True,
                                       checkid=self.lockid)
         elif piezzo.lower() == 'both':
             self.focus_delegate.focus(start_offset, stop_offset, step,
+                                      stage=self.md.motor,
                                       intensity=self.focus_intensity,
-                                      Nloops=1, piezzo=False, wait=True,
+                                      Nloops=1, wait=True,
                                       checkid=self.lockid)
             self.focus_delegate.focus(-2, 2, 1,
+                                      stage=self.md.piezzo,
                                       intensity=self.focus_intensity,
-                                      Nloops=2, piezzo=True, wait=True,
+                                      Nloops=2, wait=True,
                                       checkid=self.lockid)
         else:
             self.md.unlock()
             raise RuntimeError(f"Don't know {piezzo}")
 
         self.focus_intensity = self.laser_delegate.get_intensity()
-        
+
     def piezzoslope(self):
         self.coordinates_delegate.piezzo_plane(checkid=self.lockid, wait=True)
 
     def focusint(self, args):
         self.focus_intensity = float(args[0])
-        
+
     def motor(self, pos, speed):
         self.motor_delegate.goto_position(pos, speed=speed, wait=True,
                                           checkid=self.lockid)

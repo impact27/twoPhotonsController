@@ -28,7 +28,7 @@ class Coordinates_tab(QtWidgets.QWidget):
 
         motor_label = QtWidgets.QLabel("Motor")
         motor_label.setStyleSheet("font: bold large")
-        
+
         Xinput = QtWidgets.QLineEdit('0, 0, 0')
 #         X_validator = QtGui.QDoubleValidator(-1,100,3)
 #         Xinput.setValidator(X_validator)
@@ -49,26 +49,25 @@ class Coordinates_tab(QtWidgets.QWidget):
         clear_list_button = QtWidgets.QPushButton("Clear List")
         validate_button = QtWidgets.QPushButton("Process next Position")
         save_errors = QtWidgets.QPushButton('Save Errors')
-        
+
         offset_label = QtWidgets.QLabel("Offset Position:")
         offset_input = QtWidgets.QLineEdit("0, 0, 0")
         offset_button = QtWidgets.QPushButton("Move Origin")
-        
 
         correction_label_motor = QtWidgets.QLabel('')
         self.correction_label_motor = correction_label_motor
-        
-        correction_reset = QtWidgets.QPushButton('Reset')
+
+        correction_reset_motor = QtWidgets.QPushButton('Reset')
+        correction_reset_piezzo = QtWidgets.QPushButton('Reset')
         correction_save = QtWidgets.QPushButton('Save')
         correction_load = QtWidgets.QPushButton('Load')
-        
-        
-        
+
         piezzo_label = QtWidgets.QLabel("Piezzo")
         piezzo_label.setStyleSheet("font: bold large")
-        
+
         piezzo_plane_button = QtWidgets.QPushButton('Piezzo Plane')
-        
+        motor_plane_button = QtWidgets.QPushButton('Motor Plane')
+
         correction_label_piezzo = QtWidgets.QLabel('')
         self.correction_label_piezzo = correction_label_piezzo
 
@@ -98,13 +97,9 @@ class Coordinates_tab(QtWidgets.QWidget):
         tabs_widget.setSizePolicy(QtWidgets.QSizePolicy.Expanding,
                                   QtWidgets.QSizePolicy.Minimum)
 
-        
-
         offset_layout = QtWidgets.QHBoxLayout()
         offset_layout.addWidget(offset_label)
         offset_layout.addWidget(offset_input)
-
-        
 
         hbuttons = QtWidgets.QHBoxLayout()
         hbuttons.addWidget(save_errors)
@@ -116,42 +111,48 @@ class Coordinates_tab(QtWidgets.QWidget):
         main_layout.addWidget(pos_list)
         main_layout.addWidget(validate_button)
         main_layout.addLayout(hbuttons)
-        
-        load_layout = QtWidgets.QHBoxLayout()
-        load_layout.addWidget(correction_save)
-        load_layout.addWidget(correction_load)
-        load_layout.addWidget(correction_reset)
-        
+        main_layout.addWidget(motor_plane_button)
+
         correction_layout = QtWidgets.QVBoxLayout()
         correction_layout.addLayout(offset_layout)
         correction_layout.addWidget(offset_button)
-        
-        correction_layout.addWidget(correction_label_motor)
-        correction_layout.addLayout(load_layout)
-        
         main_layout.addLayout(correction_layout)
-        
-        
+
+        main_layout.addWidget(correction_label_motor)
+        main_layout.addWidget(correction_reset_motor)
+
         line = QtWidgets.QFrame()
         line.setFrameShape(QtWidgets.QFrame.HLine)
         line.setFrameShadow(QtWidgets.QFrame.Sunken)
         main_layout.addWidget(line)
-        
+
         main_layout.addWidget(piezzo_label)
         main_layout.addWidget(piezzo_plane_button)
         main_layout.addWidget(correction_label_piezzo)
+        main_layout.addWidget(correction_reset_piezzo)
+
+        line = QtWidgets.QFrame()
+        line.setFrameShape(QtWidgets.QFrame.HLine)
+        line.setFrameShadow(QtWidgets.QFrame.Sunken)
+        main_layout.addWidget(line)
+
+        load_layout = QtWidgets.QHBoxLayout()
+        load_layout.addWidget(correction_save)
+        load_layout.addWidget(correction_load)
+        main_layout.addLayout(load_layout)
+
         self.setLayout(main_layout)
 
         #======================================================================
         #      Connections
         #======================================================================
         cd = application_delegate.coordinates_delegate
+        md = application_delegate.mouvment_delegate
 
-        self.updateCorrection_motor(
-            application_delegate.mouvment_delegate.motor.corrections)
-        self.updateCorrection_piezzo(
-            application_delegate.mouvment_delegate.piezzo.corrections)
+        self.updateCorrection_motor(md.motor.corrections)
+        self.updateCorrection_piezzo(md.piezzo.corrections)
 
+        motor_plane_button.clicked.connect(cd.motor_plane)
         piezzo_plane_button.clicked.connect(cd.piezzo_plane)
         pos_list.cellClicked.connect(self.cellClicked)
         pos_list.verticalHeader().sectionClicked.connect(self.rowClicked)
@@ -168,11 +169,11 @@ class Coordinates_tab(QtWidgets.QWidget):
         self.displayrow.connect(cd.displayrow)
         cd.updatelist.connect(self.updateList)
 
-        application_delegate.mouvment_delegate.motor.coordinatesCorrected.connect(
-            self.updateCorrection_motor)
-        application_delegate.mouvment_delegate.piezzo.coordinatesCorrected.connect(
-            self.updateCorrection_piezzo)
-        correction_reset.clicked.connect(cd.clear_positions)
+        md.motor.coordinatesCorrected.connect(self.updateCorrection_motor)
+        md.piezzo.coordinatesCorrected.connect(self.updateCorrection_piezzo)
+
+        correction_reset_motor.clicked.connect(md.motor.reset_corrections)
+        correction_reset_piezzo.clicked.connect(md.piezzo.reset_corrections)
 
         md = application_delegate.mouvment_delegate
         correction_save.clicked.connect(md.save_corrections)
@@ -181,8 +182,8 @@ class Coordinates_tab(QtWidgets.QWidget):
         save_errors.clicked.connect(cd.save_errors)
 
         offset_button.clicked.connect(lambda:
-            application_delegate.mouvment_delegate.motor.offset_origin(
-                    np.fromstring(offset_input.text(), sep=',')))
+                                      application_delegate.mouvment_delegate.motor.offset_origin(
+                                          np.fromstring(offset_input.text(), sep=',')))
 
         #======================================================================
         #         Save variables
@@ -249,19 +250,22 @@ class Coordinates_tab(QtWidgets.QWidget):
 
     def _updateCorrection(self, corrections, label):
         text = ("Offset: {offset}\n"
-                "Slope: {slope_x:.3g}X + {slope_y:.3g}Y\n"
-                "Rotation angle: {rotation_angle:.5g}π\n"
-                "Stage diff angle: {stage_angle:.5g}π".format(
-                        offset=corrections['offset'],
-                        slope_x=corrections['slope'][0],
-                        slope_y=corrections['slope'][1],
-                        rotation_angle=corrections["rotation angle"] / np.pi,
-                        stage_angle=corrections["stage diff angle"] / np.pi
+                "Angles: {angles}".format(
+                    offset=np.array_str(corrections['offset'], 
+                                        precision=2, 
+                                        max_line_width=40,
+                                        suppress_small=True),
+                    angles=np.array_str(corrections["rotation angles"], 
+                                        precision=4,
+                                        max_line_width=40,
+                                        suppress_small=True)
                 ))
-        label.setText(text)
         
+        label.setText(text)
+
     def updateCorrection_motor(self, corrections):
         self._updateCorrection(corrections, self.correction_label_motor)
-        
+
     def updateCorrection_piezzo(self, corrections):
         self._updateCorrection(corrections, self.correction_label_piezzo)
+        

@@ -31,7 +31,7 @@ class write_delegate(QtCore.QObject):
         super().__init__()
         self.parent = parent
         self.init_thread()
-        
+
     def init_thread(self):
         self.thread = write_thread(self.parent)
         self.thread.finished.connect(self.endwrite)
@@ -126,8 +126,9 @@ class write_thread(QtCore.QThread):
 
              # Focus with z stage
             self.focus_delegate.focus(-focus_range / 2, focus_range / 2, focus_step,
+                                      stage=self.md.motor,
                                       intensity=None,
-                                      Nloops=1, piezzo=False,
+                                      Nloops=1,
                                       wait=True,
                                       checkid=self.lockid)
 
@@ -153,8 +154,9 @@ class write_thread(QtCore.QThread):
                           focus_range / 2])
                     # Focus with z stage
                     self.focus_delegate.focus(0, -focus_range, focus_step,
+                                              stage=self.md.motor,
                                               intensity=intensity,
-                                              Nloops=1, piezzo=False,
+                                              Nloops=1,
                                               wait=True,
                                               checkid=self.lockid)
 
@@ -163,8 +165,9 @@ class write_thread(QtCore.QThread):
 
                     # Focus with piezzo
                     self.focus_delegate.focus(-5, 5, 1,
+                                              stage=self.md.piezzo,
                                               intensity=intensity,
-                                              Nloops=2, piezzo=True,
+                                              Nloops=2,
                                               wait=True,
                                               checkid=self.lockid)
 

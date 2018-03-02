@@ -77,8 +77,7 @@ class Write_tab(QtWidgets.QWidget):
         main_layout = QtWidgets.QVBoxLayout(self)
         main_layout.addLayout(path_layout)
         main_layout.addLayout(settings_layout)
-        
-        
+
         buttons_layout = QtWidgets.QHBoxLayout()
         buttons_layout.addWidget(draw_button)
         buttons_layout.addWidget(write_button)

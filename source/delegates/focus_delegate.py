@@ -9,6 +9,7 @@ import numpy as np
 import sys
 import time
 
+
 class Focus_delegate(QtCore.QObject):
 
     updatelist = QtCore.pyqtSignal(list)
@@ -22,12 +23,12 @@ class Focus_delegate(QtCore.QObject):
         self.canvas = app_delegate.canvas_delegate
         self.app_delegate = app_delegate
         self.init_thread()
-        
+
         self.md.motor.coordinatesCorrected.connect(lambda x: self._update())
         self.md.piezzo.coordinatesCorrected.connect(lambda x: self._update())
-        
+
     def init_thread(self):
-        self.thread = zThread(self.md, 
+        self.thread = zThread(self.md,
                               self.app_delegate.camera_delegate,
                               self.app_delegate.laser_delegate,
                               self.addGraph)
@@ -64,7 +65,8 @@ class Focus_delegate(QtCore.QObject):
             print("Can't Plot!!!", sys.exc_info()[0])
             raise
 
-    def focus(self, start_offset, stop_offset, step, *, intensity=None, Nloops=1,
+    def focus(self, start_offset, stop_offset, step, stage, *,
+              intensity=None, Nloops=1,
               piezzo=False, wait=False, checkid=None):
 
         QtCore.QMutexLocker(self.mutex)
@@ -85,11 +87,7 @@ class Focus_delegate(QtCore.QObject):
         """
         if intensity is None:
             intensity = self.app_delegate.laser_delegate.get_intensity()
-        if piezzo:
-            stage = self.md.piezzo
-        else:
-            self.md.piezzo.reset(checkid=checkid)
-            stage = self.md.motor
+            
         self.thread.set_args(
             start_offset,
             stop_offset,
@@ -112,7 +110,7 @@ class Focus_delegate(QtCore.QObject):
             "piezzo_Xs": self.md.piezzo.get_position(raw=True),
             "graphs": graphs,
             "time": time.time()
-            })
+        })
         self._update()
 
     def save(self):
@@ -131,12 +129,11 @@ class Focus_delegate(QtCore.QObject):
                     for line in data[:, scan_idx]:
                         np.savetxt(f, line[np.newaxis])
                 f.write(('Best: {}\n').format(pos["graphs"][1]).encode())
-        with open(fn[:-4]+'_times.txt', 'w') as f:
+        with open(fn[:-4] + '_times.txt', 'w') as f:
             for pos in self._positions:
                 f.write("{time}, {position_motor}, {position_piezzo}\n".format(
                         time=pos["time"], position_motor=pos["c"],
                         position_piezzo=pos["piezzo_Xs"]))
-                
 
     def clear(self):
 
@@ -147,11 +144,11 @@ class Focus_delegate(QtCore.QObject):
 
     def _update(self):
         QtCore.QMutexLocker(self.mutex)
-        
+
         ret = []
         for pos in self._positions:
-            ret.append((self.md.motor.XstoXm(pos["motor_Xs"]) 
-                     , self.md.piezzo.XstoXm(pos["piezzo_Xs"])))
+            ret.append((self.md.motor.XstoXm(
+                pos["motor_Xs"]), self.md.piezzo.XstoXm(pos["piezzo_Xs"])))
         self.updatelist.emit(ret)
 
     def ESTOP(self):

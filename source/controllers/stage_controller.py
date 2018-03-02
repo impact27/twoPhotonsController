@@ -248,6 +248,7 @@ class cubethread(QtCore.QThread):
         super().__init__()
         self.StageName = StageName
         self.stage_callback = stage_callback
+
     def run(self):
         stage = GCSDevice(HW_conf.GCS_cube_controller_name)
         stage.ConnectUSB(self.StageName)
@@ -389,9 +390,9 @@ class z_controller(stage_controller):
             raise RuntimeError("Stage is None")
         self._kCubeDCServoMotor = stage
         self.posmin = float(str(self._kCubeDCServoMotor.AdvancedMotorLimits
-                          .LengthMinimum)) * 1e3
+                                .LengthMinimum)) * 1e3
         self.posmax = float(str(self._kCubeDCServoMotor.AdvancedMotorLimits
-                          .LengthMaximum)) * 1e3
+                                .LengthMaximum)) * 1e3
 
 
 class Zthread(QtCore.QThread):

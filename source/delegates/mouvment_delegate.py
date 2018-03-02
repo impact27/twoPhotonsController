@@ -29,6 +29,8 @@ import sys
 import time
 import json
 
+from .coordinates_solver import XmtoXs, XstoXm
+
 if sys.platform == "darwin":
     from controllers.stage_controller_placeholder import (linear_controller,
                                                           cube_controller,
@@ -60,11 +62,11 @@ class mouvment_delegate(QtCore.QObject):
     @property
     def piezzo(self):
         return self._piezzo
-    
+
     @property
     def motor(self):
         return self._motor
-    
+
     def _checklock(self, lockid=None):
 
         QtCore.QMutexLocker(self.mutex)
@@ -114,6 +116,7 @@ class mouvment_delegate(QtCore.QObject):
 
         return (self.piezzo.is_onTarget()
                 and self.motor.is_onTarget())
+
     @property
     def is_ready(self):
 
@@ -133,12 +136,12 @@ class mouvment_delegate(QtCore.QObject):
         with open(fn, 'w') as f:
             mydict = {'motor': self.motor.corrections,
                       'piezzo': self.piezzo.corrections}
-            
+
             def ndtolist(array):
                 if isinstance(array, np.ndarray):
                     return list(array)
                 raise TypeError("Unknown Type")
-            
+
             json.dump(mydict, f, indent=4, default=ndtolist)
 
     def load_corrections(self):
@@ -167,12 +170,13 @@ class controller(QtCore.QObject):
         self.parent = parent
         self._lastXs = None
         self._ndim = 3
+        self._corrections = {}
+        self.reset_corrections()
 
-        self._corrections = {
+    def reset_corrections(self):
+        self.corrections = {
             "offset": np.zeros(3, float),
-            "slope": np.zeros(2, float),
-            "rotation angle": 0.,
-            "stage diff angle": 0.
+            "rotation angles": np.zeros(4, float)
         }
 
     def get_position(self, raw=False):
@@ -320,29 +324,13 @@ class controller(QtCore.QObject):
 
         QtCore.QMutexLocker(self.mutex)
         self._corrections["offset"] = np.asarray(corrections["offset"])
-        self._corrections["slope"] = np.asarray(corrections["slope"])
-        self._corrections["rotation angle"] = float(corrections["rotation angle"])
-        self._corrections["stage diff angle"] = float(corrections["stage diff angle"])
+        self._corrections["rotation angles"] = np.asarray(
+            corrections["rotation angles"])
         self.coordinatesCorrected.emit(self._corrections)
-        
+
     def set_correction_key(self, key, value):
         self._corrections[key] = value
         self.coordinatesCorrected.emit(self._corrections)
-
-    def _get_angle_matrices(self):
-
-        QtCore.QMutexLocker(self.mutex)
-
-        theta = self._corrections["rotation angle"]
-        phi = self._corrections["stage diff angle"]
-
-        c, s = np.cos(theta), np.sin(theta)
-        R = np.array([[c, -s], [s, c]])
-
-        c, s = np.cos(phi), np.sin(phi)
-        M = np.array([[1, s], [0, c]])
-
-        return R, M
 
     def reconnect(self):
 
@@ -354,27 +342,15 @@ class controller(QtCore.QObject):
 
         QtCore.QMutexLocker(self.mutex)
 
-        R, M = self._get_angle_matrices()
-
-        Xm = np.array(Xs, float)
-        Xm[:2] = M@Xs[:2]
-        Xm -= self._corrections['offset']
-        Xm[:2] = np.linalg.inv(R)@Xm[:2]
-        Xm[2] -= self._getZPlane(Xs[:2])
-        return Xm
+        return XstoXm(Xs, self._corrections["offset"],
+                      self._corrections["rotation angles"])
 
     def XmtoXs(self, Xm):
 
         QtCore.QMutexLocker(self.mutex)
 
-        R, M = self._get_angle_matrices()
-
-        Xs = np.array(Xm, float)
-        Xs[:2] = R@Xm[:2]
-        Xs += self._corrections['offset']
-        Xs[:2] = np.linalg.inv(M)@Xs[:2]
-        Xs[2] += self._getZPlane(Xs[:2])
-        return Xs
+        return XmtoXs(Xm, self._corrections["offset"],
+                      self._corrections["rotation angles"])
 
     def set_raw_Z_zero(self, Zzero):
 
@@ -385,7 +361,7 @@ class controller(QtCore.QObject):
         offset[2] += Zzero - actualZ
         self.corrections["offset"] = offset
         self.coordinatesCorrected.emit(self.corrections)
-        
+
     def offset_origin(self, newXm):
         corrections = self.corrections
         offset = corrections["offset"]
@@ -418,9 +394,6 @@ class controller(QtCore.QObject):
 
     def _VRANGE(self, axis):
         pass
-
-    def _getZPlane(self, XYstage):
-        return np.dot(self._corrections["slope"], XYstage)
 
 
 class motor(controller):
@@ -502,18 +475,19 @@ class piezzo(controller):
     def __init__(self, parent):
         super().__init__(1000, parent)
         self.mutex = QtCore.QMutex()
-        self.set_correction_key('offset', np.array([50., 50., 25.]))
         self.XYZ_c = cube_controller()
         self.XYZ_c.stageConnected.connect(lambda: self.reset())
         self.XYZ_c.connect()
+
+    def reset_corrections(self):
+        super().reset_corrections()
+        self.set_correction_key('offset', np.array([50., 50., 25.]))
 
     def reset(self, checkid=None):
 
         QtCore.QMutexLocker(self.mutex)
 
-        self._corrections['offset'] = np.array([50., 50., 25.])
-        self._corrections["slope"] = np.zeros(2)
-        self.coordinatesCorrected.emit(self.corrections)
+        self.reset_corrections()
         self.goto_position([0, 0, 0], checkid=checkid)
 
     def _XSPOS(self):
@@ -567,3 +541,45 @@ class piezzo(controller):
         QtCore.QMutexLocker(self.mutex)
 
         self.XYZ_c.reconnect()
+
+#    def _get_angle_matrices(self):
+#
+#        QtCore.QMutexLocker(self.mutex)
+#
+#        theta = self._corrections["rotation angle"]
+#        phi = self._corrections["stage diff angle"]
+#
+#        c, s = np.cos(theta), np.sin(theta)
+#        R = np.array([[c, -s], [s, c]])
+#
+#        c, s = np.cos(phi), np.sin(phi)
+#        M = np.array([[1, s], [0, c]])
+#
+#        return R, M
+#    def _getZPlane(self, XYstage):
+#        return np.dot(self._corrections["slope"], XYstage)
+#
+#    def XstoXm(self, Xs):
+#
+#        QtCore.QMutexLocker(self.mutex)
+#        R, M = self._get_angle_matrices()
+#
+#        Xm = np.array(Xs, float)
+#        Xm[:2] = M@Xs[:2]
+#        Xm -= self._corrections['offset']
+#        Xm[:2] = np.linalg.inv(R)@Xm[:2]
+#        Xm[2] -= self._getZPlane(Xs[:2])
+#        return Xm
+#
+#    def XmtoXs(self, Xm):
+#
+#        QtCore.QMutexLocker(self.mutex)
+#
+#        R, M = self._get_angle_matrices()
+#
+#        Xs = np.array(Xm, float)
+#        Xs[:2] = R@Xm[:2]
+#        Xs += self._corrections['offset']
+#        Xs[:2] = np.linalg.inv(M)@Xs[:2]
+#        Xs[2] += self._getZPlane(Xs[:2])
+#        return Xs
