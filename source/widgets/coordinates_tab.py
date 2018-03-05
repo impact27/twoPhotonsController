@@ -147,7 +147,7 @@ class Coordinates_tab(QtWidgets.QWidget):
         #      Connections
         #======================================================================
         cd = application_delegate.coordinates_delegate
-        md = application_delegate.mouvment_delegate
+        md = application_delegate.movement_delegate
 
         self.updateCorrection_motor(md.motor.corrections)
         self.updateCorrection_piezzo(md.piezzo.corrections)
@@ -175,14 +175,14 @@ class Coordinates_tab(QtWidgets.QWidget):
         correction_reset_motor.clicked.connect(md.motor.reset_corrections)
         correction_reset_piezzo.clicked.connect(md.piezzo.reset_corrections)
 
-        md = application_delegate.mouvment_delegate
+        md = application_delegate.movement_delegate
         correction_save.clicked.connect(md.save_corrections)
         correction_load.clicked.connect(md.load_corrections)
 
         save_errors.clicked.connect(cd.save_errors)
 
         offset_button.clicked.connect(lambda:
-                                      application_delegate.mouvment_delegate.motor.offset_origin(
+                                      application_delegate.movement_delegate.motor.offset_origin(
                                           np.fromstring(offset_input.text(), sep=',')))
 
         #======================================================================

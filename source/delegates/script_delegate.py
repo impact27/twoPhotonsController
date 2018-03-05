@@ -147,9 +147,9 @@ class Execute_Parser(Parser):
     def __init__(self, app_delegate):
         super().__init__()
         self.camera_delegate = app_delegate.camera_delegate
-        self.md = app_delegate.mouvment_delegate
-        self.piezzo_delegate = app_delegate.mouvment_delegate.piezzo
-        self.motor_delegate = app_delegate.mouvment_delegate.motor
+        self.md = app_delegate.movement_delegate
+        self.piezzo_delegate = app_delegate.movement_delegate.piezzo
+        self.motor_delegate = app_delegate.movement_delegate.motor
         self.laser_delegate = app_delegate.laser_delegate
         self.focus_delegate = app_delegate.focus_delegate
         self.coordinates_delegate = app_delegate.coordinates_delegate

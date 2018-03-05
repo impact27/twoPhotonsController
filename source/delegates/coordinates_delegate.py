@@ -34,7 +34,7 @@ class coordinates_delegate(QtCore.QObject):
         self._current_pos = None
         self.parent = application_delegate
         self.camera = application_delegate.camera_delegate
-        self._md = application_delegate.mouvment_delegate
+        self._md = application_delegate.movement_delegate
         self.init_thread()
 
     def init_thread(self):
@@ -176,7 +176,7 @@ class plane_thread(QtCore.QThread):
 
     def __init__(self, application_delegate):
         super().__init__()
-        self._md = application_delegate.mouvment_delegate
+        self._md = application_delegate.movement_delegate
         self._fd = application_delegate.focus_delegate
         self.laser_delegate = application_delegate.laser_delegate
         self.checkid = None

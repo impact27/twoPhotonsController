@@ -21,7 +21,7 @@ import sys
 from PyQt5 import QtCore
 
 from .coordinates_delegate import coordinates_delegate
-from .mouvment_delegate import mouvment_delegate
+from .movement_delegate import movement_delegate
 from .write_delegate import write_delegate
 from .laser_delegate import laser_delegate
 from .camera_delegate import camera_delegate
@@ -40,7 +40,7 @@ class Application_delegate(QtCore.QObject):
 
         # Create delegates for I/O
         self.canvas_delegate = Canvas_delegate(self)
-        self.mouvment_delegate = mouvment_delegate(self)
+        self.movement_delegate = movement_delegate(self)
         self.camera_delegate = camera_delegate()
         self.laser_delegate = laser_delegate()
         self.focus_delegate = Focus_delegate(self)
@@ -55,7 +55,7 @@ class Application_delegate(QtCore.QObject):
     def ESTOP(self):
         self.focus_delegate.ESTOP()
         self.write_delegate.ESTOP()
-        self.mouvment_delegate.ESTOP()
+        self.movement_delegate.ESTOP()
         self.script_delegate.ESTOP()
         self.coordinates_delegate.ESTOP()
-        self.mouvment_delegate.unlock()
+        self.movement_delegate.unlock()
