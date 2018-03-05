@@ -138,6 +138,7 @@ class coordinates_delegate(QtCore.QObject):
         self._current_pos['Xs'] = self._md.motor.get_position(raw=True)
         self._current_pos['im'] = self.camera.get_image()
         self._update()
+        self._updateXYZCorr()
 
     def _updateXYZCorr(self):
 
@@ -169,7 +170,6 @@ class coordinates_delegate(QtCore.QObject):
 
     def _update(self):
         # use saved info to correct coordinates
-        self._updateXYZCorr()
         self.updatelist.emit(self._positions)
 
 class plane_thread(QtCore.QThread):

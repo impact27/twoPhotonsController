@@ -273,8 +273,8 @@ class z_controller(stage_controller):
         self.thread = Zthread(serial, self.set_stage)
         if serial is not None:
             self.connect(serial)
-        self.posmin = 0
-        self.posmax = 12000
+        self.posmin = -12000
+        self.posmax = 0
 
     def reconnect(self):
         if self._kCubeDCServoMotor is not None:
@@ -284,7 +284,7 @@ class z_controller(stage_controller):
     def get_position(self):
         Z = float(str(self._kCubeDCServoMotor.Position)) * 1e3
         # Reverse z
-        Z = self.posmin + self.posmax - Z
+        Z = - Z
         return Z
 
     def ESTOP(self):
@@ -311,7 +311,7 @@ class z_controller(stage_controller):
             V[0] = 1
             print("Speed too small")
         # Reverse z
-        Z = self.posmin + self.posmax - X[0]
+        Z = - X[0]
         self.set_velocity(V[0])
         self._move_to(Z)
 
@@ -389,9 +389,9 @@ class z_controller(stage_controller):
         if stage is None:
             raise RuntimeError("Stage is None")
         self._kCubeDCServoMotor = stage
-        self.posmin = float(str(self._kCubeDCServoMotor.AdvancedMotorLimits
+        self._posmin = float(str(self._kCubeDCServoMotor.AdvancedMotorLimits
                                 .LengthMinimum)) * 1e3
-        self.posmax = float(str(self._kCubeDCServoMotor.AdvancedMotorLimits
+        self._posmax = float(str(self._kCubeDCServoMotor.AdvancedMotorLimits
                                 .LengthMaximum)) * 1e3
 
 
