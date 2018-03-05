@@ -126,7 +126,8 @@ class linear_controller(fake_controller):
 #==============================================================================
 # Cube Controller
 #==============================================================================
-
+class CubeError(BaseException):
+    pass
 
 class cube_controller(fake_controller):
 
@@ -138,6 +139,7 @@ class cube_controller(fake_controller):
         self.V = np.array([0, 0, 0])
         self.target = np.array([0, 0, 0])
         self.startTime = 0
+        self.error = CubeError
 
     def connect(self):
         self.stageConnected.emit()

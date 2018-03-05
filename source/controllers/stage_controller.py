@@ -18,6 +18,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 from pipython import GCSDevice
+import pipython
 import time
 import numpy as np
 from PyQt5 import QtCore
@@ -187,6 +188,7 @@ class cube_controller(stage_controller):
         super().__init__()
         self.cube = None
         self.thread = cubethread(HW_conf.cubeName, self.set_stage)
+        self.error = pipython.gcserror.GCSError
 
     def set_stage(self, stage):
         if stage is None:
