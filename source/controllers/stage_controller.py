@@ -264,7 +264,6 @@ class cubethread(QtCore.QThread):
 # Z Controller
 # =============================================================================
 
-
 class z_controller(stage_controller):
     # Reverse z
     def __init__(self, serial=HW_conf.kinesis_cube_serial):
