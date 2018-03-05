@@ -65,7 +65,14 @@ class Parser():
     def parse(self, filename):
         with open(filename) as f:
             for line in f.readlines():
-                self.readline(line)
+                try:
+                    self.readline(line)
+                except BaseException:
+                    print('')
+                    print("Error while parsing line:")
+                    print(line)
+                    print(sys.exc_info())
+                    print('')
 
     def readline(self, line):
         line = line.strip()
