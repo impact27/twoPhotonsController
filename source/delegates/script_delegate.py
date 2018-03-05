@@ -53,8 +53,7 @@ class Parse_thread(QtCore.QThread):
         try:
             self._parser.parse(self._filename)
         except BaseException:
-            print("Error while parsing")
-            print(sys.exc_info())
+            pass
 
 
 class Parser():
@@ -73,6 +72,7 @@ class Parser():
                     print(line)
                     print(sys.exc_info())
                     print('')
+                    raise
 
     def readline(self, line):
         line = line.strip()
