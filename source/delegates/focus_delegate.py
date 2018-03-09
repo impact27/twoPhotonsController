@@ -306,7 +306,7 @@ class Zcorrector():
         self.stage.goto_position([np.nan, np.nan, zBest],
                                  wait=True, checkid=self.lockid, isRaw=True)
 
-        self.stage.set_raw_Z_zero(zBest)
+        self.stage.set_Z_zero()
 
         # save result and position
         return ret

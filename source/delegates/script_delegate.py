@@ -11,6 +11,7 @@ import matplotlib
 import sys
 cmap = matplotlib.cm.get_cmap('viridis')
 from PyQt5 import QtCore
+from matplotlib import collections  as mc
 
 
 class Script_delegate():
@@ -81,7 +82,7 @@ class Parser():
         arg = line[1:]
         if command.lower() in ['laser', 'focus', 'camera', 'focusint']:
             getattr(self, command)(arg)
-        elif command.lower() in ['piezzoslope']:
+        elif command.lower() in ['piezzoslope', 'piezzoreset']:
             getattr(self, command)()
         elif command.lower() in ['piezzo', 'motor']:
             getattr(self, command)(*self.read_move_args(arg))
@@ -147,6 +148,9 @@ class Parser():
         pass
 
     def piezzoslope(self):
+        pass
+    
+    def piezzoreset(self):
         pass
 
 
@@ -214,7 +218,10 @@ class Execute_Parser(Parser):
 
     def piezzoslope(self):
         self.coordinates_delegate.piezzo_plane(checkid=self.lockid, wait=True)
-
+        
+    def piezzoreset(self):
+        self.piezzo_delegate.reset()
+        
     def focusint(self, args):
         self.focus_intensity = float(args[0])
 
@@ -245,19 +252,30 @@ class Draw_Parser(Parser):
         self.motor_position = np.zeros(3) * np.nan
         self.piezzo_position = np.zeros(3) * np.nan
         self.color = cmap(0)
+        self.colors = []
+        self.lines = []
 
     def parse(self, filename):
         self.canvas.clear()
-        super().parse(filename)
+        try:
+            super().parse(filename)
+        except BaseException as e:
+            print(e)
+            raise
+        lc = mc.LineCollection(self.lines, colors=self.colors, linewidths=2)
+        self.canvas._axes.add_collection(lc)
+        self.canvas._axes.axis('equal')
+
         self.canvas.draw()
+        self.colors = []
+        self.lines = []
 
     def plotto(self, pos):
         if self.writing:
             start = self.motor_position + self.piezzo_position
-            self.canvas.plot([pos[0], start[0]],
-                             [pos[1], start[1]],
-                             c=self.color,
-                             axis='equal', draw=False)
+            
+            self.lines.append([start[:2], pos[:2]])
+            self.colors.append(self.color)
 
     def piezzo(self, pos, speed):
         piezzo_to = self.move(self.piezzo_position, pos)
@@ -268,7 +286,7 @@ class Draw_Parser(Parser):
         motor_to = self.move(self.motor_position, pos)
         self.plotto(motor_to + self.piezzo_position)
         self.motor_position = motor_to
-        self.piezzo_position = np.zeros(3)
+        
 
     def move(self, start_position, pos):
         pos[np.isnan(pos)] = start_position[np.isnan(pos)]
@@ -279,3 +297,6 @@ class Draw_Parser(Parser):
 
     def laser_power(self, power):
         self.color = cmap(power / 10)
+        
+    def piezzoreset(self):
+        self.piezzo_position = np.zeros(3)

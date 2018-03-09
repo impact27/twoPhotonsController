@@ -352,13 +352,14 @@ class controller(QtCore.QObject):
         return XmtoXs(Xm, self._corrections["offset"],
                       self._corrections["rotation angles"])
 
-    def set_raw_Z_zero(self, Zzero):
+    def set_Z_zero(self):
 
         QtCore.QMutexLocker(self.mutex)
-
-        actualZ = self.XmtoXs([*self.position[:2], 0])[2]
+        
+        actualZ = self.position[2]
         offset = np.asarray(self.corrections["offset"], float)
-        offset[2] += Zzero - actualZ
+        
+        offset[2] += actualZ
         self.corrections["offset"] = offset
         self.coordinatesCorrected.emit(self.corrections)
 
@@ -481,7 +482,7 @@ class piezzo(controller):
 
     def reset_corrections(self):
         super().reset_corrections()
-        self.set_correction_key('offset', np.array([50., 50., 25.]))
+        self.set_correction_key('offset', np.array([50., 50., 50.]))
 
     def reset(self, checkid=None):
 
@@ -502,7 +503,7 @@ class piezzo(controller):
         try:
             self.XYZ_c.MOVVEL(Xs, V)
         except self.XYZ_c.error:
-            print(Xs)
+            print("Error at ", Xs)
             raise
 
     def is_onTarget(self):
