@@ -71,6 +71,9 @@ class Controls_tab(QtWidgets.QWidget):
 
         goto_motor_button = QtWidgets.QPushButton("GO")
         getcurr_motor_button = QtWidgets.QPushButton("Get Current")
+        
+        motor_z_piezzo_button = QtWidgets.QPushButton("Z Piezzo")
+        motor_z_piezzo_button.setCheckable(True)
 
         cube_label = QtWidgets.QLabel('Piezzo Stage')
         cube_label.setStyleSheet("font: bold large")
@@ -164,6 +167,7 @@ class Controls_tab(QtWidgets.QWidget):
         main_layout.addLayout(motor_H_layout)
         main_layout.addLayout(motor_layout)
         main_layout.addLayout(motor_GO_layout)
+        main_layout.addWidget(motor_z_piezzo_button)
 
         line = QtWidgets.QFrame()
         line.setFrameShape(QtWidgets.QFrame.HLine)
@@ -206,6 +210,7 @@ class Controls_tab(QtWidgets.QWidget):
         stage_cube_reconnect.clicked.connect(md.piezzo.reconnect)
 
         goto_motor_button.clicked.connect(self.goto_motor)
+        motor_z_piezzo_button.clicked.connect(md.motor.switch_z_controller)
 
         goto_cube_button.clicked.connect(lambda: md.piezzo.goto_position(
             [s.getValue() for s in cube_selectors]))

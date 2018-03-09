@@ -145,7 +145,7 @@ class cube_controller(fake_controller):
         self.stageConnected.emit()
 
     def get_pos_range(self, axis):
-        return np.array([0, 100])
+        return np.array([-50., 50])
 
     def get_vel_range(self, axis):
         return np.array([0, 4000])

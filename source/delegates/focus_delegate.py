@@ -175,21 +175,25 @@ class zThread(QtCore.QThread):
                             intensity, checkid)
 
     def run(self):
-        if self._focus_args is None:
-            raise RuntimeError("args not initialised!")
-
-        if self._focus_args[-1] is None:
-            lockid = self._md.lock()
-            if lockid is None:
-                self.error = "Unable to lock the movement"
-                return
-        else:
-            lockid = self._focus_args[-1]
-
-        graphs = self._zcorrector.focus(*self._focus_args[:-1], lockid)
-        self._md.unlock()
-        self._focus_args = None
-        self.addGraph(graphs)
+        try:
+            if self._focus_args is None:
+                raise RuntimeError("args not initialised!")
+    
+            if self._focus_args[-1] is None:
+                lockid = self._md.lock()
+                if lockid is None:
+                    self.error = "Unable to lock the movement"
+                    return
+            else:
+                lockid = self._focus_args[-1]
+    
+            graphs = self._zcorrector.focus(*self._focus_args[:-1], lockid)
+            self._md.unlock()
+            self._focus_args = None
+            self.addGraph(graphs)
+        except RuntimeError as e:
+            print(e)
+            raise e
 
 
 class Zcorrector():
@@ -267,6 +271,9 @@ class Zcorrector():
             zPos, intensity, sizes = self.get_image_range(
                 z_start, z_stop, current_step)
 
+            if 2*np.min(intensity) > np.max(intensity):
+                raise RuntimeError("Can't focus")
+                
             argbest = np.argmax(intensity)
 
             if intensity[argbest] == 255:

@@ -195,7 +195,6 @@ class controller(QtCore.QObject):
         QtCore.QMutexLocker(self.mutex)
 
         """
-
         Any value of Xm set to nan will not be moved
         """
 
@@ -240,7 +239,7 @@ class controller(QtCore.QObject):
         V = np.abs(Xdist / Xtime)
 
         # Move
-        self._MOVVEL(Xs, V, checkid=checkid)
+        self._MOVVEL(Xs, V)
 
         # Wait for movment to end
         if wait:
@@ -387,7 +386,7 @@ class controller(QtCore.QObject):
     def _XSPOS(self):
         pass
 
-    def _MOVVEL(self, Xs, V, checkid=None):
+    def _MOVVEL(self, Xs, V):
         pass
 
     def _XSRANGE(self, axis):
@@ -397,13 +396,28 @@ class controller(QtCore.QObject):
         pass
 
 
+
+    
 class motor(controller):
     def __init__(self, parent):
         super().__init__(1000, parent)
         self.mutex = QtCore.QMutex()
         self.XY_c = linear_controller()
-        self.Z_c = z_controller()
         self.XY_c.waitState()
+        
+        self.motor_z = z_controller()
+        self.piezzo_z = zpiezzoController(parent, self.motor_z)
+        
+        self.Z_c = self.motor_z
+        
+    def switch_z_controller(self, piezzo):
+        self.wait_end_motion()
+        if piezzo:
+            self.Z_c = self.piezzo_z
+        else:
+            self.Z_c = self.motor_z
+            
+        self.coordinatesCorrected.emit(self._corrections)
 
     def _XSPOS(self):
 
@@ -414,7 +428,7 @@ class motor(controller):
         X = np.asarray([*XY, Z])
         return X
 
-    def _MOVVEL(self, Xs, V, checkid=None):
+    def _MOVVEL(self, Xs, V):
 
         QtCore.QMutexLocker(self.mutex)
 
@@ -480,10 +494,6 @@ class piezzo(controller):
         self.XYZ_c.stageConnected.connect(lambda: self.reset())
         self.XYZ_c.connect()
 
-    def reset_corrections(self):
-        super().reset_corrections()
-        self.set_correction_key('offset', np.array([50., 50., 50.]))
-
     def reset(self, checkid=None, wait=False):
 
         QtCore.QMutexLocker(self.mutex)
@@ -497,7 +507,7 @@ class piezzo(controller):
 
         return np.asarray(self.XYZ_c.get_position())
 
-    def _MOVVEL(self, Xs, V, checkid=None):
+    def _MOVVEL(self, Xs, V):
 
         QtCore.QMutexLocker(self.mutex)
         try:
@@ -545,6 +555,42 @@ class piezzo(controller):
         QtCore.QMutexLocker(self.mutex)
 
         self.XYZ_c.reconnect()
+        
+class zpiezzoController():
+    
+    def __init__(self, md, motor_z_controller):
+        self.motor_c = motor_z_controller
+        self.piezzo = md.piezzo
+        
+    def get_position(self):
+        return self.motor_c.get_position() + self.piezzo.XYZ_c.get_position()[2]
+    
+    def MOVVEL(self, Xs, V):
+        piezzo_pos = self.piezzo.get_position(raw=True)
+        piezzo_pos[2] = Xs[0]-self.motor_c.get_position()
+        self.piezzo.XYZ_c.MOVVEL(piezzo_pos, [0, 0, V[0]])
+        self.piezzo.move_signal.emit(list(self.piezzo.XstoXm(piezzo_pos)), V)
+    
+    def is_onTarget(self,):
+        return self.piezzo.XYZ_c.is_onTarget()
+    
+    def get_pos_range(self, axis):
+        return self.piezzo.XYZ_c.get_pos_range(2) + self.motor_c.get_position()
+    
+    def get_vel_range(self, axis):
+        return self.piezzo.XYZ_c.get_vel_range(2)
+    
+    def stop(self,):
+        self.piezzo.stop()
+        
+    def ESTOP(self,):
+        self.piezzo.ESTOP()
+        
+    def is_ready(self,):
+        self.piezzo.is_ready()
+        
+    def reconnect(self,):
+        pass
 
 #    def _get_angle_matrices(self):
 #

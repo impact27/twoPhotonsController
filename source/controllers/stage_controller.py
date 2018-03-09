@@ -190,6 +190,7 @@ class cube_controller(stage_controller):
         self.cube = None
         self.thread = cubethread(HW_conf.cubeName, self.set_stage)
         self.error = pipython.gcserror.GCSError
+        self.internal_offset = np.asarray([50, 50, 50])
 
     def set_stage(self, stage):
         if stage is None:
@@ -208,6 +209,7 @@ class cube_controller(stage_controller):
         self.cube.CloseConnection()
 
     def MOVVEL(self, X, V):
+        X += self.internal_offset
         # Reverse y and z
         X[1:] = 100 - X[1:]
         self.cube.VEL([1, 2, 3], list(np.abs(V)))
@@ -217,6 +219,8 @@ class cube_controller(stage_controller):
         X = np.asarray(list(self.cube.qPOS([1, 2, 3]).values()), dtype=float)
         # Reverse y and z
         X[1:] = 100 - X[1:]
+        
+        X -= self.internal_offset
         return X
 
     def stop(self):
@@ -235,7 +239,7 @@ class cube_controller(stage_controller):
         return np.all(self.cube.qONT([1, 2, 3]).values())
 
     def get_pos_range(self, axis):
-        return np.array([0., 100.])
+        return np.array([-50., 50.])
 
     def get_vel_range(self, axis):
         return np.array([0., 4000.])
@@ -310,8 +314,10 @@ class z_controller(stage_controller):
             1000 * self._kCubeDCServoMotor.AdvancedMotorLimits.VelocityMaximum]
 
     def MOVVEL(self, X, V):
-        if V[0] < 1:
-            V[0] = 1
+        if V[0] < 1e-3:
+            return
+        elif V[0] < 2:
+            V[0] = 2
             print("Speed too small")
         # Reverse z
         Z = - X[0]
