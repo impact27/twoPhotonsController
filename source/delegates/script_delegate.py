@@ -220,7 +220,7 @@ class Execute_Parser(Parser):
         self.coordinates_delegate.piezzo_plane(checkid=self.lockid, wait=True)
         
     def piezzoreset(self):
-        self.piezzo_delegate.reset()
+        self.piezzo_delegate.reset(checkid=self.lockid, wait=True)
         
     def focusint(self, args):
         self.focus_intensity = float(args[0])

@@ -484,12 +484,12 @@ class piezzo(controller):
         super().reset_corrections()
         self.set_correction_key('offset', np.array([50., 50., 50.]))
 
-    def reset(self, checkid=None):
+    def reset(self, checkid=None, wait=False):
 
         QtCore.QMutexLocker(self.mutex)
 
         self.reset_corrections()
-        self.goto_position([0, 0, 0], checkid=checkid)
+        self.goto_position([0, 0, 0], checkid=checkid, wait=wait)
 
     def _XSPOS(self):
 

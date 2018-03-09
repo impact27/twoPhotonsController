@@ -194,25 +194,29 @@ class plane_thread(QtCore.QThread):
         self.Nloops = Nloops
 
     def run(self):
-        positions = np.zeros((len(self._pos), 3))
-        for i, corner in enumerate(self._pos):
-            corner[2] = self.range[0]
-            self._stage.goto_position(corner, speed=1000, wait=True,
-                                          checkid=self.checkid)
-            self._fd.focus(0, self.range[1] - self.range[0], self.range[2],
-                           Nloops=self.Nloops,
-                           stage=self._stage,
-                           intensity=self.focus_intensity,
-                           wait=True, checkid=self.checkid)
-            
-            self.focus_intensity = self.laser_delegate.get_intensity()
-
-            positions[i] = self._stage.get_position(raw=True)
-
-        corrections = self._stage.corrections
-        offset, rotation_angles = solve_z(
-            positions, offset=corrections["offset"],
-            rotation_angles=corrections["rotation angles"])
-        corrections["offset"] = offset
-        corrections["rotation angles"] = rotation_angles
-        self._stage.corrections = corrections
+        try:
+            positions = np.zeros((len(self._pos), 3))
+            for i, corner in enumerate(self._pos):
+                corner[2] = self.range[0]
+                self._stage.goto_position(corner, speed=1000, wait=True,
+                                              checkid=self.checkid)
+                self._fd.focus(0, self.range[1] - self.range[0], self.range[2],
+                               Nloops=self.Nloops,
+                               stage=self._stage,
+                               intensity=self.focus_intensity,
+                               wait=True, checkid=self.checkid)
+                
+                self.focus_intensity = self.laser_delegate.get_intensity()
+    
+                positions[i] = self._stage.get_position(raw=True)
+    
+            corrections = self._stage.corrections
+            offset, rotation_angles = solve_z(
+                positions, offset=corrections["offset"],
+                rotation_angles=corrections["rotation angles"])
+            corrections["offset"] = offset
+            corrections["rotation angles"] = rotation_angles
+            self._stage.corrections = corrections
+        except BaseException as e:
+            print(e)
+            raise e

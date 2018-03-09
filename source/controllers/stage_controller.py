@@ -166,6 +166,7 @@ class linethread(QtCore.QThread):
     def run(self):
         stage = GCSDevice(HW_conf.GCS_lin_controller_name)
         stage.ConnectUSB(self.StageName)
+        time.sleep(1)
         if stage.qCST()['1'] != HW_conf.GCS_lin_stage_name:
             print(stage.qCST()['1'])
             raise RuntimeError("Incorrect stage connected")
@@ -254,6 +255,7 @@ class cubethread(QtCore.QThread):
     def run(self):
         stage = GCSDevice(HW_conf.GCS_cube_controller_name)
         stage.ConnectUSB(self.StageName)
+        time.sleep(1)
         if stage.qCST()['1'] != HW_conf.GCS_cube_stage_name:
             print(stage.qCST()['1'])
             raise RuntimeError("Incorrect stage connected")
