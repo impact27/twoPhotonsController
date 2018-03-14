@@ -52,6 +52,8 @@ class laser_delegate(QtCore.QObject):
         return self.controller.get_range()
 
     def set_intensity(self, V):
+        if V is None:
+            return
 
         QtCore.QMutexLocker(self.mutex)
 

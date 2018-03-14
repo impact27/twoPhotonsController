@@ -251,16 +251,16 @@ class Coordinates_tab(QtWidgets.QWidget):
     def _updateCorrection(self, corrections, label):
         text = ("Offset: {offset}\n"
                 "Angles: {angles}".format(
-                    offset=np.array_str(corrections['offset'], 
-                                        precision=2, 
+                    offset=np.array_str(corrections['offset'],
+                                        precision=2,
                                         max_line_width=40,
                                         suppress_small=True),
-                    angles=np.array_str(corrections["rotation angles"], 
+                    angles=np.array_str(corrections["rotation angles"],
                                         precision=4,
                                         max_line_width=40,
                                         suppress_small=True)
                 ))
-        
+
         label.setText(text)
 
     def updateCorrection_motor(self, corrections):
@@ -268,4 +268,3 @@ class Coordinates_tab(QtWidgets.QWidget):
 
     def updateCorrection_piezzo(self, corrections):
         self._updateCorrection(corrections, self.correction_label_piezzo)
-        

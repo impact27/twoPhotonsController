@@ -32,7 +32,7 @@ class camera_controller():
         print('Connected Camera')
 
     def get_image(self):
-        return np.random.rand(50, 100) * 256
+        return np.random.rand()*np.random.rand(50, 100) * 256
 
     def exposure_time_range(self):
         return [1.9e-5, .1]

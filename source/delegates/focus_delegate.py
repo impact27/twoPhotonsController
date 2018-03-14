@@ -102,6 +102,10 @@ class Focus_delegate(QtCore.QObject):
             self.thread.wait()
 
     def addGraph(self, graphs):
+        
+        if graphs is None:
+            self.app_delegate.error.emit("Focus Failed")
+            return
 
         QtCore.QMutexLocker(self.mutex)
 
@@ -192,8 +196,7 @@ class zThread(QtCore.QThread):
             self._focus_args = None
             self.addGraph(graphs)
         except RuntimeError as e:
-            print(e)
-            raise e
+            self.addGraph(None)
 
 
 class Zcorrector():
@@ -205,20 +208,30 @@ class Zcorrector():
         self.lockid = None
         self.laser = laser
 
-    def decrease_power(self):
+    def change_power(self, factor=0.8):
         V = self.laser.get_intensity()
-        V = 0.8 * V
+        V = factor * V
         self.laser.set_intensity(V)
 
     def startlaser(self, intensity):
+        if intensity is None or intensity < 1e-6:
+            intensity = 0.1
         self.camera.auto_exposure_time(False)
         self.camera.set_exposure_time(self.camera.exposure_time_range()[0])
         self.laser.set_intensity(intensity)
         self.laser.switch(True)
         self.camera.extShutter(True)
+        
 
     def endlaser(self):
         pass
+    
+    def get_intensity(self):
+        self.camera.restart_streaming()
+        im = self.camera.get_image()
+        mymax = np.amax(im)
+        size = np.sum(im > mymax / 10)
+        return mymax, size
 
     def get_image_range(self, start, stop, step):
         """get the images corresponding to the positions in zPos
@@ -232,23 +245,63 @@ class Zcorrector():
         for i, z in enumerate(zPos):
             self.stage.goto_position([np.nan, np.nan, z],
                                      wait=True, checkid=self.lockid, isRaw=True)
-            self.camera.restart_streaming()
-            im = self.camera.get_image()
-            mymax = np.amax(im)
-            size = np.sum(im > mymax / 10)
+            
+            mymax, size = self.get_intensity()
+            
             intensities[i] = mymax
             sizes[i] = size
+            
             if mymax == 255:
                 if i > 1:
                     start = zPos[i - 2]
-                self.decrease_power()
+                self.change_power(0.8)
                 return self.get_image_range(start, stop, step)
 
             if mymax < np.max(intensities) / 3:
+                
                 return zPos, intensities, sizes
 
+        #Failed focus
+        if 2*np.min(intensities) > np.max(intensities):
+            raise RuntimeError("Can't focus")
+            
         return zPos, intensities, sizes
 
+    def focus_range(self, z_start, z_stop, current_step):
+        zPos, intensity, sizes = self.get_image_range(
+            z_start, z_stop, current_step)
+            
+        argbest = np.argmax(intensity)
+        zBest = zPos[argbest]
+        
+        #If on side
+        if argbest == 0 or argbest == len(intensity) - 1:
+            return self.focus_range(
+                    zBest - 2*current_step,
+                    zBest + 2.1*current_step,
+                    current_step)
+            
+        #Check intensity is high enough
+        if np.max(intensity) < 150:
+            
+            self.stage.goto_position([np.nan, np.nan, zBest],
+                             wait=True, checkid=self.lockid, isRaw=True)
+            
+            intensity, _ = self.get_intensity()
+            intensity_old = 0
+            while intensity < 150 and intensity > 1.05*intensity_old:
+                intensity_old = intensity
+                self.change_power(1.2)
+                intensity, _ = self.get_intensity()
+            
+            if intensity_old > 0:
+                return self.focus_range(
+                        zBest - 2*current_step,
+                        zBest + 2.1*current_step,
+                        current_step)
+            
+        return zPos, intensity, sizes
+        
     def focus(self, start_offset, stop_offset, step, N_loops=1,
               intensity=None, checkid=None):
         """ Go to the best focal point for the laser
@@ -267,30 +320,12 @@ class Zcorrector():
         list_sizes = []
 
         for i in range(N_loops):
-
-            zPos, intensity, sizes = self.get_image_range(
-                z_start, z_stop, current_step)
-
-            if 2*np.min(intensity) > np.max(intensity):
-                raise RuntimeError("Can't focus")
-                
+            zPos, intensity, sizes = self.focus_range(z_start, z_stop, current_step)
+            
             argbest = np.argmax(intensity)
-
-            if intensity[argbest] == 255:
-                argbest = (np.argwhere(intensity == 255)
-                           [np.argmin(sizes[intensity == 255])][0])
-
             current_step /= 10
-
-            if argbest == 0:
-                z_start = zPos[0]
-            else:
-                z_start = zPos[argbest - 1]
-
-            if argbest == len(intensity) - 1:
-                z_stop = zPos[argbest]
-            else:
-                z_stop = zPos[argbest + 1]
+            z_start = zPos[argbest - 1]
+            z_stop = zPos[argbest + 1]
 
             list_zpos.append(zPos)
             list_int.append(intensity)
