@@ -29,11 +29,16 @@ class camera_delegate(QtCore.QObject):
         self.reset_bg()
         self.roi0 = self.controller.roi
         
-    def set_roi(self, roi):
+    def set_relative_roi(self, roi):
+        QtCore.QMutexLocker(self.mutex)
+        roi = np.array(roi)
+        cur_roi = np.array(self.controller.roi)
+        roi[:2] += cur_roi[:2]
         self.controller.roi = roi
         self.new_roi.emit()
         
     def reset_roi(self):
+        QtCore.QMutexLocker(self.mutex)
         self.controller.roi = self.roi0
         self.new_roi.emit()
 

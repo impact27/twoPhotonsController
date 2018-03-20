@@ -17,11 +17,10 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-import numpy as np
 from .pixelink import PixeLINK
 import serial
 from .HW_conf import camera_shutter_COM, pixeLINK_SN
-
+import numpy as np
 
 class camera_controller():
     def __init__(self):
@@ -29,6 +28,8 @@ class camera_controller():
         self.reconnect()
         self._ext_shutter = serial.Serial(camera_shutter_COM)
         self._ext_shutter.write('OFF\n'.encode())
+        self.shape = np.asarray([3840, 2484])
+        self.roi = (0, 0, 3840, 2484)
 
     def __del__(self):
         self._ext_shutter.close()
@@ -74,8 +75,26 @@ class camera_controller():
         return self.cam.roi
     
     @roi.setter
-    def roi(self, ltwhTuple):
+    def roi(self, roi):
+        roi = np.asarray(roi)
+        roi[:2] = self.shape - (roi[:2]+roi[2:])
+        
         streaming = self.cam.streaming
         self.cam.streaming = False
-        self.cam.roi = ltwhTuple
+        try:
+            self.cam.roi = tuple(roi)
+        except BaseException as e:
+            print(roi[0] + roi[2], roi[1]+roi[3])
+            print(e)
         self.cam.streaming = streaming
+
+#%%
+#from matplotlib.pyplot import figure, imshow
+#cc = camera_controller()
+#cc.ext_shutter(True)
+#print(cc.roi)
+##%%
+#cc.roi = (500, 500, 1023,1005)
+#print(cc.get_image().shape)
+#imshow(cc.get_image())
+    

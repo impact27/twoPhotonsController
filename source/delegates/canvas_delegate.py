@@ -58,7 +58,7 @@ class Canvas_delegate(QtCore.QObject):
         self.ROI_select = None
         self.rescale_factor = 2
         self.cd = parent.camera_delegate
-        self.cd.new_roi.connect(lambda: self.imshow(self.get_frame()))
+        self.cd.new_roi.connect(self.draw_first_frame)
         
 
     def get_frame(self):
@@ -120,9 +120,15 @@ class Canvas_delegate(QtCore.QObject):
         if on:
             self.switch_draw(False)
             self.live_timer.start(33)
+            self.draw_first_frame()
         else:
             self.live_timer.stop()
         self.liveSwitched.emit(on)
+        
+    def draw_first_frame(self):
+        QtCore.QMutexLocker(self.mutex)
+        self.clear()
+        self.imshow(self.get_frame())
 
     def switch_draw(self, on):
 
@@ -326,14 +332,14 @@ class Canvas_delegate(QtCore.QObject):
         elif event.name == 'button_release_event':
             self._recthandle = None
             self.ROI_select = None
-            roi = np.array([np.min([p0[0], p1[0]]),
-                            np.min([p0[1], p1[1]]),
-                            np.abs(p0[0] - p1[0]),
-                            np.abs(p0[1] - p1[1])])
+            roi = np.array([np.min([p0[1], p1[1]]),
+                            np.min([p0[0], p1[0]]),
+                            np.abs(p0[1] - p1[1]),
+                            np.abs(p0[0] - p1[0])])
             roi *= self.rescale_factor
             roi = np.round(roi)
             roi = np.array(roi, int)
-            self.cd.set_roi((*roi,))
+            self.cd.set_relative_roi((*roi,))
             
     def clear_click(self):
 
