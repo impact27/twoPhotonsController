@@ -193,7 +193,9 @@ class zThread(QtCore.QThread):
             self._md.unlock()
             self._focus_args = None
             self.addGraph(graphs)
-        except RuntimeError as e:
+        except BaseException as e:
+            print(e)
+            self._md.unlock()
             self.addGraph(None)
 
 

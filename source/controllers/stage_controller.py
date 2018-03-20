@@ -209,7 +209,7 @@ class cube_controller(stage_controller):
         self.cube.CloseConnection()
 
     def MOVVEL(self, X, V):
-        X += self.internal_offset
+        X = X + self.internal_offset
         # Reverse y and z
         X[1:] = 100 - X[1:]
         self.cube.VEL([1, 2, 3], list(np.abs(V)))

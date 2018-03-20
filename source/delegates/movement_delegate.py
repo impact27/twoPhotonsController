@@ -252,8 +252,7 @@ class Stage(QtCore.QObject):
             if np.any(toreplace):
                 Xm[toreplace] = self.XstoXm(XsFrom)[toreplace]
             Xs = self.XmtoXs(Xm)
-
-        self.move_signal.emit(list(Xm), speed)
+            
         self._lastXs = Xs
 
         # Don't move if final = now
@@ -267,6 +266,7 @@ class Stage(QtCore.QObject):
 
         # Move
         self._MOVVEL(Xs, V)
+        self.move_signal.emit(list(Xm), speed)
 
         # Wait for movment to end
         if wait:
@@ -633,7 +633,7 @@ class Piezzo_z(stage_controller):
     def MOVVEL(self, Xs, V):
         piezzo_pos = self.piezzo.get_position(raw=True)
         piezzo_pos[2] = Xs[0] - self.offset
-        self.piezzo.XYZ_c.MOVVEL(piezzo_pos, [0, 0, V[0]])
+        self.piezzo.XYZ_c.MOVVEL(piezzo_pos.copy(), [0, 0, V[0]])
         self.piezzo.move_signal.emit(list(self.piezzo.XstoXm(piezzo_pos)), V)
     
     def get_pos_range(self, axis):
