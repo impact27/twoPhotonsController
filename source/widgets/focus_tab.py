@@ -27,24 +27,26 @@ class Focus_tab(QtWidgets.QWidget):
         #       Create Widgets
         #======================================================================
         back_label = QtWidgets.QLabel("Start: Pos +")
-        back_input = QtWidgets.QLineEdit('20')
+        back_input = QtWidgets.QLineEdit('0')
 
         forth_label = QtWidgets.QLabel("End: Pos +")
-        forth_input = QtWidgets.QLineEdit('-20')
+        forth_input = QtWidgets.QLineEdit('0')
 
         step_label = QtWidgets.QLabel("Step:")
-        step_input = QtWidgets.QLineEdit('-1')
+        step_input = QtWidgets.QLineEdit('0')
 
         Nloops_label = QtWidgets.QLabel("Loops:")
-        Nloops_input = QtWidgets.QLineEdit('1')
+        Nloops_input = QtWidgets.QLineEdit('0')
+        
+        intensity_label = QtWidgets.QLabel("Intensity:")
+        intensity_input = QtWidgets.QLineEdit('0')
 
-        precision_check = QtWidgets.QCheckBox("Piezzo")
-
-        focus_button = QtWidgets.QPushButton("Focus")
+        focus_piezo_button = QtWidgets.QPushButton("Piezo")
+        focus_motor_button = QtWidgets.QPushButton("Motor")
 
         pos_list = QtWidgets.QTableWidget()
         pos_list.setColumnCount(3)
-        pos_list.setHorizontalHeaderLabels(['X motor', 'X piezzo', 'Delete'])
+        pos_list.setHorizontalHeaderLabels(['X motor', 'X piezo', 'Delete'])
         pos_list.setColumnWidth(0, 90)
         pos_list.setColumnWidth(1, 90)
         pos_list.setColumnWidth(2, 40)
@@ -66,15 +68,20 @@ class Focus_tab(QtWidgets.QWidget):
         focus_grid.addWidget(step_input, 2, 1)
         focus_grid.addWidget(Nloops_label, 3, 0)
         focus_grid.addWidget(Nloops_input, 3, 1)
-        focus_grid.addWidget(precision_check, 4, 0)
+        focus_grid.addWidget(intensity_label, 4, 0)
+        focus_grid.addWidget(intensity_input, 4, 1)
 
         bottom_layout = QtWidgets.QHBoxLayout()
         bottom_layout.addWidget(save_button)
         bottom_layout.addWidget(clear_list_button)
+        
+        focus_layout = QtWidgets.QHBoxLayout()
+        focus_layout.addWidget(focus_piezo_button)
+        focus_layout.addWidget(focus_motor_button)
 
         main_layout = QtWidgets.QVBoxLayout()
         main_layout.addLayout(focus_grid)
-        main_layout.addWidget(focus_button)
+        main_layout.addLayout(focus_layout)
         main_layout.addWidget(pos_list)
         main_layout.addLayout(bottom_layout)
         self.setLayout(main_layout)
@@ -89,26 +96,36 @@ class Focus_tab(QtWidgets.QWidget):
         pos_list.cellClicked.connect(self.cellClicked)
         pos_list.verticalHeader().sectionClicked.connect(self.rowClicked)
         
-        def focus():
-            if precision_check.isChecked():
-                stage = application_delegate.movement_delegate.piezzo
+        def focus(piezo):
+            if piezo:
+                stage = application_delegate.movement_delegate.piezo
             else:
                 stage = application_delegate.movement_delegate.motor
                 
             self.fd.focus(
-                float(back_input.text()),
-                float(forth_input.text()),
-                float(step_input.text()),
+                start_offset=float(back_input.text()),
+                stop_offset=float(forth_input.text()),
+                step=float(step_input.text()),
                 stage=stage,
-                intensity=None,
+                intensity=float(intensity_input.text()),
                 Nloops=int(float(Nloops_input.text())))
+            
+        def update_settings(settings):
+            back_input.setText(str(settings["From"]))
+            forth_input.setText(str(settings["To"]))
+            step_input.setText(str(settings["Step"]))
+            Nloops_input.setText(str(settings["NLoops"]))
+            intensity_input.setText(str(settings["Intensity"]))
 
-        focus_button.clicked.connect(focus) 
+        focus_piezo_button.clicked.connect(lambda: focus(True)) 
+        focus_motor_button.clicked.connect(lambda: focus(False)) 
 
         clear_list_button.clicked.connect(self.fd.clear)
         save_button.clicked.connect(self.fd.save)
 
         self.fd.updatelist.connect(self.updateList)
+        self.fd.update_settings.connect(update_settings)
+        update_settings(self.fd._settings)
 
         #======================================================================
         #         Save variables
@@ -139,13 +156,13 @@ class Focus_tab(QtWidgets.QWidget):
         Xm_motor_label.setAlignment(QtCore.Qt.AlignCenter)
 
         Xmtext = "[{:.1f},\n {:.1f},\n {:.3f}]".format(*Xms[1])
-        Xm_piezzo_label = QtWidgets.QLabel(Xmtext)
-        Xm_piezzo_label.setAlignment(QtCore.Qt.AlignCenter)
+        Xm_piezo_label = QtWidgets.QLabel(Xmtext)
+        Xm_piezo_label.setAlignment(QtCore.Qt.AlignCenter)
 
         Delete = QtWidgets.QLabel('X')
         Delete.setStyleSheet("background-color: red")
         Delete.setAlignment(QtCore.Qt.AlignCenter)
 
         self.pos_list.setCellWidget(row, 0, Xm_motor_label)
-        self.pos_list.setCellWidget(row, 1, Xm_piezzo_label)
+        self.pos_list.setCellWidget(row, 1, Xm_piezo_label)
         self.pos_list.setCellWidget(row, 2, Delete)

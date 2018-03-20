@@ -13,6 +13,7 @@ import time
 class Focus_delegate(QtCore.QObject):
 
     updatelist = QtCore.pyqtSignal(list)
+    update_settings = QtCore.pyqtSignal(dict)
 
     def __init__(self, app_delegate):
         super().__init__()
@@ -23,9 +24,16 @@ class Focus_delegate(QtCore.QObject):
         self.canvas = app_delegate.canvas_delegate
         self.app_delegate = app_delegate
         self.init_thread()
+        self._settings = {
+                "From": 5,
+                "To": -5,
+                "Step": -0.5,
+                "NLoops": 1,
+                "Intensity": 0.5
+                }
 
         self.md.motor.coordinatesCorrected.connect(lambda x: self._update())
-        self.md.piezzo.coordinatesCorrected.connect(lambda x: self._update())
+        self.md.piezo.coordinatesCorrected.connect(lambda x: self._update())
 
     def init_thread(self):
         self.thread = zThread(self.md,
@@ -63,9 +71,9 @@ class Focus_delegate(QtCore.QObject):
             print("Can't Plot!!!", sys.exc_info()[0])
             raise
 
-    def focus(self, start_offset, stop_offset, step, stage, *,
-              intensity=None, Nloops=1,
-              piezzo=False, wait=False, checkid=None):
+    def focus(self, stage, *, start_offset=None, stop_offset=None, step=None, 
+              intensity=None, Nloops=None,
+              wait=False, checkid=None):
 
         QtCore.QMutexLocker(self.mutex)
 
@@ -78,21 +86,26 @@ class Focus_delegate(QtCore.QObject):
             Step size
         Nloops default 1:
             Each loop has a 10X smaller step size.
-        piezzo default False:
-            SHould the piezzo be used
         wait default False:
             Should the thread wait for completion
         """
-        if intensity is None:
-            intensity = self.app_delegate.laser_delegate.get_intensity()
+        
+        if intensity is not None:
+            self._settings["Intensity"] = intensity
+        if start_offset is not None:
+            self._settings["From"] = start_offset
+        if stop_offset is not None:
+            self._settings["To"] = stop_offset
+        if step is not None:
+            self._settings["Step"] = step
+        if Nloops is not None:
+            self._settings["NLoops"] = Nloops
+        
+        self.update_settings.emit(self._settings)
             
         self.thread.set_args(
-            start_offset,
-            stop_offset,
-            step,
-            Nloops,
+            self._settings,
             stage,
-            intensity,
             checkid)
         self.thread.start()
 
@@ -106,10 +119,14 @@ class Focus_delegate(QtCore.QObject):
             return
 
         QtCore.QMutexLocker(self.mutex)
+        intensity = self.app_delegate.laser_delegate.get_intensity()
+        if np.abs(intensity - self._settings["Intensity"]) > 1e-3: 
+            self._settings["Intensity"] = intensity
+            self.update_settings.emit(self._settings)
 
         self._positions.append({
             "motor_Xs": self.md.motor.get_position(raw=True),
-            "piezzo_Xs": self.md.piezzo.get_position(raw=True),
+            "piezo_Xs": self.md.piezo.get_position(raw=True),
             "graphs": graphs,
             "time": time.time()
         })
@@ -133,9 +150,9 @@ class Focus_delegate(QtCore.QObject):
                 f.write(('Best: {}\n').format(pos["graphs"][1]).encode())
         with open(fn[:-4] + '_times.txt', 'w') as f:
             for pos in self._positions:
-                f.write("{time}, {position_motor}, {position_piezzo}\n".format(
+                f.write("{time}, {position_motor}, {position_piezo}\n".format(
                         time=pos["time"], position_motor=pos["c"],
-                        position_piezzo=pos["piezzo_Xs"]))
+                        position_piezo=pos["piezo_Xs"]))
 
     def clear(self):
 
@@ -150,7 +167,7 @@ class Focus_delegate(QtCore.QObject):
         ret = []
         for pos in self._positions:
             ret.append((self.md.motor.XstoXm(
-                pos["motor_Xs"]), self.md.piezzo.XstoXm(pos["piezzo_Xs"])))
+                pos["motor_Xs"]), self.md.piezo.XstoXm(pos["piezo_Xs"])))
         self.updatelist.emit(ret)
 
     def ESTOP(self):
@@ -167,31 +184,31 @@ class zThread(QtCore.QThread):
         super().__init__()
         self.addGraph = addGraph
         self._zcorrector = Zcorrector(None, camera, laser)
-        self._focus_args = None
+        self._settings = None
+        self._checkid = None
         self._md = movement_delegate
 
-    def set_args(self, start_offset, stop_offset, step, Nloops, stage,
-                 intensity, checkid):
+    def set_args(self, settings, stage, checkid):
         self._zcorrector.stage = stage
-        self._focus_args = (start_offset, stop_offset, step, Nloops,
-                            intensity, checkid)
+        self._settings = settings
+        self._checkid = checkid
 
     def run(self):
         try:
-            if self._focus_args is None:
-                raise RuntimeError("args not initialised!")
+            if self._settings is None:
+                raise RuntimeError("Settings not initialised!")
     
-            if self._focus_args[-1] is None:
+            if self._checkid is None:
                 lockid = self._md.lock()
                 if lockid is None:
                     self.error = "Unable to lock the movement"
                     return
             else:
-                lockid = self._focus_args[-1]
+                lockid = self._checkid
     
-            graphs = self._zcorrector.focus(*self._focus_args[:-1], lockid)
+            graphs = self._zcorrector.focus(self._settings, lockid)
             self._md.unlock()
-            self._focus_args = None
+            self._settings = None
             self.addGraph(graphs)
         except BaseException as e:
             print(e)
@@ -300,10 +317,15 @@ class Zcorrector():
             
         return data
         
-    def focus(self, start_offset, stop_offset, step, N_loops=1,
-              intensity=None, checkid=None):
+    def focus(self, settings, checkid=None):
         """ Go to the best focal point for the laser
         """
+        start_offset = settings["From"]
+        stop_offset = settings["To"]
+        step = settings["Step"]
+        N_loops = settings["NLoops"]
+        intensity = settings["Intensity"]
+        
         self.lockid = checkid
         self.startlaser(intensity)
 

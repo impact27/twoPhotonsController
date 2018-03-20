@@ -41,11 +41,11 @@ class write_delegate(QtCore.QObject):
             gcommands = f.read()
         intensityRange = self.parent.laser_delegate.get_range()
         posRange = np.asarray([
-            self.parent.movement_delegate.piezzo.get_positionRange(0),
-            self.parent.movement_delegate.piezzo.get_positionRange(1),
-            self.parent.movement_delegate.piezzo.get_positionRange(2)
+            self.parent.movement_delegate.piezo.get_positionRange(0),
+            self.parent.movement_delegate.piezo.get_positionRange(1),
+            self.parent.movement_delegate.piezo.get_positionRange(2)
         ])
-        speedRange = self.parent.movement_delegate.piezzo.get_velocityRange(0)
+        speedRange = self.parent.movement_delegate.piezo.get_velocityRange(0)
 
         checker = gcode_checker(intensityRange, posRange, speedRange)
 
@@ -125,14 +125,13 @@ class write_thread(QtCore.QThread):
                 dy = 1
 
              # Focus with z stage
-            self.focus_delegate.focus(-focus_range / 2, focus_range / 2, focus_step,
+            self.focus_delegate.focus(start_offset=-focus_range / 2,
+                                      stop_offset=focus_range / 2, 
+                                      step=focus_step,
                                       stage=self.md.motor,
-                                      intensity=None,
                                       Nloops=1,
                                       wait=True,
                                       checkid=self.lockid)
-
-            intensity = self.ld.get_intensity()
 
             for par, y in enumerate(np.arange(yori, yori + Ny * dy, dy)):
                 # Want to draw s
@@ -142,7 +141,7 @@ class write_thread(QtCore.QThread):
                     goto([np.nan,
                           np.nan,
                           move_dist])
-                    self.md.piezzo.reset()
+                    self.md.piezo.reset()
                     # Move to pos
                     goto([x + focus_offset[0],
                           y + focus_offset[1],
@@ -153,9 +152,10 @@ class write_thread(QtCore.QThread):
                           y + focus_offset[1],
                           focus_range / 2])
                     # Focus with z stage
-                    self.focus_delegate.focus(0, -focus_range, focus_step,
+                    self.focus_delegate.focus(start_offset=0,
+                                              stop_offset=-focus_range,
+                                              step=focus_step,
                                               stage=self.md.motor,
-                                              intensity=intensity,
                                               Nloops=1,
                                               wait=True,
                                               checkid=self.lockid)
@@ -163,10 +163,11 @@ class write_thread(QtCore.QThread):
                     # Move to pos
                     goto([x, y, 0])
 
-                    # Focus with piezzo
-                    self.focus_delegate.focus(-5, 5, 1,
-                                              stage=self.md.piezzo,
-                                              intensity=intensity,
+                    # Focus with piezo
+                    self.focus_delegate.focus(start_offset=-5,
+                                              stop_offset=5,
+                                              step=1,
+                                              stage=self.md.piezo,
                                               Nloops=2,
                                               wait=True,
                                               checkid=self.lockid)
@@ -185,11 +186,11 @@ class write_thread(QtCore.QThread):
 
     def writeGCode(self):
         self.parent.camera_delegate.extShutter(False)
-        defaultCubeSpeed = self.md.piezzo.get_velocity()
-        writer = gwriter(self.md.piezzo, self.ld, self.lockid)
+        defaultCubeSpeed = self.md.piezo.get_velocity()
+        writer = gwriter(self.md.piezo, self.ld, self.lockid)
         writer.readGcommands(self.gcommands)
         self.ld.set_intensity(0)
-        self.md.piezzo.set_velocity(defaultCubeSpeed, checkid=self.lockid)
+        self.md.piezo.set_velocity(defaultCubeSpeed, checkid=self.lockid)
         self.parent.camera_delegate.extShutter(True)
 
 

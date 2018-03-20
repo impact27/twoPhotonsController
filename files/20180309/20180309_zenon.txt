@@ -1,32 +1,32 @@
 focusint 0.5
 laser power 0
 laser ON
-piezzoreset
+piezoreset
 motor X0.000 Y0.000 Z0.000 F1500.000
 focus motor 0 -40 -1
-piezzoslope
+piezoslope
 laser power 0
-piezzo X-25.000 Y-10.000 Z-0.950 F1500
+piezo X-25.000 Y-10.000 Z-0.950 F1500
 laser power 2.694300
-piezzo X25.000 Y-10.000 Z-0.950 F400
+piezo X25.000 Y-10.000 Z-0.950 F400
 laser power 0
 laser power 0
-piezzo X-25.000 Y-5.000 Z-0.950 F1500
+piezo X-25.000 Y-5.000 Z-0.950 F1500
 laser power 2.694300
-piezzo X25.000 Y-5.000 Z-0.950 F400
+piezo X25.000 Y-5.000 Z-0.950 F400
 laser power 0
 laser power 0
-piezzo X-25.000 Y0.000 Z-0.950 F1500
+piezo X-25.000 Y0.000 Z-0.950 F1500
 laser power 2.694300
-piezzo X25.000 Y0.000 Z-0.950 F400
+piezo X25.000 Y0.000 Z-0.950 F400
 laser power 0
 laser power 0
-piezzo X-25.000 Y5.000 Z-0.950 F1500
+piezo X-25.000 Y5.000 Z-0.950 F1500
 laser power 2.694300
-piezzo X25.000 Y5.000 Z-0.950 F400
+piezo X25.000 Y5.000 Z-0.950 F400
 laser power 0
 laser power 0
-piezzo X-25.000 Y10.000 Z-0.950 F1500
+piezo X-25.000 Y10.000 Z-0.950 F1500
 laser power 2.694300
-piezzo X25.000 Y10.000 Z-0.950 F400
+piezo X25.000 Y10.000 Z-0.950 F400
 laser power 0

@@ -82,9 +82,9 @@ class Parser():
         arg = line[1:]
         if command.lower() in ['laser', 'focus', 'camera', 'focusint']:
             getattr(self, command)(arg)
-        elif command.lower() in ['piezzoslope', 'piezzoreset']:
+        elif command.lower() in ['piezoslope', 'piezoreset']:
             getattr(self, command)()
-        elif command.lower() in ['piezzo', 'motor']:
+        elif command.lower() in ['piezo', 'motor']:
             getattr(self, command)(*self.read_move_args(arg))
 
     def focusint(self, args):
@@ -138,7 +138,7 @@ class Parser():
     def motor(self, pos, speed):
         pass
 
-    def piezzo(self, pos, speed):
+    def piezo(self, pos, speed):
         pass
 
     def laser_state(self, state):
@@ -147,10 +147,10 @@ class Parser():
     def laser_power(self, power):
         pass
 
-    def piezzoslope(self):
+    def piezoslope(self):
         pass
     
-    def piezzoreset(self):
+    def piezoreset(self):
         pass
 
 
@@ -159,13 +159,12 @@ class Execute_Parser(Parser):
         super().__init__()
         self.camera_delegate = app_delegate.camera_delegate
         self.md = app_delegate.movement_delegate
-        self.piezzo_delegate = app_delegate.movement_delegate.piezzo
+        self.piezo_delegate = app_delegate.movement_delegate.piezo
         self.motor_delegate = app_delegate.movement_delegate.motor
         self.laser_delegate = app_delegate.laser_delegate
         self.focus_delegate = app_delegate.focus_delegate
         self.coordinates_delegate = app_delegate.coordinates_delegate
         self.lockid = None
-        self.focus_intensity = None
 
     def parse(self, filename):
         self.lockid = self.md.lock()
@@ -184,43 +183,47 @@ class Execute_Parser(Parser):
         self.camera_delegate.set_exposure_time(exp_time)
 
     def focus(self, args):
-        piezzo, start_offset, stop_offset, step = args
+        piezo, start_offset, stop_offset, step = args
         start_offset, stop_offset, step = float(
             start_offset), float(stop_offset), float(step)
-        if piezzo.lower() == 'piezzo':
-            self.focus_delegate.focus(start_offset, stop_offset, step,
-                                      stage=self.md.piezzo,
-                                      intensity=self.focus_intensity,
+        if piezo.lower() == 'piezo':
+            self.focus_delegate.focus(start_offset=start_offset,
+                                      stop_offset=stop_offset,
+                                      step=step,
+                                      stage=self.md.piezo,
                                       Nloops=2, wait=True,
                                       checkid=self.lockid)
-        elif piezzo.lower() == 'motor':
-            self.focus_delegate.focus(start_offset, stop_offset, step,
+        elif piezo.lower() == 'motor':
+            self.focus_delegate.focus(start_offset=start_offset,
+                                      stop_offset=stop_offset,
+                                      step=step,
                                       stage=self.md.motor,
-                                      intensity=self.focus_intensity,
                                       Nloops=1, wait=True,
                                       checkid=self.lockid)
-        elif piezzo.lower() == 'both':
-            self.focus_delegate.focus(start_offset, stop_offset, step,
+        elif piezo.lower() == 'both':
+            self.focus_delegate.focus(start_offset=start_offset,
+                                      stop_offset=stop_offset, 
+                                      step=step,
                                       stage=self.md.motor,
-                                      intensity=self.focus_intensity,
                                       Nloops=1, wait=True,
                                       checkid=self.lockid)
-            self.focus_delegate.focus(-2, 2, 1,
-                                      stage=self.md.piezzo,
-                                      intensity=self.focus_intensity,
+            self.focus_delegate.focus(start_offset=-2,
+                                      stop_offset=2,
+                                      step=1,
+                                      stage=self.md.piezo,
                                       Nloops=2, wait=True,
                                       checkid=self.lockid)
         else:
             self.md.unlock()
-            raise RuntimeError(f"Don't know {piezzo}")
+            raise RuntimeError(f"Don't know {piezo}")
 
         self.focus_intensity = self.laser_delegate.get_intensity()
 
-    def piezzoslope(self):
-        self.coordinates_delegate.piezzo_plane(checkid=self.lockid, wait=True)
+    def piezoslope(self):
+        self.coordinates_delegate.piezo_plane(checkid=self.lockid, wait=True)
         
-    def piezzoreset(self):
-        self.piezzo_delegate.reset(checkid=self.lockid, wait=True)
+    def piezoreset(self):
+        self.piezo_delegate.reset(checkid=self.lockid, wait=True)
         
     def focusint(self, args):
         self.focus_intensity = float(args[0])
@@ -229,8 +232,8 @@ class Execute_Parser(Parser):
         self.motor_delegate.goto_position(pos, speed=speed, wait=True,
                                           checkid=self.lockid)
 
-    def piezzo(self, pos, speed):
-        self.piezzo_delegate.goto_position(pos, speed=speed, wait=True,
+    def piezo(self, pos, speed):
+        self.piezo_delegate.goto_position(pos, speed=speed, wait=True,
                                            checkid=self.lockid)
 
     def laser_state(self, state):
@@ -250,7 +253,7 @@ class Draw_Parser(Parser):
         self.canvas = canvas
         self.writing = False
         self.motor_position = np.zeros(3) * np.nan
-        self.piezzo_position = np.zeros(3) * np.nan
+        self.piezo_position = np.zeros(3) * np.nan
         self.color = cmap(0)
         self.colors = []
         self.lines = []
@@ -272,19 +275,19 @@ class Draw_Parser(Parser):
 
     def plotto(self, pos):
         if self.writing:
-            start = self.motor_position + self.piezzo_position
+            start = self.motor_position + self.piezo_position
             
             self.lines.append([start[:2], pos[:2]])
             self.colors.append(self.color)
 
-    def piezzo(self, pos, speed):
-        piezzo_to = self.move(self.piezzo_position, pos)
-        self.plotto(piezzo_to + self.motor_position)
-        self.piezzo_position = piezzo_to
+    def piezo(self, pos, speed):
+        piezo_to = self.move(self.piezo_position, pos)
+        self.plotto(piezo_to + self.motor_position)
+        self.piezo_position = piezo_to
 
     def motor(self, pos, speed):
         motor_to = self.move(self.motor_position, pos)
-        self.plotto(motor_to + self.piezzo_position)
+        self.plotto(motor_to + self.piezo_position)
         self.motor_position = motor_to
         
 
@@ -298,5 +301,5 @@ class Draw_Parser(Parser):
     def laser_power(self, power):
         self.color = cmap(power / 10)
         
-    def piezzoreset(self):
-        self.piezzo_position = np.zeros(3)
+    def piezoreset(self):
+        self.piezo_position = np.zeros(3)

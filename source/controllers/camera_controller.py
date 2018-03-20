@@ -68,3 +68,14 @@ class camera_controller():
             self._ext_shutter.write('ON\n'.encode())
         else:
             self._ext_shutter.write('OFF\n'.encode())
+           
+    @property
+    def roi(self):
+        return self.cam.roi
+    
+    @roi.setter
+    def roi(self, ltwhTuple):
+        streaming = self.cam.streaming
+        self.cam.streaming = False
+        self.cam.roi = ltwhTuple
+        self.cam.streaming = streaming

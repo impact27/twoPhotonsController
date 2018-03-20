@@ -1,6 +1,6 @@
 focusint 0.5
 motor X0.000 Y0.000 Z0.000 F1500.000
-piezzo X0.000 Y0.000 Z0.000 F1500.000
+piezo X0.000 Y0.000 Z0.000 F1500.000
 laser power 4.000000
 motor F1000.000
 laser ON
@@ -106,416 +106,416 @@ motor Y0.000
 motor X49.000
 laser power 0
 motor X75.000 Y800.000 Z0.000 F1500.000
-piezzoslope
-piezzo X-50.000 Y-50.000 Z-1.700 F1500
+piezoslope
+piezo X-50.000 Y-50.000 Z-1.700 F1500
 laser power 4.000000
-piezzo X50.000 Y-50.000 Z-1.700 F400
+piezo X50.000 Y-50.000 Z-1.700 F400
 laser power 0
-piezzo X-50.000 Y-48.000 Z-1.710 F1500
+piezo X-50.000 Y-48.000 Z-1.710 F1500
 laser power 4.000000
-piezzo X50.000 Y-48.000 Z-1.710 F400
+piezo X50.000 Y-48.000 Z-1.710 F400
 laser power 0
-piezzo X-50.000 Y-46.000 Z-1.720 F1500
+piezo X-50.000 Y-46.000 Z-1.720 F1500
 laser power 4.000000
-piezzo X50.000 Y-46.000 Z-1.720 F400
+piezo X50.000 Y-46.000 Z-1.720 F400
 laser power 0
-piezzo X-50.000 Y-44.000 Z-1.730 F1500
+piezo X-50.000 Y-44.000 Z-1.730 F1500
 laser power 4.000000
-piezzo X50.000 Y-44.000 Z-1.730 F400
+piezo X50.000 Y-44.000 Z-1.730 F400
 laser power 0
-piezzo X-50.000 Y-42.000 Z-1.740 F1500
+piezo X-50.000 Y-42.000 Z-1.740 F1500
 laser power 4.000000
-piezzo X50.000 Y-42.000 Z-1.740 F400
+piezo X50.000 Y-42.000 Z-1.740 F400
 laser power 0
-piezzo X-50.000 Y-40.000 Z-1.750 F1500
+piezo X-50.000 Y-40.000 Z-1.750 F1500
 laser power 4.000000
-piezzo X50.000 Y-40.000 Z-1.750 F400
+piezo X50.000 Y-40.000 Z-1.750 F400
 laser power 0
-piezzo X-50.000 Y-38.000 Z-1.760 F1500
+piezo X-50.000 Y-38.000 Z-1.760 F1500
 laser power 4.000000
-piezzo X50.000 Y-38.000 Z-1.760 F400
+piezo X50.000 Y-38.000 Z-1.760 F400
 laser power 0
-piezzo X-50.000 Y-36.000 Z-1.770 F1500
+piezo X-50.000 Y-36.000 Z-1.770 F1500
 laser power 4.000000
-piezzo X50.000 Y-36.000 Z-1.770 F400
+piezo X50.000 Y-36.000 Z-1.770 F400
 laser power 0
-piezzo X-50.000 Y-34.000 Z-1.780 F1500
+piezo X-50.000 Y-34.000 Z-1.780 F1500
 laser power 4.000000
-piezzo X50.000 Y-34.000 Z-1.780 F400
+piezo X50.000 Y-34.000 Z-1.780 F400
 laser power 0
-piezzo X-50.000 Y-32.000 Z-1.790 F1500
+piezo X-50.000 Y-32.000 Z-1.790 F1500
 laser power 4.000000
-piezzo X50.000 Y-32.000 Z-1.790 F400
+piezo X50.000 Y-32.000 Z-1.790 F400
 laser power 0
-piezzo X-50.000 Y-30.000 Z-1.800 F1500
+piezo X-50.000 Y-30.000 Z-1.800 F1500
 laser power 4.000000
-piezzo X50.000 Y-30.000 Z-1.800 F400
+piezo X50.000 Y-30.000 Z-1.800 F400
 laser power 0
-piezzo X-50.000 Y-28.000 Z-1.810 F1500
+piezo X-50.000 Y-28.000 Z-1.810 F1500
 laser power 4.000000
-piezzo X50.000 Y-28.000 Z-1.810 F400
+piezo X50.000 Y-28.000 Z-1.810 F400
 laser power 0
-piezzo X-50.000 Y-26.000 Z-1.820 F1500
+piezo X-50.000 Y-26.000 Z-1.820 F1500
 laser power 4.000000
-piezzo X50.000 Y-26.000 Z-1.820 F400
+piezo X50.000 Y-26.000 Z-1.820 F400
 laser power 0
-piezzo X-50.000 Y-24.000 Z-1.830 F1500
+piezo X-50.000 Y-24.000 Z-1.830 F1500
 laser power 4.000000
-piezzo X50.000 Y-24.000 Z-1.830 F400
+piezo X50.000 Y-24.000 Z-1.830 F400
 laser power 0
-piezzo X-50.000 Y-22.000 Z-1.840 F1500
+piezo X-50.000 Y-22.000 Z-1.840 F1500
 laser power 4.000000
-piezzo X50.000 Y-22.000 Z-1.840 F400
+piezo X50.000 Y-22.000 Z-1.840 F400
 laser power 0
-piezzo X-50.000 Y-20.000 Z-1.850 F1500
+piezo X-50.000 Y-20.000 Z-1.850 F1500
 laser power 4.000000
-piezzo X50.000 Y-20.000 Z-1.850 F400
+piezo X50.000 Y-20.000 Z-1.850 F400
 laser power 0
-piezzo X-50.000 Y-18.000 Z-1.860 F1500
+piezo X-50.000 Y-18.000 Z-1.860 F1500
 laser power 4.000000
-piezzo X50.000 Y-18.000 Z-1.860 F400
+piezo X50.000 Y-18.000 Z-1.860 F400
 laser power 0
-piezzo X-50.000 Y-16.000 Z-1.870 F1500
+piezo X-50.000 Y-16.000 Z-1.870 F1500
 laser power 4.000000
-piezzo X50.000 Y-16.000 Z-1.870 F400
+piezo X50.000 Y-16.000 Z-1.870 F400
 laser power 0
-piezzo X-50.000 Y-14.000 Z-1.880 F1500
+piezo X-50.000 Y-14.000 Z-1.880 F1500
 laser power 4.000000
-piezzo X50.000 Y-14.000 Z-1.880 F400
+piezo X50.000 Y-14.000 Z-1.880 F400
 laser power 0
-piezzo X-50.000 Y-12.000 Z-1.890 F1500
+piezo X-50.000 Y-12.000 Z-1.890 F1500
 laser power 4.000000
-piezzo X50.000 Y-12.000 Z-1.890 F400
+piezo X50.000 Y-12.000 Z-1.890 F400
 laser power 0
-piezzo X-50.000 Y-10.000 Z-1.900 F1500
+piezo X-50.000 Y-10.000 Z-1.900 F1500
 laser power 4.000000
-piezzo X50.000 Y-10.000 Z-1.900 F400
+piezo X50.000 Y-10.000 Z-1.900 F400
 laser power 0
-piezzo X-50.000 Y-8.000 Z-1.910 F1500
+piezo X-50.000 Y-8.000 Z-1.910 F1500
 laser power 4.000000
-piezzo X50.000 Y-8.000 Z-1.910 F400
+piezo X50.000 Y-8.000 Z-1.910 F400
 laser power 0
-piezzo X-50.000 Y-6.000 Z-1.920 F1500
+piezo X-50.000 Y-6.000 Z-1.920 F1500
 laser power 4.000000
-piezzo X50.000 Y-6.000 Z-1.920 F400
+piezo X50.000 Y-6.000 Z-1.920 F400
 laser power 0
-piezzo X-50.000 Y-4.000 Z-1.930 F1500
+piezo X-50.000 Y-4.000 Z-1.930 F1500
 laser power 4.000000
-piezzo X50.000 Y-4.000 Z-1.930 F400
+piezo X50.000 Y-4.000 Z-1.930 F400
 laser power 0
-piezzo X-50.000 Y-2.000 Z-1.940 F1500
+piezo X-50.000 Y-2.000 Z-1.940 F1500
 laser power 4.000000
-piezzo X50.000 Y-2.000 Z-1.940 F400
+piezo X50.000 Y-2.000 Z-1.940 F400
 laser power 0
-piezzo X-50.000 Y0.000 Z-1.950 F1500
+piezo X-50.000 Y0.000 Z-1.950 F1500
 laser power 4.000000
-piezzo X50.000 Y0.000 Z-1.950 F400
+piezo X50.000 Y0.000 Z-1.950 F400
 laser power 0
-piezzo X-50.000 Y2.000 Z-1.960 F1500
+piezo X-50.000 Y2.000 Z-1.960 F1500
 laser power 4.000000
-piezzo X50.000 Y2.000 Z-1.960 F400
+piezo X50.000 Y2.000 Z-1.960 F400
 laser power 0
-piezzo X-50.000 Y4.000 Z-1.970 F1500
+piezo X-50.000 Y4.000 Z-1.970 F1500
 laser power 4.000000
-piezzo X50.000 Y4.000 Z-1.970 F400
+piezo X50.000 Y4.000 Z-1.970 F400
 laser power 0
-piezzo X-50.000 Y6.000 Z-1.980 F1500
+piezo X-50.000 Y6.000 Z-1.980 F1500
 laser power 4.000000
-piezzo X50.000 Y6.000 Z-1.980 F400
+piezo X50.000 Y6.000 Z-1.980 F400
 laser power 0
-piezzo X-50.000 Y8.000 Z-1.990 F1500
+piezo X-50.000 Y8.000 Z-1.990 F1500
 laser power 4.000000
-piezzo X50.000 Y8.000 Z-1.990 F400
+piezo X50.000 Y8.000 Z-1.990 F400
 laser power 0
-piezzo X-50.000 Y10.000 Z-2.000 F1500
+piezo X-50.000 Y10.000 Z-2.000 F1500
 laser power 4.000000
-piezzo X50.000 Y10.000 Z-2.000 F400
+piezo X50.000 Y10.000 Z-2.000 F400
 laser power 0
-piezzo X-50.000 Y12.000 Z-2.010 F1500
+piezo X-50.000 Y12.000 Z-2.010 F1500
 laser power 4.000000
-piezzo X50.000 Y12.000 Z-2.010 F400
+piezo X50.000 Y12.000 Z-2.010 F400
 laser power 0
-piezzo X-50.000 Y14.000 Z-2.020 F1500
+piezo X-50.000 Y14.000 Z-2.020 F1500
 laser power 4.000000
-piezzo X50.000 Y14.000 Z-2.020 F400
+piezo X50.000 Y14.000 Z-2.020 F400
 laser power 0
-piezzo X-50.000 Y16.000 Z-2.030 F1500
+piezo X-50.000 Y16.000 Z-2.030 F1500
 laser power 4.000000
-piezzo X50.000 Y16.000 Z-2.030 F400
+piezo X50.000 Y16.000 Z-2.030 F400
 laser power 0
-piezzo X-50.000 Y18.000 Z-2.040 F1500
+piezo X-50.000 Y18.000 Z-2.040 F1500
 laser power 4.000000
-piezzo X50.000 Y18.000 Z-2.040 F400
+piezo X50.000 Y18.000 Z-2.040 F400
 laser power 0
-piezzo X-50.000 Y20.000 Z-2.050 F1500
+piezo X-50.000 Y20.000 Z-2.050 F1500
 laser power 4.000000
-piezzo X50.000 Y20.000 Z-2.050 F400
+piezo X50.000 Y20.000 Z-2.050 F400
 laser power 0
-piezzo X-50.000 Y22.000 Z-2.060 F1500
+piezo X-50.000 Y22.000 Z-2.060 F1500
 laser power 4.000000
-piezzo X50.000 Y22.000 Z-2.060 F400
+piezo X50.000 Y22.000 Z-2.060 F400
 laser power 0
-piezzo X-50.000 Y24.000 Z-2.070 F1500
+piezo X-50.000 Y24.000 Z-2.070 F1500
 laser power 4.000000
-piezzo X50.000 Y24.000 Z-2.070 F400
+piezo X50.000 Y24.000 Z-2.070 F400
 laser power 0
-piezzo X-50.000 Y26.000 Z-2.080 F1500
+piezo X-50.000 Y26.000 Z-2.080 F1500
 laser power 4.000000
-piezzo X50.000 Y26.000 Z-2.080 F400
+piezo X50.000 Y26.000 Z-2.080 F400
 laser power 0
-piezzo X-50.000 Y28.000 Z-2.090 F1500
+piezo X-50.000 Y28.000 Z-2.090 F1500
 laser power 4.000000
-piezzo X50.000 Y28.000 Z-2.090 F400
+piezo X50.000 Y28.000 Z-2.090 F400
 laser power 0
-piezzo X-50.000 Y30.000 Z-2.100 F1500
+piezo X-50.000 Y30.000 Z-2.100 F1500
 laser power 4.000000
-piezzo X50.000 Y30.000 Z-2.100 F400
+piezo X50.000 Y30.000 Z-2.100 F400
 laser power 0
-piezzo X-50.000 Y32.000 Z-2.110 F1500
+piezo X-50.000 Y32.000 Z-2.110 F1500
 laser power 4.000000
-piezzo X50.000 Y32.000 Z-2.110 F400
+piezo X50.000 Y32.000 Z-2.110 F400
 laser power 0
-piezzo X-50.000 Y34.000 Z-2.120 F1500
+piezo X-50.000 Y34.000 Z-2.120 F1500
 laser power 4.000000
-piezzo X50.000 Y34.000 Z-2.120 F400
+piezo X50.000 Y34.000 Z-2.120 F400
 laser power 0
-piezzo X-50.000 Y36.000 Z-2.130 F1500
+piezo X-50.000 Y36.000 Z-2.130 F1500
 laser power 4.000000
-piezzo X50.000 Y36.000 Z-2.130 F400
+piezo X50.000 Y36.000 Z-2.130 F400
 laser power 0
-piezzo X-50.000 Y38.000 Z-2.140 F1500
+piezo X-50.000 Y38.000 Z-2.140 F1500
 laser power 4.000000
-piezzo X50.000 Y38.000 Z-2.140 F400
+piezo X50.000 Y38.000 Z-2.140 F400
 laser power 0
-piezzo X-50.000 Y40.000 Z-2.150 F1500
+piezo X-50.000 Y40.000 Z-2.150 F1500
 laser power 4.000000
-piezzo X50.000 Y40.000 Z-2.150 F400
+piezo X50.000 Y40.000 Z-2.150 F400
 laser power 0
-piezzo X-50.000 Y42.000 Z-2.160 F1500
+piezo X-50.000 Y42.000 Z-2.160 F1500
 laser power 4.000000
-piezzo X50.000 Y42.000 Z-2.160 F400
+piezo X50.000 Y42.000 Z-2.160 F400
 laser power 0
-piezzo X-50.000 Y44.000 Z-2.170 F1500
+piezo X-50.000 Y44.000 Z-2.170 F1500
 laser power 4.000000
-piezzo X50.000 Y44.000 Z-2.170 F400
+piezo X50.000 Y44.000 Z-2.170 F400
 laser power 0
-piezzo X-50.000 Y46.000 Z-2.180 F1500
+piezo X-50.000 Y46.000 Z-2.180 F1500
 laser power 4.000000
-piezzo X50.000 Y46.000 Z-2.180 F400
+piezo X50.000 Y46.000 Z-2.180 F400
 laser power 0
-piezzo X-50.000 Y48.000 Z-2.190 F1500
+piezo X-50.000 Y48.000 Z-2.190 F1500
 laser power 4.000000
-piezzo X50.000 Y48.000 Z-2.190 F400
+piezo X50.000 Y48.000 Z-2.190 F400
 laser power 0
-piezzo X-50.000 Y50.000 Z-2.200 F1500
+piezo X-50.000 Y50.000 Z-2.200 F1500
 laser power 4.000000
-piezzo X50.000 Y50.000 Z-2.200 F400
+piezo X50.000 Y50.000 Z-2.200 F400
 laser power 0
 motor X75.000 Y950.000 Z0.000 F1500.000
-piezzoslope
-piezzo X-50.000 Y-50.000 Z-1.700 F1500
+piezoslope
+piezo X-50.000 Y-50.000 Z-1.700 F1500
 laser power 4.000000
-piezzo X50.000 Y-50.000 Z-1.700 F400
+piezo X50.000 Y-50.000 Z-1.700 F400
 laser power 0
-piezzo X-50.000 Y-48.000 Z-1.710 F1500
+piezo X-50.000 Y-48.000 Z-1.710 F1500
 laser power 4.000000
-piezzo X50.000 Y-48.000 Z-1.710 F400
+piezo X50.000 Y-48.000 Z-1.710 F400
 laser power 0
-piezzo X-50.000 Y-46.000 Z-1.720 F1500
+piezo X-50.000 Y-46.000 Z-1.720 F1500
 laser power 4.000000
-piezzo X50.000 Y-46.000 Z-1.720 F400
+piezo X50.000 Y-46.000 Z-1.720 F400
 laser power 0
-piezzo X-50.000 Y-44.000 Z-1.730 F1500
+piezo X-50.000 Y-44.000 Z-1.730 F1500
 laser power 4.000000
-piezzo X50.000 Y-44.000 Z-1.730 F400
+piezo X50.000 Y-44.000 Z-1.730 F400
 laser power 0
-piezzo X-50.000 Y-42.000 Z-1.740 F1500
+piezo X-50.000 Y-42.000 Z-1.740 F1500
 laser power 4.000000
-piezzo X50.000 Y-42.000 Z-1.740 F400
+piezo X50.000 Y-42.000 Z-1.740 F400
 laser power 0
-piezzo X-50.000 Y-40.000 Z-1.750 F1500
+piezo X-50.000 Y-40.000 Z-1.750 F1500
 laser power 4.000000
-piezzo X50.000 Y-40.000 Z-1.750 F400
+piezo X50.000 Y-40.000 Z-1.750 F400
 laser power 0
-piezzo X-50.000 Y-38.000 Z-1.760 F1500
+piezo X-50.000 Y-38.000 Z-1.760 F1500
 laser power 4.000000
-piezzo X50.000 Y-38.000 Z-1.760 F400
+piezo X50.000 Y-38.000 Z-1.760 F400
 laser power 0
-piezzo X-50.000 Y-36.000 Z-1.770 F1500
+piezo X-50.000 Y-36.000 Z-1.770 F1500
 laser power 4.000000
-piezzo X50.000 Y-36.000 Z-1.770 F400
+piezo X50.000 Y-36.000 Z-1.770 F400
 laser power 0
-piezzo X-50.000 Y-34.000 Z-1.780 F1500
+piezo X-50.000 Y-34.000 Z-1.780 F1500
 laser power 4.000000
-piezzo X50.000 Y-34.000 Z-1.780 F400
+piezo X50.000 Y-34.000 Z-1.780 F400
 laser power 0
-piezzo X-50.000 Y-32.000 Z-1.790 F1500
+piezo X-50.000 Y-32.000 Z-1.790 F1500
 laser power 4.000000
-piezzo X50.000 Y-32.000 Z-1.790 F400
+piezo X50.000 Y-32.000 Z-1.790 F400
 laser power 0
-piezzo X-50.000 Y-30.000 Z-1.800 F1500
+piezo X-50.000 Y-30.000 Z-1.800 F1500
 laser power 4.000000
-piezzo X50.000 Y-30.000 Z-1.800 F400
+piezo X50.000 Y-30.000 Z-1.800 F400
 laser power 0
-piezzo X-50.000 Y-28.000 Z-1.810 F1500
+piezo X-50.000 Y-28.000 Z-1.810 F1500
 laser power 4.000000
-piezzo X50.000 Y-28.000 Z-1.810 F400
+piezo X50.000 Y-28.000 Z-1.810 F400
 laser power 0
-piezzo X-50.000 Y-26.000 Z-1.820 F1500
+piezo X-50.000 Y-26.000 Z-1.820 F1500
 laser power 4.000000
-piezzo X50.000 Y-26.000 Z-1.820 F400
+piezo X50.000 Y-26.000 Z-1.820 F400
 laser power 0
-piezzo X-50.000 Y-24.000 Z-1.830 F1500
+piezo X-50.000 Y-24.000 Z-1.830 F1500
 laser power 4.000000
-piezzo X50.000 Y-24.000 Z-1.830 F400
+piezo X50.000 Y-24.000 Z-1.830 F400
 laser power 0
-piezzo X-50.000 Y-22.000 Z-1.840 F1500
+piezo X-50.000 Y-22.000 Z-1.840 F1500
 laser power 4.000000
-piezzo X50.000 Y-22.000 Z-1.840 F400
+piezo X50.000 Y-22.000 Z-1.840 F400
 laser power 0
-piezzo X-50.000 Y-20.000 Z-1.850 F1500
+piezo X-50.000 Y-20.000 Z-1.850 F1500
 laser power 4.000000
-piezzo X50.000 Y-20.000 Z-1.850 F400
+piezo X50.000 Y-20.000 Z-1.850 F400
 laser power 0
-piezzo X-50.000 Y-18.000 Z-1.860 F1500
+piezo X-50.000 Y-18.000 Z-1.860 F1500
 laser power 4.000000
-piezzo X50.000 Y-18.000 Z-1.860 F400
+piezo X50.000 Y-18.000 Z-1.860 F400
 laser power 0
-piezzo X-50.000 Y-16.000 Z-1.870 F1500
+piezo X-50.000 Y-16.000 Z-1.870 F1500
 laser power 4.000000
-piezzo X50.000 Y-16.000 Z-1.870 F400
+piezo X50.000 Y-16.000 Z-1.870 F400
 laser power 0
-piezzo X-50.000 Y-14.000 Z-1.880 F1500
+piezo X-50.000 Y-14.000 Z-1.880 F1500
 laser power 4.000000
-piezzo X50.000 Y-14.000 Z-1.880 F400
+piezo X50.000 Y-14.000 Z-1.880 F400
 laser power 0
-piezzo X-50.000 Y-12.000 Z-1.890 F1500
+piezo X-50.000 Y-12.000 Z-1.890 F1500
 laser power 4.000000
-piezzo X50.000 Y-12.000 Z-1.890 F400
+piezo X50.000 Y-12.000 Z-1.890 F400
 laser power 0
-piezzo X-50.000 Y-10.000 Z-1.900 F1500
+piezo X-50.000 Y-10.000 Z-1.900 F1500
 laser power 4.000000
-piezzo X50.000 Y-10.000 Z-1.900 F400
+piezo X50.000 Y-10.000 Z-1.900 F400
 laser power 0
-piezzo X-50.000 Y-8.000 Z-1.910 F1500
+piezo X-50.000 Y-8.000 Z-1.910 F1500
 laser power 4.000000
-piezzo X50.000 Y-8.000 Z-1.910 F400
+piezo X50.000 Y-8.000 Z-1.910 F400
 laser power 0
-piezzo X-50.000 Y-6.000 Z-1.920 F1500
+piezo X-50.000 Y-6.000 Z-1.920 F1500
 laser power 4.000000
-piezzo X50.000 Y-6.000 Z-1.920 F400
+piezo X50.000 Y-6.000 Z-1.920 F400
 laser power 0
-piezzo X-50.000 Y-4.000 Z-1.930 F1500
+piezo X-50.000 Y-4.000 Z-1.930 F1500
 laser power 4.000000
-piezzo X50.000 Y-4.000 Z-1.930 F400
+piezo X50.000 Y-4.000 Z-1.930 F400
 laser power 0
-piezzo X-50.000 Y-2.000 Z-1.940 F1500
+piezo X-50.000 Y-2.000 Z-1.940 F1500
 laser power 4.000000
-piezzo X50.000 Y-2.000 Z-1.940 F400
+piezo X50.000 Y-2.000 Z-1.940 F400
 laser power 0
-piezzo X-50.000 Y0.000 Z-1.950 F1500
+piezo X-50.000 Y0.000 Z-1.950 F1500
 laser power 4.000000
-piezzo X50.000 Y0.000 Z-1.950 F400
+piezo X50.000 Y0.000 Z-1.950 F400
 laser power 0
-piezzo X-50.000 Y2.000 Z-1.960 F1500
+piezo X-50.000 Y2.000 Z-1.960 F1500
 laser power 4.000000
-piezzo X50.000 Y2.000 Z-1.960 F400
+piezo X50.000 Y2.000 Z-1.960 F400
 laser power 0
-piezzo X-50.000 Y4.000 Z-1.970 F1500
+piezo X-50.000 Y4.000 Z-1.970 F1500
 laser power 4.000000
-piezzo X50.000 Y4.000 Z-1.970 F400
+piezo X50.000 Y4.000 Z-1.970 F400
 laser power 0
-piezzo X-50.000 Y6.000 Z-1.980 F1500
+piezo X-50.000 Y6.000 Z-1.980 F1500
 laser power 4.000000
-piezzo X50.000 Y6.000 Z-1.980 F400
+piezo X50.000 Y6.000 Z-1.980 F400
 laser power 0
-piezzo X-50.000 Y8.000 Z-1.990 F1500
+piezo X-50.000 Y8.000 Z-1.990 F1500
 laser power 4.000000
-piezzo X50.000 Y8.000 Z-1.990 F400
+piezo X50.000 Y8.000 Z-1.990 F400
 laser power 0
-piezzo X-50.000 Y10.000 Z-2.000 F1500
+piezo X-50.000 Y10.000 Z-2.000 F1500
 laser power 4.000000
-piezzo X50.000 Y10.000 Z-2.000 F400
+piezo X50.000 Y10.000 Z-2.000 F400
 laser power 0
-piezzo X-50.000 Y12.000 Z-2.010 F1500
+piezo X-50.000 Y12.000 Z-2.010 F1500
 laser power 4.000000
-piezzo X50.000 Y12.000 Z-2.010 F400
+piezo X50.000 Y12.000 Z-2.010 F400
 laser power 0
-piezzo X-50.000 Y14.000 Z-2.020 F1500
+piezo X-50.000 Y14.000 Z-2.020 F1500
 laser power 4.000000
-piezzo X50.000 Y14.000 Z-2.020 F400
+piezo X50.000 Y14.000 Z-2.020 F400
 laser power 0
-piezzo X-50.000 Y16.000 Z-2.030 F1500
+piezo X-50.000 Y16.000 Z-2.030 F1500
 laser power 4.000000
-piezzo X50.000 Y16.000 Z-2.030 F400
+piezo X50.000 Y16.000 Z-2.030 F400
 laser power 0
-piezzo X-50.000 Y18.000 Z-2.040 F1500
+piezo X-50.000 Y18.000 Z-2.040 F1500
 laser power 4.000000
-piezzo X50.000 Y18.000 Z-2.040 F400
+piezo X50.000 Y18.000 Z-2.040 F400
 laser power 0
-piezzo X-50.000 Y20.000 Z-2.050 F1500
+piezo X-50.000 Y20.000 Z-2.050 F1500
 laser power 4.000000
-piezzo X50.000 Y20.000 Z-2.050 F400
+piezo X50.000 Y20.000 Z-2.050 F400
 laser power 0
-piezzo X-50.000 Y22.000 Z-2.060 F1500
+piezo X-50.000 Y22.000 Z-2.060 F1500
 laser power 4.000000
-piezzo X50.000 Y22.000 Z-2.060 F400
+piezo X50.000 Y22.000 Z-2.060 F400
 laser power 0
-piezzo X-50.000 Y24.000 Z-2.070 F1500
+piezo X-50.000 Y24.000 Z-2.070 F1500
 laser power 4.000000
-piezzo X50.000 Y24.000 Z-2.070 F400
+piezo X50.000 Y24.000 Z-2.070 F400
 laser power 0
-piezzo X-50.000 Y26.000 Z-2.080 F1500
+piezo X-50.000 Y26.000 Z-2.080 F1500
 laser power 4.000000
-piezzo X50.000 Y26.000 Z-2.080 F400
+piezo X50.000 Y26.000 Z-2.080 F400
 laser power 0
-piezzo X-50.000 Y28.000 Z-2.090 F1500
+piezo X-50.000 Y28.000 Z-2.090 F1500
 laser power 4.000000
-piezzo X50.000 Y28.000 Z-2.090 F400
+piezo X50.000 Y28.000 Z-2.090 F400
 laser power 0
-piezzo X-50.000 Y30.000 Z-2.100 F1500
+piezo X-50.000 Y30.000 Z-2.100 F1500
 laser power 4.000000
-piezzo X50.000 Y30.000 Z-2.100 F400
+piezo X50.000 Y30.000 Z-2.100 F400
 laser power 0
-piezzo X-50.000 Y32.000 Z-2.110 F1500
+piezo X-50.000 Y32.000 Z-2.110 F1500
 laser power 4.000000
-piezzo X50.000 Y32.000 Z-2.110 F400
+piezo X50.000 Y32.000 Z-2.110 F400
 laser power 0
-piezzo X-50.000 Y34.000 Z-2.120 F1500
+piezo X-50.000 Y34.000 Z-2.120 F1500
 laser power 4.000000
-piezzo X50.000 Y34.000 Z-2.120 F400
+piezo X50.000 Y34.000 Z-2.120 F400
 laser power 0
-piezzo X-50.000 Y36.000 Z-2.130 F1500
+piezo X-50.000 Y36.000 Z-2.130 F1500
 laser power 4.000000
-piezzo X50.000 Y36.000 Z-2.130 F400
+piezo X50.000 Y36.000 Z-2.130 F400
 laser power 0
-piezzo X-50.000 Y38.000 Z-2.140 F1500
+piezo X-50.000 Y38.000 Z-2.140 F1500
 laser power 4.000000
-piezzo X50.000 Y38.000 Z-2.140 F400
+piezo X50.000 Y38.000 Z-2.140 F400
 laser power 0
-piezzo X-50.000 Y40.000 Z-2.150 F1500
+piezo X-50.000 Y40.000 Z-2.150 F1500
 laser power 4.000000
-piezzo X50.000 Y40.000 Z-2.150 F400
+piezo X50.000 Y40.000 Z-2.150 F400
 laser power 0
-piezzo X-50.000 Y42.000 Z-2.160 F1500
+piezo X-50.000 Y42.000 Z-2.160 F1500
 laser power 4.000000
-piezzo X50.000 Y42.000 Z-2.160 F400
+piezo X50.000 Y42.000 Z-2.160 F400
 laser power 0
-piezzo X-50.000 Y44.000 Z-2.170 F1500
+piezo X-50.000 Y44.000 Z-2.170 F1500
 laser power 4.000000
-piezzo X50.000 Y44.000 Z-2.170 F400
+piezo X50.000 Y44.000 Z-2.170 F400
 laser power 0
-piezzo X-50.000 Y46.000 Z-2.180 F1500
+piezo X-50.000 Y46.000 Z-2.180 F1500
 laser power 4.000000
-piezzo X50.000 Y46.000 Z-2.180 F400
+piezo X50.000 Y46.000 Z-2.180 F400
 laser power 0
-piezzo X-50.000 Y48.000 Z-2.190 F1500
+piezo X-50.000 Y48.000 Z-2.190 F1500
 laser power 4.000000
-piezzo X50.000 Y48.000 Z-2.190 F400
+piezo X50.000 Y48.000 Z-2.190 F400
 laser power 0
-piezzo X-50.000 Y50.000 Z-2.200 F1500
+piezo X-50.000 Y50.000 Z-2.200 F1500
 laser power 4.000000
-piezzo X50.000 Y50.000 Z-2.200 F400
+piezo X50.000 Y50.000 Z-2.200 F400
 laser power 0
 motor X100.000 Y750.000 Z0.000 F1500.000
 motor F1000.000

@@ -40,12 +40,11 @@ class coordinates_delegate(QtCore.QObject):
     def init_thread(self):
         self.plane_thread = plane_thread(self.parent)
 
-    def piezzo_plane(self, checkid=None, wait=False):
-        stage = self._md.piezzo
+    def piezo_plane(self, checkid=None, wait=False):
+        stage = self._md.piezo
         XYs = ([-45, -45], [-45, 45],
                [45, 45], [45, -45])
-        intensity = 0.5
-        self.plane_thread.settings(stage, intensity, XYs, 2, -2.1, -1, 2)
+        self.plane_thread.settings(stage=stage, XYpos=XYs)
         if checkid is not None:
             self.plane_thread.checkid = checkid
         self.plane_thread.start()
@@ -58,9 +57,8 @@ class coordinates_delegate(QtCore.QObject):
             return
         stage = self._md.motor
         Xms = np.asarray([p['Xm'] for p in self._positions])
-        Xms = Xms[:, :2]
-        intensity = 0.5
-        self.plane_thread.settings(stage, intensity, Xms, 20, -20, -1, 1)
+        XYs = Xms[:, :2]
+        self.plane_thread.settings(stage=stage, XYpos=XYs)
         if checkid is not None:
             self.plane_thread.checkid = checkid
         self.plane_thread.start()
@@ -109,18 +107,26 @@ class coordinates_delegate(QtCore.QObject):
         # if still positions in the list & position is reachable:
         if self._load_next():
                 # go to position
-            self._md.piezzo.reset()
+            self._md.piezo.reset()
             self._md.motor.goto_position(self._current_pos['Xm'])
 
     def save_errors(self):
         fn = QtWidgets.QFileDialog.getSaveFileName(
             QtWidgets.QApplication.topLevelWidgets()[0], 'TXT file',
             QtCore.QDir.homePath(), "Text (*.txt)")[0]
-        ret = np.zeros((len(self._positions), 3))
+        
+        if len(self._positions) == 0:
+            return
+        
+        if len(fn) == 0:
+            return
+        
+        ret = np.zeros((len(self._positions), 3)) * np.nan
         for i, pos in enumerate(self._positions):
-            Xm1 = pos['Xm']
-            Xm2 = self._md.motor.XstoXm(pos['Xs'])
-            ret[i] = (Xm1 - Xm2)
+            if pos['Xs'] is not None:
+                Xm1 = pos['Xm']
+                Xm2 = self._md.motor.XstoXm(pos['Xs'])
+                ret[i] = (Xm1 - Xm2)
         np.savetxt(fn, ret)
 
     def _load_next(self):
@@ -163,10 +169,10 @@ class coordinates_delegate(QtCore.QObject):
         # Apply correction
         self._md.motor.corrections = corrections
 
-        # Propagate Z cirrection to piezzo
-        piezzo_corr = self._md.piezzo.corrections
-        piezzo_corr["rotation angles"][2] = rot_angles[2]
-        self._md.piezzo.corrections = piezzo_corr
+        # Propagate Z cirrection to piezo
+        piezo_corr = self._md.piezo.corrections
+        piezo_corr["rotation angles"][2] = rot_angles[2]
+        self._md.piezo.corrections = piezo_corr
 
     def _update(self):
         # use saved info to correct coordinates
@@ -182,31 +188,30 @@ class plane_thread(QtCore.QThread):
         self.checkid = None
         
         
-    def settings(self, stage, laser_intensity, XYpos, start, stop, step, Nloops):
-        self.focus_intensity = laser_intensity
+    def settings(self, *, stage, XYpos):
         
         XYpos = np.asarray(XYpos)
         self._pos = np.zeros((len(XYpos), 3))
         self._pos[:, :2] = XYpos
         
         self._stage = stage
-        self.range = (start, stop, step)
-        self.Nloops = Nloops
 
     def run(self):
         try:
+            start = self._fd._settings["From"]
+            stop = self._fd._settings["To"]
+            step = self._fd._settings["Step"]
+            
             positions = np.zeros((len(self._pos), 3))
             for i, corner in enumerate(self._pos):
-                corner[2] = self.range[0]
+                corner[2] = start
                 self._stage.goto_position(corner, speed=1000, wait=True,
                                               checkid=self.checkid)
-                self._fd.focus(0, self.range[1] - self.range[0], self.range[2],
-                               Nloops=self.Nloops,
+                self._fd.focus(start_offset=0, 
+                               stop_offset=(stop - start),
+                               step=step,
                                stage=self._stage,
-                               intensity=self.focus_intensity,
                                wait=True, checkid=self.checkid)
-                
-                self.focus_intensity = self.laser_delegate.get_intensity()
     
                 positions[i] = self._stage.get_position(raw=True)
     

@@ -43,12 +43,12 @@ class Controls_tab(QtWidgets.QWidget):
         stage_cube_reconnect = QtWidgets.QPushButton('Reconnect')
 
         vel_motor_range = md.motor.get_velocityRange(0)
-        vel_cube_range = md.piezzo.get_velocityRange(0)
+        vel_cube_range = md.piezo.get_velocityRange(0)
 
         vel_motor_label = QtWidgets.QLabel('V [μm/s]:')
         vel_cube_label = QtWidgets.QLabel('V [μm/s]:')
         vel_motor_selector = doubleSelector(vel_motor_range, md.motor.velocity)
-        vel_cube_selector = doubleSelector(vel_cube_range, md.piezzo.velocity)
+        vel_cube_selector = doubleSelector(vel_cube_range, md.piezo.velocity)
 
         motor_Ranges = md.motor.positionRange
 
@@ -72,15 +72,15 @@ class Controls_tab(QtWidgets.QWidget):
         goto_motor_button = QtWidgets.QPushButton("GO")
         getcurr_motor_button = QtWidgets.QPushButton("Get Current")
         
-        motor_z_piezzo_button = QtWidgets.QPushButton("Z Piezzo")
-        motor_z_piezzo_button.setCheckable(True)
+        motor_z_piezo_button = QtWidgets.QPushButton("Z Piezo")
+        motor_z_piezo_button.setCheckable(True)
 
-        cube_label = QtWidgets.QLabel('Piezzo Stage')
+        cube_label = QtWidgets.QLabel('Piezo Stage')
         cube_label.setStyleSheet("font: bold large")
         cube_status = LightWidget()
 
-        cube_ranges = md.piezzo.positionRange
-        cube_pos = md.piezzo.position
+        cube_ranges = md.piezo.positionRange
+        cube_pos = md.piezo.position
         cube_selectors = [doubleSelector(r, x) for r, x in zip(cube_ranges,
                                                                cube_pos)]
         cube_labels = [QtWidgets.QLabel(s + ' [μm]: ') for s in AxisNames]
@@ -167,7 +167,7 @@ class Controls_tab(QtWidgets.QWidget):
         main_layout.addLayout(motor_H_layout)
         main_layout.addLayout(motor_layout)
         main_layout.addLayout(motor_GO_layout)
-        main_layout.addWidget(motor_z_piezzo_button)
+        main_layout.addWidget(motor_z_piezo_button)
 
         line = QtWidgets.QFrame()
         line.setFrameShape(QtWidgets.QFrame.HLine)
@@ -207,17 +207,17 @@ class Controls_tab(QtWidgets.QWidget):
         laser_setV.newValue.connect(ld.set_intensity)
 
         stage_motor_reconnect.clicked.connect(md.motor.reconnect)
-        stage_cube_reconnect.clicked.connect(md.piezzo.reconnect)
+        stage_cube_reconnect.clicked.connect(md.piezo.reconnect)
 
         goto_motor_button.clicked.connect(self.goto_motor)
-        motor_z_piezzo_button.clicked.connect(md.motor_z_switcher.switch)
+        motor_z_piezo_button.clicked.connect(md.motor_z_switcher.switch)
 
-        goto_cube_button.clicked.connect(lambda: md.piezzo.goto_position(
+        goto_cube_button.clicked.connect(lambda: md.piezo.goto_position(
             [s.getValue() for s in cube_selectors]))
 
         vel_motor_selector.newValue.connect(md.motor.set_velocity)
 
-        vel_cube_selector.newValue.connect(md.piezzo.set_velocity)
+        vel_cube_selector.newValue.connect(md.piezo.set_velocity)
 
         cam_reconnect.clicked.connect(cd.reconnect)
 
@@ -260,8 +260,8 @@ class Controls_tab(QtWidgets.QWidget):
         md.motor.coordinatesCorrected.connect(setMotorRange)
         md.motor.move_signal.connect(
             self.set_target_motor)
-        md.piezzo.move_signal.connect(
-            self.set_target_piezzo)
+        md.piezo.move_signal.connect(
+            self.set_target_piezo)
 
         #======================================================================
         #         Save variables
@@ -277,7 +277,7 @@ class Controls_tab(QtWidgets.QWidget):
         # Update status
         def updateStatus():
             motor_status.setOn(md.motor.is_ready())
-            cube_status.setOn(md.piezzo.is_ready())
+            cube_status.setOn(md.piezo.is_ready())
 
         self.status_timer = QtCore.QTimer()
         self.status_timer.timeout.connect(updateStatus)
@@ -289,7 +289,7 @@ class Controls_tab(QtWidgets.QWidget):
             if np.isfinite(pos):
                 sel.setValue(pos)
 
-    def set_target_piezzo(self, target_pos, speed):
+    def set_target_piezo(self, target_pos, speed):
         for sel, pos in zip([*(self.cube_selectors), self.vel_cube_selector],
                             [*target_pos, speed]):
             if np.isfinite(pos):
@@ -321,8 +321,8 @@ class Controls_tab(QtWidgets.QWidget):
 
     def updateCube(self):
         md = self.application_delegate.movement_delegate
-        V = md.piezzo.velocity
-        Pos = md.piezzo.position
+        V = md.piezo.velocity
+        Pos = md.piezo.position
         self.vel_cube_selector.setValue(V)
         [s.setValue(x) for s, x in zip(self.cube_selectors, Pos)]
 

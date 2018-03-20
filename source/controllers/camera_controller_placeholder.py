@@ -17,16 +17,13 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-from matplotlib.image import imread
-from glob import glob
-import random
 import numpy as np
-import re
 
 
 class camera_controller():
     def __init__(self):
         self.exposure_time = .01
+        self._roi = (0, 0, 100, 100)
 
     def reconnect(self):
         print('Connected Camera')
@@ -35,7 +32,10 @@ class camera_controller():
         data = np.exp(-(np.arange(100)-50)**2/(2*20))
         data = data[:, np.newaxis] * data[np.newaxis, :]
         data = data/np.max(data) * 256
-        return np.random.rand() * data
+        data = np.random.rand() * data
+        data = data[self._roi[0]:self._roi[0]+self._roi[2],
+                    self._roi[1]:self._roi[1]+self._roi[3]]
+        return data
 
     def exposure_time_range(self):
         return [1.9e-5, .1]
@@ -51,3 +51,11 @@ class camera_controller():
 
     def restart_streaming(self):
         pass
+    
+    @property
+    def roi(self):
+        return self._roi
+    
+    @roi.setter
+    def roi(self, ltwhTuple):
+        self._roi = ltwhTuple

@@ -48,7 +48,7 @@ for x_origin in np.arange(10)*1000:
             
             for i, x in enumerate(np.arange(-25, 25, 1)):
                 parity = 2*(i%2-0.5)
-                script.write_lines_piezzo([x, parity*-49, z], [x, parity*49, z])
+                script.write_lines_piezo([x, parity*-49, z], [x, parity*49, z])
                 
         Ymotor_start = Ymotor_start + 95*10
             
@@ -64,7 +64,7 @@ for x_origin in np.arange(10)*1000:
         
         for i, y in enumerate(np.linspace(-48, 47, 20)):
             parity = 2*(i%2-0.5)
-            script.write_lines_piezzo([parity*-49, y, z], [parity*49, y, z])
+            script.write_lines_piezo([parity*-49, y, z], [parity*49, y, z])
     
 
 script.save(fn)

@@ -10,20 +10,20 @@ fn = '20180302_chip.txt'
 
 write_offset = 1.8
 write_power = 4
-write_speed_piezzo = 400
+write_speed_piezo = 400
 write_speed = 1000
 off_speed = 1500
 offsets = np.linspace(-1.7, -2.2, 51)
 
-def write_lines_piezzo(lines, yPos, z_from, z_to, off_speed, power, length, speed):
-    lines.append("piezzo X{x:.3f} Y{y:.3f} Z{z:.3f} F{f:d}".format(
+def write_lines_piezo(lines, yPos, z_from, z_to, off_speed, power, length, speed):
+    lines.append("piezo X{x:.3f} Y{y:.3f} Z{z:.3f} F{f:d}".format(
         x=-50,
         y=yPos - 50,
         z=z_from,
         f=off_speed))
 
     lines.append("laser power {:f}".format(power))
-    lines.append("piezzo X{x:.3f} Y{y:.3f} Z{z:.3f} F{f:d}".format(
+    lines.append("piezo X{x:.3f} Y{y:.3f} Z{z:.3f} F{f:d}".format(
         x=length - 50,
         y=yPos - 50,
         z=z_to,
@@ -36,7 +36,7 @@ def write_lines_piezzo(lines, yPos, z_from, z_to, off_speed, power, length, spee
 lines = ['focusint 0.5']
 lines.append("motor X{x:.3f} Y{y:.3f} Z{z:.3f} F{s:.3f}".format(
                 x=0, y=0, z=0, s=off_speed))
-lines.append("piezzo X{x:.3f} Y{y:.3f} Z{z:.3f} F{s:.3f}".format(
+lines.append("piezo X{x:.3f} Y{y:.3f} Z{z:.3f} F{s:.3f}".format(
                 x=0, y=0, z=0, s=off_speed))
 lines.append("laser power {:f}".format(write_power))
 lines.append("motor F{s:.3f}".format(s=write_speed))
@@ -54,20 +54,20 @@ lines.append("laser power 0")
 
 lines.append("motor X{x:.3f} Y{y:.3f} Z{z:.3f} F{s:.3f}".format(
                 x=75, y=800, z=0, s=off_speed))
-lines.append("piezzoslope")
+lines.append("piezoslope")
 
 for i, offset in enumerate(offsets):
     ypos = i / (len(offsets) - 1) * 100
-    write_lines_piezzo(lines, ypos, offset, offset, off_speed, write_power, 100, write_speed_piezzo)
+    write_lines_piezo(lines, ypos, offset, offset, off_speed, write_power, 100, write_speed_piezo)
 
 
 
 lines.append("motor X{x:.3f} Y{y:.3f} Z{z:.3f} F{s:.3f}".format(
                 x=75, y=950, z=0, s=off_speed))
-lines.append("piezzoslope")
+lines.append("piezoslope")
 for i, offset in enumerate(offsets):
     ypos = i / (len(offsets) - 1) * 100
-    write_lines_piezzo(lines, ypos, offset, offset, off_speed, write_power, 100, write_speed_piezzo)
+    write_lines_piezo(lines, ypos, offset, offset, off_speed, write_power, 100, write_speed_piezo)
 
 lines.append("motor X{x:.3f} Y{y:.3f} Z{z:.3f} F{s:.3f}".format(
                 x=100, y=750, z=0, s=off_speed))

@@ -50,7 +50,7 @@ else:
 
 class movement_delegate(QtCore.QObject):
     """Delegate for movement. 
-    Pretty empty as the motion is done through motor and piezzo
+    Pretty empty as the motion is done through motor and piezo
     """
     updatePosition = QtCore.pyqtSignal()
 
@@ -62,10 +62,10 @@ class movement_delegate(QtCore.QObject):
 
         self.parent = parent
 
-        self._piezzo = Piezzo(self._checklock)
+        self._piezo = Piezo(self._checklock)
         self._motor = Motor(self._checklock)
         
-        self.motor_z_switcher = Motor_z_switcher(self._motor, self._piezzo)
+        self.motor_z_switcher = Motor_z_switcher(self._motor, self._piezo)
 
         self.error = self.parent.error
 
@@ -73,8 +73,8 @@ class movement_delegate(QtCore.QObject):
         
     #Normal things
     @property
-    def piezzo(self):
-        return self._piezzo
+    def piezo(self):
+        return self._piezo
 
     @property
     def motor(self):
@@ -113,21 +113,21 @@ class movement_delegate(QtCore.QObject):
         """stops the movement"""
         QtCore.QMutexLocker(self.mutex)
 
-        self.piezzo.stop()
+        self.piezo.stop()
         self.motor.stop()
 
     def ESTOP(self):
         """Emergency stop"""
         QtCore.QMutexLocker(self.mutex)
 
-        self.piezzo.ESTOP()
+        self.piezo.ESTOP()
         self.motor.ESTOP()
 
     def is_onTarget(self):
         """Checks if the stages reached the target"""
         QtCore.QMutexLocker(self.mutex)
 
-        return (self.piezzo.is_onTarget()
+        return (self.piezo.is_onTarget()
                 and self.motor.is_onTarget())
 
     @property
@@ -135,7 +135,7 @@ class movement_delegate(QtCore.QObject):
         """Checks if the stages are ready"""
         QtCore.QMutexLocker(self.mutex)
 
-        return self.motor.is_ready() and self.piezzo.is_ready()
+        return self.motor.is_ready() and self.piezo.is_ready()
 
     #==========================================================================
     #     Corrections
@@ -145,7 +145,7 @@ class movement_delegate(QtCore.QObject):
         """Saves the corrections"""
         QtCore.QMutexLocker(self.mutex)
         mydict = {'motor': self.motor.corrections,
-                      'piezzo': self.piezzo.corrections}
+                      'piezo': self.piezo.corrections}
 
         def ndtolist(array):
             if isinstance(array, np.ndarray):
@@ -164,7 +164,7 @@ class movement_delegate(QtCore.QObject):
         except FileNotFoundError:
             self.parent.error.emit('No saved correction')
         self.motor.corrections = corrections['motor']
-        self.piezzo.corrections = corrections['piezzo']
+        self.piezo.corrections = corrections['piezo']
 
 
 # =============================================================================
@@ -504,8 +504,8 @@ class Motor(Stage):
         self.Z_c.reconnect()
 
 
-class Piezzo(Stage):
-    """Piezzo stage"""
+class Piezo(Stage):
+    """Piezo stage"""
     def __init__(self, checklock):
         super().__init__(1000, checklock)
         self.mutex = QtCore.QMutex()
@@ -580,13 +580,13 @@ class Motor_z_switcher():
     """Thus class is tasked with changing the z controller of the motor stage.
     This is slightly ugly so don't look too closely.
     
-    It will basically mix motor and piezzo.
+    It will basically mix motor and piezo.
     """
-    def __init__(self, motor, piezzo):
+    def __init__(self, motor, piezo):
         super().__init__()
         self.motor = motor
-        self.piezzo = piezzo
-        self.piezzo_z_controller = Piezzo_z(piezzo)
+        self.piezo = piezo
+        self.piezo_z_controller = Piezo_z(piezo)
         self.motor_z_controller = motor.Z_c
         
     #Change Z slice
@@ -596,60 +596,60 @@ class Motor_z_switcher():
         self.motor.move_signal.emit(list(self.motor.XstoXm(motor_pos)),
                                     self.motor._speed)
         
-    def switch(self, piezzo):
-        if piezzo:
+    def switch(self, piezo):
+        if piezo:
             self.motor.wait_end_motion()
-            self.piezzo_z_controller.set_offset(self.motor.Z_c.get_position())
-            self.motor.Z_c = self.piezzo_z_controller
-            self.piezzo_z_controller.move_signal.connect(self.moved_z_controller)
+            self.piezo_z_controller.set_offset(self.motor.Z_c.get_position())
+            self.motor.Z_c = self.piezo_z_controller
+            self.piezo_z_controller.move_signal.connect(self.moved_z_controller)
         else:
             self.motor.Z_c = self.motor_z_controller
-            self.piezzo_z_controller.move_signal.disconnect(self.moved_z_controller)
+            self.piezo_z_controller.move_signal.disconnect(self.moved_z_controller)
             
         self.motor.coordinatesCorrected.emit(self.motor._corrections)
         
-class Piezzo_z(stage_controller):
+class Piezo_z(stage_controller):
     """Singled out z direction to mix with the motor stage (see Motor_z_switcher)"""
     move_signal = QtCore.pyqtSignal(float)
     
-    def __init__(self, piezzo_controller):
+    def __init__(self, piezo_controller):
         super().__init__()
-        self.piezzo = piezzo_controller
+        self.piezo = piezo_controller
         self.offset = 0
-        piezzo_controller.move_signal.connect(self.piezzo_moved)
+        piezo_controller.move_signal.connect(self.piezo_moved)
         
     def set_offset(self, offset):
         self.offset = offset
         
-    def piezzo_moved(self, Xm, V):
-        self.move_signal.emit(self.offset + self.piezzo.XmtoXs(Xm)[2])
+    def piezo_moved(self, Xm, V):
+        self.move_signal.emit(self.offset + self.piezo.XmtoXs(Xm)[2])
     
     def get_position(self):
-        return self.offset + self.piezzo.XYZ_c.get_position()[2]
+        return self.offset + self.piezo.XYZ_c.get_position()[2]
     
     def MOVVEL(self, Xs, V):
-        piezzo_pos = self.piezzo.get_position(raw=True)
-        piezzo_pos[2] = Xs[0] - self.offset
-        self.piezzo.XYZ_c.MOVVEL(piezzo_pos.copy(), [0, 0, V[0]])
-        self.piezzo.move_signal.emit(list(self.piezzo.XstoXm(piezzo_pos)), V)
+        piezo_pos = self.piezo.get_position(raw=True)
+        piezo_pos[2] = Xs[0] - self.offset
+        self.piezo.XYZ_c.MOVVEL(piezo_pos.copy(), [0, 0, V[0]])
+        self.piezo.move_signal.emit(list(self.piezo.XstoXm(piezo_pos)), V)
     
     def get_pos_range(self, axis):
-        return self.piezzo.XYZ_c.get_pos_range(2) + self.offset
+        return self.piezo.XYZ_c.get_pos_range(2) + self.offset
     
     def get_vel_range(self, axis):
-        return self.piezzo.XYZ_c.get_vel_range(2)
+        return self.piezo.XYZ_c.get_vel_range(2)
     
     def is_onTarget(self,):
-        return self.piezzo.XYZ_c.is_onTarget()
+        return self.piezo.XYZ_c.is_onTarget()
     
     def stop(self,):
-        self.piezzo.XYZ_c.stop()
+        self.piezo.XYZ_c.stop()
         
     def ESTOP(self,):
-        self.piezzo.XYZ_c.ESTOP()
+        self.piezo.XYZ_c.ESTOP()
         
     def is_ready(self,):
-        self.piezzo.XYZ_c.is_ready()
+        self.piezo.XYZ_c.is_ready()
 
 #    def _get_angle_matrices(self):
 #

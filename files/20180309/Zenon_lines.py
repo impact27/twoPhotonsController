@@ -29,15 +29,15 @@ script = Script(focus_int=focus_int,
 z = write_settings['offset']
 script.move_motor([0, 0, 0])
 for y in np.arange(-40, 40, 5):
-    script.write_lines_piezzo([-45, y, z], [45, y, z])
+    script.write_lines_piezo([-45, y, z], [45, y, z])
 
 script.move_motor([0, 100, 0])
 for y in np.arange(-40, 40, 5):
-    script.write_lines_piezzo([-45, y, z], [45, y, z])
+    script.write_lines_piezo([-45, y, z], [45, y, z])
     
 script.move_motor([0, 200, 0])
 for y in np.arange(-40, 40, 5):
-    script.write_lines_piezzo([-45, y, z], [45, y, z])
+    script.write_lines_piezo([-45, y, z], [45, y, z])
     
 
 script.save(fn)

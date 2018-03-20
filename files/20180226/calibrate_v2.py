@@ -21,15 +21,15 @@ motor_step = 125
 text_height = 100
 
 
-def write_lines_piezzo(lines, yPos, z_from, z_to, off_speed, power, length, speed):
-    lines.append("piezzo X{x:.3f} Y{y:.3f} Z{z:.3f} F{f:d}".format(
+def write_lines_piezo(lines, yPos, z_from, z_to, off_speed, power, length, speed):
+    lines.append("piezo X{x:.3f} Y{y:.3f} Z{z:.3f} F{f:d}".format(
         x=-50,
         y=yPos - 50,
         z=z_from,
         f=off_speed))
 
     lines.append("laser power {:f}".format(power))
-    lines.append("piezzo X{x:.3f} Y{y:.3f} Z{z:.3f} F{f:d}".format(
+    lines.append("piezo X{x:.3f} Y{y:.3f} Z{z:.3f} F{f:d}".format(
         x=length - 50,
         y=yPos - 50,
         z=z_to,
@@ -38,7 +38,7 @@ def write_lines_piezzo(lines, yPos, z_from, z_to, off_speed, power, length, spee
     
 
 
-def calibrate(lines, powers, speeds, z_offsets, off_speed, motor_step, motor_origin, piezzo):
+def calibrate(lines, powers, speeds, z_offsets, off_speed, motor_step, motor_origin, piezo):
     lines.append("laser ON")
     
     for xpos, speed in enumerate(speeds):
@@ -46,12 +46,12 @@ def calibrate(lines, powers, speeds, z_offsets, off_speed, motor_step, motor_ori
         lines.append("motor X{:.2f} Y{:.2f} Z20".format(
                 motor_X, motor_origin[1]))
         lines.append("focus motor 0 -41 -1")
-        lines.append("piezzoslope")
+        lines.append("piezoslope")
         # Write top line
-        lines.append("piezzo X-50 Y-50 Z0 F{:d}".format(off_speed))
+        lines.append("piezo X-50 Y-50 Z0 F{:d}".format(off_speed))
         
         lines.append("laser power {:f}".format(write_power))
-        lines.append("piezzo X-50 Y50 Z0 F{:d}".format(np.min(speeds)))
+        lines.append("piezo X-50 Y50 Z0 F{:d}".format(np.min(speeds)))
         lines.append("laser power 0")
         
         
@@ -60,7 +60,7 @@ def calibrate(lines, powers, speeds, z_offsets, off_speed, motor_step, motor_ori
             length = 100
             ypos = ypos * 100 / (len(powers) - 1)
             
-            write_lines_piezzo(lines, ypos, 0, -3, off_speed, power,
+            write_lines_piezo(lines, ypos, 0, -3, off_speed, power,
                                    length, speed)
          
             
@@ -70,12 +70,12 @@ def calibrate(lines, powers, speeds, z_offsets, off_speed, motor_step, motor_ori
                 
 
 motor_origin = [0, 0]
-piezzo = True
-text = 'piezzo'
+piezo = True
+text = 'piezo'
 
 
 lines = ['focusint 0.5']
-calibrate(lines, powers, speeds, z_offsets, off_speed, motor_step, motor_origin, piezzo)     
+calibrate(lines, powers, speeds, z_offsets, off_speed, motor_step, motor_origin, piezo)     
 get_gtext(lines, text, [-50, -200], text_height, np.max(powers), np.min(speeds)) 
          
 

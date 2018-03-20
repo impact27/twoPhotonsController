@@ -34,7 +34,6 @@ class Coordinates_tab(QtWidgets.QWidget):
 #         Xinput.setValidator(X_validator)
         newpos_button = QtWidgets.QPushButton("New Reference Position")
 
-        path_field = QtWidgets.QLineEdit()
         pos_file_button = QtWidgets.QPushButton('Load Positions File')
 
         pos_list = QtWidgets.QTableWidget()
@@ -58,41 +57,37 @@ class Coordinates_tab(QtWidgets.QWidget):
         self.correction_label_motor = correction_label_motor
 
         correction_reset_motor = QtWidgets.QPushButton('Reset')
-        correction_reset_piezzo = QtWidgets.QPushButton('Reset')
+        correction_reset_piezo = QtWidgets.QPushButton('Reset')
         correction_save = QtWidgets.QPushButton('Save')
         correction_load = QtWidgets.QPushButton('Load')
 
-        piezzo_label = QtWidgets.QLabel("Piezzo")
-        piezzo_label.setStyleSheet("font: bold large")
+        piezo_label = QtWidgets.QLabel("Piezo")
+        piezo_label.setStyleSheet("font: bold large")
 
-        piezzo_plane_button = QtWidgets.QPushButton('Piezzo Plane')
+        piezo_plane_button = QtWidgets.QPushButton('Piezo Plane')
         motor_plane_button = QtWidgets.QPushButton('Motor Plane')
 
-        correction_label_piezzo = QtWidgets.QLabel('')
-        self.correction_label_piezzo = correction_label_piezzo
+        correction_label_piezo = QtWidgets.QLabel('')
+        self.correction_label_piezo = correction_label_piezo
 
         #======================================================================
         #     Layout
         #======================================================================
 
         coord = QtWidgets.QHBoxLayout()
-        coord.addWidget(QtWidgets.QLabel("X (x, y, z):"))
+        coord.addWidget(QtWidgets.QLabel("x, y, z:"))
         coord.addWidget(Xinput)
 
         tab1Layout = QtWidgets.QVBoxLayout()
         tab1Layout.addLayout(coord)
         tab1Layout.addWidget(newpos_button)
 
-        path_layout = QtWidgets.QHBoxLayout()
-        path_layout.addWidget(path_field)
-
         tab2Layout = QtWidgets.QVBoxLayout()
-        tab2Layout.addLayout(path_layout)
         tab2Layout.addWidget(pos_file_button)
 
         tabs_widget = QtWidgets.QTabWidget()
-        tabs_widget.addTab(Layout_wrapper(tab2Layout), 'File')
         tabs_widget.addTab(Layout_wrapper(tab1Layout), 'Manual')
+        tabs_widget.addTab(Layout_wrapper(tab2Layout), 'File')
 
         tabs_widget.setSizePolicy(QtWidgets.QSizePolicy.Expanding,
                                   QtWidgets.QSizePolicy.Minimum)
@@ -126,16 +121,16 @@ class Coordinates_tab(QtWidgets.QWidget):
         line.setFrameShadow(QtWidgets.QFrame.Sunken)
         main_layout.addWidget(line)
 
-        main_layout.addWidget(piezzo_label)
-        main_layout.addWidget(piezzo_plane_button)
-        main_layout.addWidget(correction_label_piezzo)
-        main_layout.addWidget(correction_reset_piezzo)
+        main_layout.addWidget(piezo_label)
+        main_layout.addWidget(piezo_plane_button)
+        main_layout.addWidget(correction_label_piezo)
+        main_layout.addWidget(correction_reset_piezo)
 
         line = QtWidgets.QFrame()
         line.setFrameShape(QtWidgets.QFrame.HLine)
         line.setFrameShadow(QtWidgets.QFrame.Sunken)
         main_layout.addWidget(line)
-
+        
         load_layout = QtWidgets.QHBoxLayout()
         load_layout.addWidget(correction_save)
         load_layout.addWidget(correction_load)
@@ -148,19 +143,24 @@ class Coordinates_tab(QtWidgets.QWidget):
         #======================================================================
         cd = application_delegate.coordinates_delegate
         md = application_delegate.movement_delegate
+        self.md = md
 
         self.updateCorrection_motor(md.motor.corrections)
-        self.updateCorrection_piezzo(md.piezzo.corrections)
+        self.updateCorrection_piezo(md.piezo.corrections)
 
         motor_plane_button.clicked.connect(cd.motor_plane)
-        piezzo_plane_button.clicked.connect(cd.piezzo_plane)
+        piezo_plane_button.clicked.connect(cd.piezo_plane)
         pos_list.cellClicked.connect(self.cellClicked)
         pos_list.verticalHeader().sectionClicked.connect(self.rowClicked)
 
-        newpos_button.clicked.connect(lambda: cd.add_position(
-            np.fromstring(Xinput.text(), sep=',')))
+        def newpos():
+            cd.add_position(np.fromstring(Xinput.text(), sep=','))
+            
+        newpos_button.clicked.connect(newpos)
+        Xinput.editingFinished.connect(newpos)
+        
 
-        pos_file_button.clicked.connect(self.openfile)
+        pos_file_button.clicked.connect(self.open_position_file)
 
         clear_list_button.clicked.connect(cd.clear_positions)
         validate_button.clicked.connect(cd.processPos)
@@ -170,42 +170,47 @@ class Coordinates_tab(QtWidgets.QWidget):
         cd.updatelist.connect(self.updateList)
 
         md.motor.coordinatesCorrected.connect(self.updateCorrection_motor)
-        md.piezzo.coordinatesCorrected.connect(self.updateCorrection_piezzo)
+        md.piezo.coordinatesCorrected.connect(self.updateCorrection_piezo)
 
         correction_reset_motor.clicked.connect(md.motor.reset_corrections)
-        correction_reset_piezzo.clicked.connect(md.piezzo.reset_corrections)
+        correction_reset_piezo.clicked.connect(md.piezo.reset_corrections)
 
-        md = application_delegate.movement_delegate
-        correction_save.clicked.connect(lambda : md.save_corrections())
-        correction_load.clicked.connect(lambda : md.load_corrections())
+        correction_save.clicked.connect(self.save_correction_file)
+        correction_load.clicked.connect(self.open_correction_file)
 
         save_errors.clicked.connect(cd.save_errors)
 
-        offset_button.clicked.connect(lambda:
-                                      application_delegate.movement_delegate.motor.offset_origin(
-                                          np.fromstring(offset_input.text(), sep=',')))
+        offset_button.clicked.connect(lambda: md.motor.offset_origin(
+                            np.fromstring(offset_input.text(), sep=',')))
+            
 
         #======================================================================
         #         Save variables
         #======================================================================
 
         self.xinput = Xinput
-        self.fninput = path_field
         self.pos_list = pos_list
-        self.path_field = path_field
         self.cd = cd
 
-    def openfile(self):
-        fn = self.path_field.text()
-
-        check = QtCore.QFileInfo(fn)
-
-        if not check.exists() or not check.isFile():
-            fn = QtWidgets.QFileDialog.getOpenFileName(
-                self, 'Position File', QtCore.QDir.homePath())[0]
-            self.path_field.setText(fn)
-
-        self.cd.load_list(fn)
+    def open_correction_file(self):
+        fn = QtWidgets.QFileDialog.getOpenFileName(
+            self, 'Position File', QtCore.QDir.homePath() +'/correction.txt',
+            'Text File (*.txt)')[0]
+        if len(fn) > 0:
+            self.md.load_corrections(fn)
+        
+    def save_correction_file(self):
+        fn = QtWidgets.QFileDialog.getSaveFileName(
+            self, 'Position File', QtCore.QDir.homePath() +'/correction.txt' ,
+            'Text File (*.txt)')[0]
+        if len(fn) > 0:
+            self.md.save_corrections(fn)
+        
+    def open_position_file(self):
+        fn = QtWidgets.QFileDialog.getOpenFileName(
+            self, 'Position File', QtCore.QDir.homePath())[0]
+        if len(fn) > 0:
+            self.cd.load_list(fn)
 
     def cellClicked(self, row, column):
         if column == 2:
@@ -266,5 +271,5 @@ class Coordinates_tab(QtWidgets.QWidget):
     def updateCorrection_motor(self, corrections):
         self._updateCorrection(corrections, self.correction_label_motor)
 
-    def updateCorrection_piezzo(self, corrections):
-        self._updateCorrection(corrections, self.correction_label_piezzo)
+    def updateCorrection_piezo(self, corrections):
+        self._updateCorrection(corrections, self.correction_label_piezo)

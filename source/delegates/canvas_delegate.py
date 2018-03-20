@@ -46,17 +46,36 @@ class Canvas_delegate(QtCore.QObject):
         self._lastim = np.zeros((2, 2))
         self._canvas.figure.canvas.mpl_connect(
             'button_press_event', self.onImageClick)
+        self._canvas.figure.canvas.mpl_connect(
+            'button_press_event', self.set_roi)
+        self._canvas.figure.canvas.mpl_connect(
+            'button_release_event', self.set_roi)
+        self._canvas.figure.canvas.mpl_connect(
+            'motion_notify_event', self.set_roi)
+        
         self._click_pos = np.array([[np.nan, np.nan], [np.nan, np.nan]])
+        
+        self.ROI_select = None
+        self.rescale_factor = 2
+        self.cd = parent.camera_delegate
+        self.cd.new_roi.connect(lambda: self.imshow(self.get_frame()))
+        
 
+    def get_frame(self):
+        frame = self._parent.camera_delegate.get_image()
+        frame = cv2.resize(frame, 
+                           (frame.shape[1] // self.rescale_factor,
+                            frame.shape[0] // self.rescale_factor),
+                           interpolation=cv2.INTER_AREA)
+        return frame
+    
     def show_frame(self, frame=None):
 
         QtCore.QMutexLocker(self.mutex)
 
         try:
             if frame is None:
-                frame = self._parent.camera_delegate.get_image()
-                frame = cv2.resize(frame, (frame.shape[1] // 2, frame.shape[0] // 2),
-                                   interpolation=cv2.INTER_AREA)
+                frame = self.get_frame()
 
             extent = (0, frame.shape[1] * self._pixelSize,
                       0, frame.shape[0] * self._pixelSize)
@@ -65,13 +84,14 @@ class Canvas_delegate(QtCore.QObject):
                 frame, vmin=self._vmin, vmax=self._vmax, extent=extent)
         except BaseException:
             print("Can't show frame", sys.exc_info())
+            raise
 
     def draw_current_position(self):
 
         QtCore.QMutexLocker(self.mutex)
 
         newpos = (self._parent.movement_delegate.motor.position
-                  + self._parent.movement_delegate.piezzo.position)
+                  + self._parent.movement_delegate.piezo.position)
         laserI = 0  # self._parent.laser_delegate.get_intensity()
         lRange = self._parent.laser_delegate.get_range()
         f = (laserI - lRange[0]) / (lRange[1] - lRange[0])
@@ -162,6 +182,7 @@ class Canvas_delegate(QtCore.QObject):
 
         self._imhandle = None
         self._crosshandle = None
+        self._recthandle = None
         self._twinx = None
         self._canvas.figure.clear()
         self._axes = self._canvas.figure.add_subplot(111)
@@ -203,6 +224,9 @@ class Canvas_delegate(QtCore.QObject):
 
             if self._crosshandle is not None:
                 self._axes.draw_artist(self._crosshandle[0])
+                
+            if self._recthandle is not None:
+                self._axes.draw_artist(self._recthandle[0])
 
             self._canvas.blit(self._axes.bbox)
         else:
@@ -248,6 +272,7 @@ class Canvas_delegate(QtCore.QObject):
         # Are we displaying an image?
         if self._imhandle is None or event.ydata is None or event.xdata is None:
             return
+        
         if QtWidgets.QApplication.keyboardModifiers() != QtCore.Qt.ControlModifier:
             return
         # What button was that?
@@ -268,13 +293,55 @@ class Canvas_delegate(QtCore.QObject):
                 self._click_pos[:, 1], self._click_pos[:, 0], 'r-x')
         self.update_image(self.get_last_im())
         self.newclick.emit(self._click_pos)
-
+        
+    def set_roi(self, event):
+        if self._canvas.toolbar._active == "ZOOM":
+            return
+        
+        # Are we displaying an image?
+        if self._imhandle is None or event.ydata is None or event.xdata is None:
+            return
+        if QtWidgets.QApplication.keyboardModifiers() == QtCore.Qt.ControlModifier:
+            return
+        p0 = self.ROI_select
+        p1 = [event.ydata, event.xdata]
+        
+        if event.name == 'button_press_event':
+            self.ROI_select = p1
+        
+        if p0 is None:
+            return
+        
+        if event.name == 'motion_notify_event':
+            if self._recthandle is not None:
+                self._recthandle[0].set_data(
+                    [p0[1], p1[1], p1[1], p0[1], p0[1]],
+                    [p0[0], p0[0], p1[0], p1[0], p0[0]])
+            else:
+                self._recthandle = self._axes.plot(
+                    [p0[1], p1[1], p1[1], p0[1], p0[1]],
+                    [p0[0], p0[0], p1[0], p1[0], p0[0]], 'r')
+            self.update_image(self.get_last_im())
+            
+        elif event.name == 'button_release_event':
+            self._recthandle = None
+            self.ROI_select = None
+            roi = np.array([np.min([p0[0], p1[0]]),
+                            np.min([p0[1], p1[1]]),
+                            np.abs(p0[0] - p1[0]),
+                            np.abs(p0[1] - p1[1])])
+            roi *= self.rescale_factor
+            roi = np.round(roi)
+            roi = np.array(roi, int)
+            self.cd.set_roi((*roi,))
+            
     def clear_click(self):
 
         QtCore.QMutexLocker(self.mutex)
 
         self.set_click_pos(np.array([[np.nan, np.nan], [np.nan, np.nan]]))
-        self._crosshandle[0].set_data(np.nan, np.nan)
+        if self._crosshandle is not None:
+            self._crosshandle[0].set_data(np.nan, np.nan)
         if self._imhandle is not None:
             self.update_image(self.get_last_im())
 

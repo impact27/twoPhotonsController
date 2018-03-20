@@ -9,8 +9,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 fn = "motor_2times.txt"
-#fn = "piezzo_without_plate_times.txt"
-#fn = "piezzo_times.txt" 
+#fn = "piezo_without_plate_times.txt"
+#fn = "piezo_times.txt" 
 #fn = "mixed_times.txt" 
 
 with open(fn, 'r') as f:
