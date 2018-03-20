@@ -58,7 +58,7 @@ class Canvas_delegate(QtCore.QObject):
         self.ROI_select = None
         self.rescale_factor = 2
         self.cd = parent.camera_delegate
-        self.cd.new_roi.connect(self.draw_first_frame)
+        self.cd.new_roi.connect(lambda: self.draw_first_frame())
         
 
     def get_frame(self):
@@ -119,16 +119,21 @@ class Canvas_delegate(QtCore.QObject):
 
         if on:
             self.switch_draw(False)
-            self.live_timer.start(33)
             self.draw_first_frame()
+            self.live_timer.start(33)
         else:
             self.live_timer.stop()
         self.liveSwitched.emit(on)
         
-    def draw_first_frame(self):
+    def draw_first_frame(self, im=None):
+        
         QtCore.QMutexLocker(self.mutex)
+         
+        if im is None:
+            im = self.get_frame()
+       
         self.clear()
-        self.imshow(self.get_frame())
+        self.imshow(im)
 
     def switch_draw(self, on):
 
@@ -236,7 +241,7 @@ class Canvas_delegate(QtCore.QObject):
 
             self._canvas.blit(self._axes.bbox)
         else:
-            self.imshow(im, *args, **kwargs)
+            self.draw_first_frame(im)
 
     def plot(self, X, Y, fmt='-', axis='normal',
              twinx=False, draw=True, **kwargs):
@@ -301,7 +306,7 @@ class Canvas_delegate(QtCore.QObject):
         self.newclick.emit(self._click_pos)
         
     def set_roi(self, event):
-        if self._canvas.toolbar._active == "ZOOM":
+        if (self._canvas.toolbar._active == "ZOOM" or self._canvas.toolbar._active == "PAN"):
             return
         
         # Are we displaying an image?
