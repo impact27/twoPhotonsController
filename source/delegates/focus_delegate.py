@@ -53,12 +53,10 @@ class Focus_delegate(QtCore.QObject):
         QtCore.QMutexLocker(self.mutex)
 
         try:
-            list_Z, list_I, list_size = data
+            list_Z, list_I = data
             self.canvas.clear()
-            for Z, I, size in zip(list_Z, list_I, list_size):
+            for Z, I in zip(list_Z, list_I):
                 self.canvas.plot(Z, I, 'x')
-                goodsize = size < 4 * np.min(size)
-                self.canvas.plot(Z[goodsize], size[goodsize], '.', twinx=True)
             self.canvas.plot(zBest * np.ones(2), self.canvas.get_ylim(), 'k-')
             self.canvas.draw()
         except BaseException:
@@ -209,11 +207,12 @@ class Zcorrector():
         self.laser = laser
 
     def change_power(self, factor=0.8):
-        V = self.laser.get_intensity()
-        V = factor * V
+        """Change intensity of laser to get best focus"""
+        V = self.laser.get_intensity() * factor
         self.laser.set_intensity(V)
 
     def startlaser(self, intensity):
+        """Start laser with intensity"""
         if intensity is None or intensity < 1e-6:
             intensity = 0.1
         self.camera.auto_exposure_time(False)
@@ -221,78 +220,75 @@ class Zcorrector():
         self.laser.set_intensity(intensity)
         self.laser.switch(True)
         self.camera.extShutter(True)
-        
-
+    
     def endlaser(self):
+        """Stop laser"""
         pass
     
     def get_intensity(self):
+        """get intensity from camera"""
         self.camera.restart_streaming()
         im = self.camera.get_image()
         mymax = np.amax(im)
-        size = np.sum(im > mymax / 10)
-        return mymax, size
+        return mymax
 
-    def get_image_range(self, start, stop, step):
+    def get_intensity_range(self, start, stop, step):
         """get the images corresponding to the positions in zPos
-
-        condition gives the stop value
         """
         zPos = np.arange(start, stop, step)
-        intensities = np.zeros(len(zPos))
-        sizes = np.zeros(len(zPos))
+        data = np.zeros((len(zPos), 2))
+        data[:, 0] = zPos
 
         for i, z in enumerate(zPos):
             self.stage.goto_position([np.nan, np.nan, z],
                                      wait=True, checkid=self.lockid, isRaw=True)
             
-            mymax, size = self.get_intensity()
+            intensity = self.get_intensity()
             
-            intensities[i] = mymax
-            sizes[i] = size
+            data[i, 1] = intensity
             
-            if mymax == 255:
+            if intensity == 255:
                 if i > 1:
                     start = zPos[i - 2]
                 self.change_power(0.8)
-                return self.get_image_range(start, stop, step)
+                return self.get_intensity_range(start, stop, step)
 
-            if mymax < np.max(intensities) / 3:
+            if intensity < np.max(data[:, 1]) / 3:
                 
-                return zPos, intensities, sizes
+                return data[:i+1]
 
         #Failed focus
-        if 2*np.min(intensities) > np.max(intensities):
+        if 2*np.min(data[:, 1]) > np.max(data[:, 1]):
             raise RuntimeError("Can't focus")
             
-        return zPos, intensities, sizes
+        return data
 
     def focus_range(self, z_start, z_stop, current_step):
-        zPos, intensity, sizes = self.get_image_range(
+        data = self.get_intensity_range(
             z_start, z_stop, current_step)
             
-        argbest = np.argmax(intensity)
-        zBest = zPos[argbest]
+        argbest = np.argmax(data[..., 1])
+        zBest = data[..., 0][argbest]
         
         #If on side
-        if argbest == 0 or argbest == len(intensity) - 1:
+        if argbest == 0 or argbest == len(data) - 1:
             return self.focus_range(
                     zBest - 2*current_step,
                     zBest + 2.1*current_step,
                     current_step)
             
         #Check intensity is high enough
-        if np.max(intensity) < 150:
+        if np.max(data[..., 1]) < 150:
             
             self.stage.goto_position([np.nan, np.nan, zBest],
                              wait=True, checkid=self.lockid, isRaw=True)
             
-            intensity, _ = self.get_intensity()
+            intensity = self.get_intensity()
             intensity_old = 0
             while intensity < 150 and intensity > 1.05*intensity_old:
                 intensity_old = intensity
                 self.change_power(1.2)
-                intensity, _ = self.get_intensity()
+                intensity = self.get_intensity()
             
             if intensity_old > 0:
                 return self.focus_range(
@@ -300,7 +296,7 @@ class Zcorrector():
                         zBest + 2.1*current_step,
                         current_step)
             
-        return zPos, intensity, sizes
+        return data
         
     def focus(self, start_offset, stop_offset, step, N_loops=1,
               intensity=None, checkid=None):
@@ -317,25 +313,24 @@ class Zcorrector():
 
         list_zpos = []
         list_int = []
-        list_sizes = []
 
         for i in range(N_loops):
-            zPos, intensity, sizes = self.focus_range(z_start, z_stop, current_step)
+            data = self.focus_range(z_start, z_stop, current_step)
+            zPos, intensities = data.T
             
-            argbest = np.argmax(intensity)
+            argbest = np.argmax(intensities)
             current_step /= 10
             z_start = zPos[argbest - 1]
             z_stop = zPos[argbest + 1]
 
             list_zpos.append(zPos)
-            list_int.append(intensity)
-            list_sizes.append(sizes)
+            list_int.append(intensities)
 
         self.endlaser()
 
-        Y = intensity
+        Y = intensities
 
-        close = intensity > .8 * intensity.max()
+        close = intensities > .8 * intensities.max()
         if np.sum(close) < 4:
             close = np.abs(zPos - zPos[argbest]) < 1.5 * np.abs(step)
         fit = np.polyfit(zPos[close], Y[close], 2)
@@ -343,7 +338,7 @@ class Zcorrector():
         if np.abs(zBest - zPos[argbest]) > 2 * np.abs(step):
             zBest = zPos[argbest]
 
-        ret = np.asarray([list_zpos, list_int, list_sizes]), zBest
+        ret = np.asarray([list_zpos, list_int]), zBest
 
         self.stage.goto_position([np.nan, np.nan, zBest],
                                  wait=True, checkid=self.lockid, isRaw=True)

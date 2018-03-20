@@ -31,17 +31,27 @@ import json
 
 from .coordinates_solver import XmtoXs, XstoXm
 
+#If I am on my mac, the stages are not connected
+_TEST_ = False
 if sys.platform == "darwin":
+    _TEST_ = True
+    
+if _TEST_:
     from controllers.stage_controller_placeholder import (linear_controller,
                                                           cube_controller,
-                                                          z_controller)
+                                                          z_controller,
+                                                          stage_controller)
 else:
     from controllers.stage_controller import (linear_controller,
                                               cube_controller,
-                                              z_controller)
+                                              z_controller,
+                                              stage_controller)
 
 
 class movement_delegate(QtCore.QObject):
+    """Delegate for movement. 
+    Pretty empty as the motion is done through motor and piezzo
+    """
     updatePosition = QtCore.pyqtSignal()
 
     def __init__(self, parent):
@@ -52,13 +62,16 @@ class movement_delegate(QtCore.QObject):
 
         self.parent = parent
 
-        self._piezzo = piezzo(self)
-        self._motor = motor(self)
+        self._piezzo = Piezzo(self._checklock)
+        self._motor = Motor(self._checklock)
+        
+        self.motor_z_switcher = Motor_z_switcher(self._motor, self._piezzo)
 
         self.error = self.parent.error
 
         self.coordinatesCorrected = self.motor.coordinatesCorrected
-
+        
+    #Normal things
     @property
     def piezzo(self):
         return self._piezzo
@@ -68,7 +81,7 @@ class movement_delegate(QtCore.QObject):
         return self._motor
 
     def _checklock(self, lockid=None):
-
+        """Checks if the movement is locked"""
         QtCore.QMutexLocker(self.mutex)
 
         if not self.locked:
@@ -79,7 +92,7 @@ class movement_delegate(QtCore.QObject):
             raise RuntimeError('Mouvment is locked!')
 
     def lock(self):
-
+        """Locks the movement"""
         QtCore.QMutexLocker(self.mutex)
 
         if not self._checklock(None):
@@ -90,28 +103,28 @@ class movement_delegate(QtCore.QObject):
         return self.lockid
 
     def unlock(self):
-
+        """Unlocks the movement"""
         QtCore.QMutexLocker(self.mutex)
 
         self.locked = False
         self.lockid = None
 
     def stop(self):
-
+        """stops the movement"""
         QtCore.QMutexLocker(self.mutex)
 
         self.piezzo.stop()
         self.motor.stop()
 
     def ESTOP(self):
-
+        """Emergency stop"""
         QtCore.QMutexLocker(self.mutex)
 
         self.piezzo.ESTOP()
         self.motor.ESTOP()
 
     def is_onTarget(self):
-
+        """Checks if the stages reached the target"""
         QtCore.QMutexLocker(self.mutex)
 
         return (self.piezzo.is_onTarget()
@@ -119,7 +132,7 @@ class movement_delegate(QtCore.QObject):
 
     @property
     def is_ready(self):
-
+        """Checks if the stages are ready"""
         QtCore.QMutexLocker(self.mutex)
 
         return self.motor.is_ready() and self.piezzo.is_ready()
@@ -128,11 +141,11 @@ class movement_delegate(QtCore.QObject):
     #     Corrections
     #==========================================================================
 
-    def save_corrections(self):
-
+    def save_corrections(self, fn = 'corrections.txt'):
+        """Saves the corrections"""
         QtCore.QMutexLocker(self.mutex)
 
-        fn = 'corrections.txt'
+        
         with open(fn, 'w') as f:
             mydict = {'motor': self.motor.corrections,
                       'piezzo': self.piezzo.corrections}
@@ -144,11 +157,10 @@ class movement_delegate(QtCore.QObject):
 
             json.dump(mydict, f, indent=4, default=ndtolist)
 
-    def load_corrections(self):
-
+    def load_corrections(self, fn = 'corrections.txt'):
+        """Loads the corrections"""
         QtCore.QMutexLocker(self.mutex)
-
-        fn = 'corrections.txt'
+        
         try:
             with open(fn, 'r') as f:
                 corrections = json.load(f)
@@ -158,29 +170,28 @@ class movement_delegate(QtCore.QObject):
         self.piezzo.corrections = corrections['piezzo']
 
 
-class controller(QtCore.QObject):
-
+# =============================================================================
+# Stages
+# =============================================================================
+class Stage(QtCore.QObject):
+    """This is the abstract class that will coordinate the controllers"""
     move_signal = QtCore.pyqtSignal(list, float)
     coordinatesCorrected = QtCore.pyqtSignal(dict)
 
-    def __init__(self, speed, parent):
+    def __init__(self, speed, checklock):
         super().__init__()
         self.mutex = QtCore.QMutex()
         self._speed = speed
-        self.parent = parent
+        self._checklock = checklock
         self._lastXs = None
         self._ndim = 3
         self._corrections = {}
         self.reset_corrections()
-
-    def reset_corrections(self):
-        self.corrections = {
-            "offset": np.zeros(3, float),
-            "rotation angles": np.zeros(4, float)
-        }
+        
+    #Positions
 
     def get_position(self, raw=False):
-
+        """Returns the (raw?) position"""
         QtCore.QMutexLocker(self.mutex)
 
         X = self._XSPOS()
@@ -189,18 +200,34 @@ class controller(QtCore.QObject):
 
         return X
 
-    def goto_position(self, Xm, speed=np.nan, wait=False, checkid=None,
+    def goto_position(self, Xm, speed=np.nan, *, wait=False, checkid=None,
                       useLastPos=False, isRaw=False):
-
+        """Moves to the position
+        
+        Parameters:
+        ----------
+            Xm:
+                Position to go to [um]
+            speed:
+                Speed [um/s]
+            wait:
+                Should the call be blocking?
+            checkid:
+                If the movment is locked, the checkid
+            useLastPos:
+                Use for performance. Avoid calling pos()
+                (Might be useless)
+            isRaw:
+                Is Xm raw or corrected?
+                
+        Note:
+            Any value of Xm set to nan will not be moved
+        """
         QtCore.QMutexLocker(self.mutex)
-
-        """
-        Any value of Xm set to nan will not be moved
-        """
 
         Xm = np.asarray(Xm)
         # Check lock
-        if not self.parent._checklock(checkid):
+        if not self._checklock(checkid):
             return
 
         # Choose speed
@@ -249,22 +276,22 @@ class controller(QtCore.QObject):
     position = property(get_position, goto_position)
 
     def wait_end_motion(self):
-
+        """Wait hte ned of motion"""
         QtCore.QMutexLocker(self.mutex)
 
         while not self.is_onTarget():
             time.sleep(.01)
 
     def move_by(self, dX, wait=False, checkid=None):
-
+        """Move by dX. Conveninence wrapper around goto_position"""
         QtCore.QMutexLocker(self.mutex)
 
-        """Move by dX. This is an easy way but makes a lot of calls"""
         Xm = dX + self.position
         self.goto_position(Xm, wait=wait, checkid=checkid)
 
     def get_positionRange(self, axis=None):
-
+        """Get position range. This is almost correct.
+        (See corrections)"""
         QtCore.QMutexLocker(self.mutex)
 
         ret = np.zeros((self._ndim, 2))
@@ -291,7 +318,7 @@ class controller(QtCore.QObject):
 
         QtCore.QMutexLocker(self.mutex)
 
-        if not self.parent._checklock(checkid):
+        if not self._checklock(checkid):
             return
         self._speed = vel
 
@@ -330,6 +357,12 @@ class controller(QtCore.QObject):
     def set_correction_key(self, key, value):
         self._corrections[key] = value
         self.coordinatesCorrected.emit(self._corrections)
+        
+    def reset_corrections(self):
+        self.corrections = {
+            "offset": np.zeros(3, float),
+            "rotation angles": np.zeros(4, float)
+        }
 
     def reconnect(self):
 
@@ -398,26 +431,14 @@ class controller(QtCore.QObject):
 
 
     
-class motor(controller):
-    def __init__(self, parent):
-        super().__init__(1000, parent)
+class Motor(Stage):
+    """Motor stage"""
+    def __init__(self, checklock):
+        super().__init__(1000, checklock)
         self.mutex = QtCore.QMutex()
         self.XY_c = linear_controller()
         self.XY_c.waitState()
-        
-        self.motor_z = z_controller()
-        self.piezzo_z = zpiezzoController(parent, self.motor_z)
-        
-        self.Z_c = self.motor_z
-        
-    def switch_z_controller(self, piezzo):
-        self.wait_end_motion()
-        if piezzo:
-            self.Z_c = self.piezzo_z
-        else:
-            self.Z_c = self.motor_z
-            
-        self.coordinatesCorrected.emit(self._corrections)
+        self.Z_c = z_controller()
 
     def _XSPOS(self):
 
@@ -486,9 +507,10 @@ class motor(controller):
         self.Z_c.reconnect()
 
 
-class piezzo(controller):
-    def __init__(self, parent):
-        super().__init__(1000, parent)
+class Piezzo(Stage):
+    """Piezzo stage"""
+    def __init__(self, checklock):
+        super().__init__(1000, checklock)
         self.mutex = QtCore.QMutex()
         self.XYZ_c = cube_controller()
         self.XYZ_c.stageConnected.connect(lambda: self.reset())
@@ -556,41 +578,81 @@ class piezzo(controller):
 
         self.XYZ_c.reconnect()
         
-class zpiezzoController():
-    
-    def __init__(self, md, motor_z_controller):
-        self.motor_c = motor_z_controller
-        self.piezzo = md.piezzo
         
+class Motor_z_switcher():
+    """Thus class is tasked with changing the z controller of the motor stage.
+    This is slightly ugly so don't look too closely.
+    
+    It will basically mix motor and piezzo.
+    """
+    def __init__(self, motor, piezzo):
+        super().__init__()
+        self.motor = motor
+        self.piezzo = piezzo
+        self.piezzo_z_controller = Piezzo_z(piezzo)
+        self.motor_z_controller = motor.Z_c
+        
+    #Change Z slice
+    def moved_z_controller(self, Zs):
+        motor_pos = self.motor.get_position(raw=True)
+        motor_pos[2] = Zs
+        self.motor.move_signal.emit(list(self.motor.XstoXm(motor_pos)),
+                                    self.motor._speed)
+        
+    def switch(self, piezzo):
+        if piezzo:
+            self.motor.wait_end_motion()
+            self.piezzo_z_controller.set_offset(self.motor.Z_c.get_position())
+            self.motor.Z_c = self.piezzo_z_controller
+            self.piezzo_z_controller.move_signal.connect(self.moved_z_controller)
+        else:
+            self.motor.Z_c = self.motor_z_controller
+            self.piezzo_z_controller.move_signal.disconnect(self.moved_z_controller)
+            
+        self.motor.coordinatesCorrected.emit(self.motor._corrections)
+        
+class Piezzo_z(stage_controller):
+    """Singled out z direction to mix with the motor stage (see Motor_z_switcher)"""
+    move_signal = QtCore.pyqtSignal(float)
+    
+    def __init__(self, piezzo_controller):
+        super().__init__()
+        self.piezzo = piezzo_controller
+        self.offset = 0
+        piezzo_controller.move_signal.connect(self.piezzo_moved)
+        
+    def set_offset(self, offset):
+        self.offset = offset
+        
+    def piezzo_moved(self, Xm, V):
+        self.move_signal.emit(self.offset + self.piezzo.XmtoXs(Xm)[2])
+    
     def get_position(self):
-        return self.motor_c.get_position() + self.piezzo.XYZ_c.get_position()[2]
+        return self.offset + self.piezzo.XYZ_c.get_position()[2]
     
     def MOVVEL(self, Xs, V):
         piezzo_pos = self.piezzo.get_position(raw=True)
-        piezzo_pos[2] = Xs[0]-self.motor_c.get_position()
+        piezzo_pos[2] = Xs[0] - self.offset
         self.piezzo.XYZ_c.MOVVEL(piezzo_pos, [0, 0, V[0]])
         self.piezzo.move_signal.emit(list(self.piezzo.XstoXm(piezzo_pos)), V)
     
-    def is_onTarget(self,):
-        return self.piezzo.XYZ_c.is_onTarget()
-    
     def get_pos_range(self, axis):
-        return self.piezzo.XYZ_c.get_pos_range(2) + self.motor_c.get_position()
+        return self.piezzo.XYZ_c.get_pos_range(2) + self.offset
     
     def get_vel_range(self, axis):
         return self.piezzo.XYZ_c.get_vel_range(2)
     
+    def is_onTarget(self,):
+        return self.piezzo.XYZ_c.is_onTarget()
+    
     def stop(self,):
-        self.piezzo.stop()
+        self.piezzo.XYZ_c.stop()
         
     def ESTOP(self,):
-        self.piezzo.ESTOP()
+        self.piezzo.XYZ_c.ESTOP()
         
     def is_ready(self,):
-        self.piezzo.is_ready()
-        
-    def reconnect(self,):
-        pass
+        self.piezzo.XYZ_c.is_ready()
 
 #    def _get_angle_matrices(self):
 #

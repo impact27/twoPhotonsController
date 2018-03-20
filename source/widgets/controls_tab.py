@@ -210,7 +210,7 @@ class Controls_tab(QtWidgets.QWidget):
         stage_cube_reconnect.clicked.connect(md.piezzo.reconnect)
 
         goto_motor_button.clicked.connect(self.goto_motor)
-        motor_z_piezzo_button.clicked.connect(md.motor.switch_z_controller)
+        motor_z_piezzo_button.clicked.connect(md.motor_z_switcher.switch)
 
         goto_cube_button.clicked.connect(lambda: md.piezzo.goto_position(
             [s.getValue() for s in cube_selectors]))
