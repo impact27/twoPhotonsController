@@ -176,8 +176,8 @@ class Coordinates_tab(QtWidgets.QWidget):
         correction_reset_piezzo.clicked.connect(md.piezzo.reset_corrections)
 
         md = application_delegate.movement_delegate
-        correction_save.clicked.connect(md.save_corrections)
-        correction_load.clicked.connect(md.load_corrections)
+        correction_save.clicked.connect(lambda : md.save_corrections())
+        correction_load.clicked.connect(lambda : md.load_corrections())
 
         save_errors.clicked.connect(cd.save_errors)
 

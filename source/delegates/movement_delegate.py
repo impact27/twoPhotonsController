@@ -144,17 +144,14 @@ class movement_delegate(QtCore.QObject):
     def save_corrections(self, fn = 'corrections.txt'):
         """Saves the corrections"""
         QtCore.QMutexLocker(self.mutex)
-
-        
-        with open(fn, 'w') as f:
-            mydict = {'motor': self.motor.corrections,
+        mydict = {'motor': self.motor.corrections,
                       'piezzo': self.piezzo.corrections}
 
-            def ndtolist(array):
-                if isinstance(array, np.ndarray):
-                    return list(array)
-                raise TypeError("Unknown Type")
-
+        def ndtolist(array):
+            if isinstance(array, np.ndarray):
+                return list(array)
+            raise TypeError("Unknown Type")
+        with open(fn, 'w') as f:
             json.dump(mydict, f, indent=4, default=ndtolist)
 
     def load_corrections(self, fn = 'corrections.txt'):
