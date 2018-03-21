@@ -58,9 +58,11 @@ class Canvas_delegate(QtCore.QObject):
         self.ROI_select = None
         self.rescale_factor = 2
         self.cd = parent.camera_delegate
-        self.cd.new_roi.connect(lambda: self.draw_first_frame())
+        def new_roi():
+            self.clear()
+            self.show_frame()
+        self.cd.new_roi.connect(new_roi)
         
-
     def get_frame(self):
         frame = self._parent.camera_delegate.get_image()
         frame = cv2.resize(frame, 
@@ -78,12 +80,52 @@ class Canvas_delegate(QtCore.QObject):
                 frame = self.get_frame()
 
             extent = (0, frame.shape[1] * self._pixelSize,
-                      0, frame.shape[0] * self._pixelSize)
+                      frame.shape[0] * self._pixelSize, 0)
 
             self.update_image(
                 frame, vmin=self._vmin, vmax=self._vmax, extent=extent)
         except BaseException:
             print("Can't show frame", sys.exc_info())
+            
+    def update_image(self, im, *args, **kwargs):
+
+        QtCore.QMutexLocker(self.mutex)
+
+        self._lastim = im
+        if self._imhandle is not None:
+
+            self._imhandle.set_data(im)
+            self._axes.draw_artist(self._imhandle)
+
+            if self._crosshandle is not None:
+                self._axes.draw_artist(self._crosshandle[0])
+                
+            if self._recthandle is not None:
+                self._axes.draw_artist(self._recthandle[0])
+
+            self._canvas.blit(self._axes.bbox)
+        else:
+            self.clear()
+            self.imshow(im, *args, **kwargs)  
+            
+    def clear(self):
+
+        QtCore.QMutexLocker(self.mutex)
+
+        self._imhandle = None
+        self._crosshandle = None
+        self._recthandle = None
+        self._twinx = None
+        self._canvas.figure.clear()
+        self._axes = self._canvas.figure.add_subplot(111)
+        self._canvas.draw()        
+            
+            
+            
+            
+            
+            
+            
 
     def draw_current_position(self):
 
@@ -118,21 +160,11 @@ class Canvas_delegate(QtCore.QObject):
 
         if on:
             self.switch_draw(False)
-            self.draw_first_frame()
+            self.clear()
             self.live_timer.start(33)
         else:
             self.live_timer.stop()
         self.liveSwitched.emit(on)
-        
-    def draw_first_frame(self, im=None):
-        
-        QtCore.QMutexLocker(self.mutex)
-         
-        if im is None:
-            im = self.get_frame()
-       
-        self.clear()
-        self.imshow(im)
 
     def switch_draw(self, on):
 
@@ -154,7 +186,7 @@ class Canvas_delegate(QtCore.QObject):
         factor = pxsize / self._pixelSize
         self.set_click_pos(self.click_pos * factor)
         self._pixelSize = pxsize
-        self.update_im()
+        self.redraw_image()
 
     def set_range(self, vmin=0, vmax=255):
 
@@ -163,7 +195,7 @@ class Canvas_delegate(QtCore.QObject):
         self.newrange.emit(vmin, vmax)
         self._vmin = vmin
         self._vmax = vmax
-        self.update_im()
+        self.redraw_image()
 
     def auto_range(self):
 
@@ -174,29 +206,13 @@ class Canvas_delegate(QtCore.QObject):
         vmax = np.percentile(im, 99)
         self.set_range(vmin=vmin, vmax=vmax)
 
-    def update_im(self):
+    def redraw_image(self):
 
         QtCore.QMutexLocker(self.mutex)
 
         if self.is_showing_image():
             self.clear()
             self.show_frame(self.get_last_im())
-
-# =============================================================================
-#     Moved
-# =============================================================================
-
-    def clear(self):
-
-        QtCore.QMutexLocker(self.mutex)
-
-        self._imhandle = None
-        self._crosshandle = None
-        self._recthandle = None
-        self._twinx = None
-        self._canvas.figure.clear()
-        self._axes = self._canvas.figure.add_subplot(111)
-        self._canvas.draw()
 
     def get_last_im(self):
 
@@ -222,25 +238,7 @@ class Canvas_delegate(QtCore.QObject):
 
         self._canvas.draw()
 
-    def update_image(self, im, *args, **kwargs):
-
-        QtCore.QMutexLocker(self.mutex)
-
-        self._lastim = im
-        if self._imhandle is not None:
-
-            self._imhandle.set_data(im)
-            self._axes.draw_artist(self._imhandle)
-
-            if self._crosshandle is not None:
-                self._axes.draw_artist(self._crosshandle[0])
-                
-            if self._recthandle is not None:
-                self._axes.draw_artist(self._recthandle[0])
-
-            self._canvas.blit(self._axes.bbox)
-        else:
-            self.draw_first_frame(im)
+    
 
     def plot(self, X, Y, fmt='-', axis='normal',
              twinx=False, draw=True, **kwargs):
@@ -301,7 +299,7 @@ class Canvas_delegate(QtCore.QObject):
         else:
             self._crosshandle = self._axes.plot(
                 self._click_pos[:, 1], self._click_pos[:, 0], 'r-x')
-        self.update_image(self.get_last_im())
+        self.show_frame(self.get_last_im())
         self.newclick.emit(self._click_pos)
         
     def set_roi(self, event):
@@ -331,7 +329,7 @@ class Canvas_delegate(QtCore.QObject):
                 self._recthandle = self._axes.plot(
                     [p0[1], p1[1], p1[1], p0[1], p0[1]],
                     [p0[0], p0[0], p1[0], p1[0], p0[0]], 'r')
-            self.update_image(self.get_last_im())
+            self.show_frame(self.get_last_im())
             
         elif event.name == 'button_release_event':
             self._recthandle = None
@@ -340,6 +338,8 @@ class Canvas_delegate(QtCore.QObject):
                             np.min([p0[0], p1[0]]),
                             np.abs(p0[1] - p1[1]),
                             np.abs(p0[0] - p1[0])])
+            if roi[2] < 5 or roi[3] < 5:
+                return
             roi *= self.rescale_factor
             roi = np.round(roi)
             roi = np.array(roi, int)
@@ -353,7 +353,7 @@ class Canvas_delegate(QtCore.QObject):
         if self._crosshandle is not None:
             self._crosshandle[0].set_data(np.nan, np.nan)
         if self._imhandle is not None:
-            self.update_image(self.get_last_im())
+            self.show_frame()
 
     @property
     def click_pos(self):

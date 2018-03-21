@@ -33,8 +33,8 @@ class camera_controller():
         data = data[:, np.newaxis] * data[np.newaxis, :]
         data = data/np.max(data) * 256
         data = np.random.rand() * data
-        data = data[self._roi[0]:self._roi[0]+self._roi[2],
-                    self._roi[1]:self._roi[1]+self._roi[3]]
+        data = data[self._roi[1]:self._roi[1]+self._roi[3],
+                    self._roi[0]:self._roi[0]+self._roi[2]]
         return data
 
     def exposure_time_range(self):
