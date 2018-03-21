@@ -262,8 +262,9 @@ class Stage(QtCore.QObject):
         V = np.abs(Xdist / Xtime)
 
         # Move
-        self._MOVVEL(Xs, V)
+        
         self.move_signal.emit(list(Xm), speed)
+        self._MOVVEL(Xs, V)
 
         # Wait for movment to end
         if wait:
@@ -601,10 +602,10 @@ class Motor_z_switcher():
             self.motor.wait_end_motion()
             self.piezo_z_controller.set_offset(self.motor.Z_c.get_position())
             self.motor.Z_c = self.piezo_z_controller
-            self.piezo_z_controller.move_signal.connect(self.moved_z_controller)
+#            self.piezo_z_controller.move_signal.connect(self.moved_z_controller)
         else:
             self.motor.Z_c = self.motor_z_controller
-            self.piezo_z_controller.move_signal.disconnect(self.moved_z_controller)
+#            self.piezo_z_controller.move_signal.disconnect(self.moved_z_controller)
             
         self.motor.coordinatesCorrected.emit(self.motor._corrections)
         
@@ -649,7 +650,7 @@ class Piezo_z(stage_controller):
         self.piezo.XYZ_c.ESTOP()
         
     def is_ready(self,):
-        self.piezo.XYZ_c.is_ready()
+        return self.piezo.XYZ_c.is_ready()
 
 #    def _get_angle_matrices(self):
 #

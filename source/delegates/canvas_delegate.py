@@ -84,7 +84,6 @@ class Canvas_delegate(QtCore.QObject):
                 frame, vmin=self._vmin, vmax=self._vmax, extent=extent)
         except BaseException:
             print("Can't show frame", sys.exc_info())
-            raise
 
     def draw_current_position(self):
 

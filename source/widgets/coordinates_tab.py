@@ -157,7 +157,7 @@ class Coordinates_tab(QtWidgets.QWidget):
             cd.add_position(np.fromstring(Xinput.text(), sep=','))
             
         newpos_button.clicked.connect(newpos)
-        Xinput.editingFinished.connect(newpos)
+        Xinput.returnPressed.connect(newpos)
         
 
         pos_file_button.clicked.connect(self.open_position_file)

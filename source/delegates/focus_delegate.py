@@ -73,7 +73,7 @@ class Focus_delegate(QtCore.QObject):
 
     def focus(self, stage, *, start_offset=None, stop_offset=None, step=None, 
               intensity=None, Nloops=None,
-              wait=False, checkid=None):
+              wait=False, checkid=None, change_coordinates=True):
 
         QtCore.QMutexLocker(self.mutex)
 
@@ -106,7 +106,8 @@ class Focus_delegate(QtCore.QObject):
         self.thread.set_args(
             self._settings,
             stage,
-            checkid)
+            checkid,
+            change_coordinates)
         self.thread.start()
 
         if wait:
@@ -188,10 +189,11 @@ class zThread(QtCore.QThread):
         self._checkid = None
         self._md = movement_delegate
 
-    def set_args(self, settings, stage, checkid):
+    def set_args(self, settings, stage, checkid, change_coordinates):
         self._zcorrector.stage = stage
         self._settings = settings
         self._checkid = checkid
+        self._change_coordinates = change_coordinates
 
     def run(self):
         try:
@@ -206,7 +208,9 @@ class zThread(QtCore.QThread):
             else:
                 lockid = self._checkid
     
-            graphs = self._zcorrector.focus(self._settings, lockid)
+            graphs = self._zcorrector.focus(
+                    self._settings, checkid=lockid,
+                    change_coordinates=self._change_coordinates)
             self._md.unlock()
             self._settings = None
             self.addGraph(graphs)
@@ -317,7 +321,7 @@ class Zcorrector():
             
         return data
         
-    def focus(self, settings, checkid=None):
+    def focus(self, settings, checkid=None, change_coordinates=True):
         """ Go to the best focal point for the laser
         """
         start_offset = settings["From"]
@@ -367,7 +371,8 @@ class Zcorrector():
         self.stage.goto_position([np.nan, np.nan, zBest],
                                  wait=True, checkid=self.lockid, isRaw=True)
 
-        self.stage.set_Z_zero()
+        if change_coordinates:
+            self.stage.set_Z_zero()
 
         # save result and position
         return ret

@@ -211,7 +211,8 @@ class plane_thread(QtCore.QThread):
                                stop_offset=(stop - start),
                                step=step,
                                stage=self._stage,
-                               wait=True, checkid=self.checkid)
+                               wait=True, checkid=self.checkid,
+                               change_coordinates=False)
     
                 positions[i] = self._stage.get_position(raw=True)
     
@@ -224,4 +225,4 @@ class plane_thread(QtCore.QThread):
             self._stage.corrections = corrections
         except BaseException as e:
             print(e)
-            raise e
+            raise
