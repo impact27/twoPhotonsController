@@ -16,11 +16,18 @@ class Script():
         self.write_speed = write_speed
         self.write_power = write_power
 
-    def write_lines_piezo(self, Xfrom, Xto):
-        if not self._write_ready:
+    def write_line_motor(self, Xfrom, Xto):
+        self.write_line(Xfrom, Xto, 'motor')
+        
+    def write_line_piezo(self, Xfrom, Xto):
+        self.write_line(Xfrom, Xto, 'piezo')
+        
+    def write_line(self, Xfrom, Xto, stage):
+        if not self._write_ready and stage =='piezo':
             self.prepare_piezo_write()
         self._lines.append("laser power 0")
-        self._lines.append("piezo X{x:.3f} Y{y:.3f} Z{z:.3f} F{f:d}".format(
+        self._lines.append("{stage} X{x:.3f} Y{y:.3f} Z{z:.3f} F{f:d}".format(
+            stage=stage,
             x=Xfrom[0],
             y=Xfrom[1],
             z=Xfrom[2],
@@ -28,12 +35,14 @@ class Script():
     
         self._lines.append("laser power {:f}".format(
                 self.write_power))
-        self._lines.append("piezo X{x:.3f} Y{y:.3f} Z{z:.3f} F{f:d}".format(
+        self._lines.append("{stage} X{x:.3f} Y{y:.3f} Z{z:.3f} F{f:d}".format(
+            stage=stage,
             x=Xto[0],
             y=Xto[1],
             z=Xto[2],
             f=self.write_speed))
         self._lines.append("laser power 0")
+        
         
     def move_motor(self, X):
         self._write_ready = False
