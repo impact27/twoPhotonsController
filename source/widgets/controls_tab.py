@@ -39,6 +39,7 @@ class Controls_tab(QtWidgets.QWidget):
         motor_label = QtWidgets.QLabel('Linear Stage')
         motor_label.setStyleSheet("font: bold large")
         motor_status = LightWidget()
+        motor_target_status = LightWidget()
         stage_motor_reconnect = QtWidgets.QPushButton('Reconnect')
         stage_cube_reconnect = QtWidgets.QPushButton('Reconnect')
 
@@ -78,6 +79,7 @@ class Controls_tab(QtWidgets.QWidget):
         cube_label = QtWidgets.QLabel('Piezo Stage')
         cube_label.setStyleSheet("font: bold large")
         cube_status = LightWidget()
+        cube_target_status = LightWidget()
 
         cube_ranges = md.piezo.positionRange
         cube_pos = md.piezo.position
@@ -114,6 +116,7 @@ class Controls_tab(QtWidgets.QWidget):
         motor_H_layout = QtWidgets.QHBoxLayout()
         motor_H_layout.addWidget(motor_label)
         motor_H_layout.addWidget(motor_status)
+        motor_H_layout.addWidget(motor_target_status)
         motor_H_layout.addWidget(stage_motor_reconnect)
 
         motor_layout = QtWidgets.QGridLayout()
@@ -138,6 +141,7 @@ class Controls_tab(QtWidgets.QWidget):
         cube_H_layout = QtWidgets.QHBoxLayout()
         cube_H_layout.addWidget(cube_label)
         cube_H_layout.addWidget(cube_status)
+        cube_H_layout.addWidget(cube_target_status)
         cube_H_layout.addWidget(stage_cube_reconnect)
 
         cube_layout = QtWidgets.QGridLayout()
@@ -277,7 +281,9 @@ class Controls_tab(QtWidgets.QWidget):
         # Update status
         def updateStatus():
             motor_status.setOn(md.motor.is_ready())
+            motor_target_status.setOn(md.motor.is_onTarget())
             cube_status.setOn(md.piezo.is_ready())
+            cube_target_status.setOn(md.piezo.is_onTarget())
 
         self.status_timer = QtCore.QTimer()
         self.status_timer.timeout.connect(updateStatus)

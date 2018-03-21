@@ -121,6 +121,8 @@ class linear_controller(stage_controller):
         X, V = np.array([X, V]) / 1000
         for x, v, l in zip(X, V, self.lines):
             if v > 0:
+                if v < 10e-6:
+                    v = 10e-6
                 l.VEL(1, v)
                 l.MOV(1, x)
 
@@ -236,7 +238,7 @@ class cube_controller(stage_controller):
             pass
 
     def is_onTarget(self):
-        return np.all(self.cube.qONT([1, 2, 3]).values())
+        return np.all(np.array(self.cube.qONT([1, 2, 3]).values()))
 
     def get_pos_range(self, axis):
         return np.array([-50., 50.])

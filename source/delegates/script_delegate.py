@@ -53,8 +53,8 @@ class Parse_thread(QtCore.QThread):
         #        self._parser.parse(self._filename)
         try:
             self._parser.parse(self._filename)
-        except BaseException:
-            pass
+        except BaseException as e:
+            print(e)
 
 
 class Parser():
@@ -170,7 +170,11 @@ class Execute_Parser(Parser):
         self.lockid = self.md.lock()
         if self.lockid is None:
             raise RuntimeError("Can't lock motion")
-        super().parse(filename)
+        try:
+            super().parse(filename)
+        except:
+            self.laser_delegate.set_intensity(0)
+            raise
         self.md.unlock()
         self.lockid = None
 

@@ -269,15 +269,17 @@ class Stage(QtCore.QObject):
         # Wait for movment to end
         if wait:
             time.sleep(Xtime)
-            self.wait_end_motion()
+            self.wait_end_motion(10)
 
     position = property(get_position, goto_position)
 
-    def wait_end_motion(self):
+    def wait_end_motion(self, timeout=None):
         """Wait hte ned of motion"""
         QtCore.QMutexLocker(self.mutex)
-
+        tstart = time.time()
         while not self.is_onTarget():
+            if timeout is not None and time.time() - tstart > timeout:
+                raise RuntimeError('The motion took too long to complete')
             time.sleep(.01)
 
     def move_by(self, dX, wait=False, checkid=None):
@@ -448,7 +450,7 @@ class Motor(Stage):
         return X
 
     def _MOVVEL(self, Xs, V):
-
+        
         QtCore.QMutexLocker(self.mutex)
 
         self.XY_c.MOVVEL(Xs[:2], V[:2])
