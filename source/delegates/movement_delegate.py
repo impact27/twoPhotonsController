@@ -37,13 +37,13 @@ if sys.platform == "darwin":
     _TEST_ = True
     
 if _TEST_:
-    from controllers.stage_controller_placeholder import (linear_controller,
-                                                          cube_controller,
+    from controllers.stage_controller_placeholder import (Linear_controller,
+                                                          Cube_controller,
                                                           z_controller,
                                                           stage_controller)
 else:
-    from controllers.stage_controller import (linear_controller,
-                                              cube_controller,
+    from controllers.stage_controller import (Linear_controller,
+                                              Cube_controller,
                                               z_controller,
                                               stage_controller)
 
@@ -222,7 +222,6 @@ class Stage(QtCore.QObject):
         """
         QtCore.QMutexLocker(self.mutex)
 
-        Xm = np.asarray(Xm)
         # Check lock
         if not self._checklock(checkid):
             return
@@ -231,13 +230,15 @@ class Stage(QtCore.QObject):
         if np.isnan(speed):
             speed = self._speed
 
+
         # get starting point
         XsFrom = None
         if useLastPos:
             XsFrom = self._lastXs
         else:
             XsFrom = self._XSPOS()
-
+            
+        Xm = np.asarray(Xm)    
         # points to replace
         toreplace = np.isnan(Xm)
         # Get final point
@@ -249,7 +250,6 @@ class Stage(QtCore.QObject):
             if np.any(toreplace):
                 Xm[toreplace] = self.XstoXm(XsFrom)[toreplace]
             Xs = self.XmtoXs(Xm)
-            
         self._lastXs = Xs
 
         # Don't move if final = now
@@ -436,7 +436,7 @@ class Motor(Stage):
     def __init__(self, checklock):
         super().__init__(1000, checklock)
         self.mutex = QtCore.QMutex()
-        self.XY_c = linear_controller()
+        self.XY_c = Linear_controller()
         self.XY_c.waitState()
         self.Z_c = z_controller()
 
@@ -512,8 +512,8 @@ class Piezo(Stage):
     def __init__(self, checklock):
         super().__init__(1000, checklock)
         self.mutex = QtCore.QMutex()
-        self.XYZ_c = cube_controller()
-        self.XYZ_c.stageConnected.connect(lambda: self.reset())
+        self.XYZ_c = Cube_controller()
+        self.XYZ_c.stageConnected.connect(self.reset)
         self.XYZ_c.connect()
 
     def reset(self, checkid=None, wait=False):
@@ -577,6 +577,18 @@ class Piezo(Stage):
         QtCore.QMutexLocker(self.mutex)
 
         self.XYZ_c.reconnect()
+        
+    def macro_begin(self, name):
+        self.XYZ_c.MAC_BEG(name)
+        
+    def macro_end(self):
+        self.XYZ_c.MAC_END()
+        
+    def macro_start(self, name):
+        self.XYZ_c.MAC_START(name)
+    
+    def macro_delete(self, name):
+        self.XYZ_c.MAC_DEL(name)
         
         
 class Motor_z_switcher():

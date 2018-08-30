@@ -22,9 +22,55 @@ import serial
 import time
 
 from .HW_conf import laser_power_COM
+from .stage_controller import E727_controller
 
 
+
+        
 class laser_controller():
+
+    def __init__(self, cube):
+        self.cube = E727_controller()
+        self.cube.stageConnected.connect(self.reconnect)
+        self._V = 0
+        
+    def reconnect(self):
+        self.cube.SVO(4, False)
+        self.cube.SVA(4, 0)
+
+    def get_range(self):
+        return np.array([0, 10])
+
+    def set_intensity(self, V):
+        amin, amax = self.get_range()
+        if V < amin:
+            V = amin
+        if V > amax:
+            V = amax
+        self._V = V
+        self.cube.SVA(4, V)
+
+    def get_intensity(self):
+        self.cube.qSVA(4)
+        return float(self.cube.qSVA(4))
+
+    def switch(self, on):
+        if on:
+            self.set_intensity(self._V)
+        else:
+            self.cube.SVA(4, 0)
+
+    def get_state(self):
+        return self.cube.IsControllerReady()
+
+
+
+#%%
+if __name__ == '__main__':
+    pass
+
+
+class old_laser_controller():
 
     def __init__(self):
         self.ser = None
@@ -88,9 +134,3 @@ class laser_controller():
         else:
             print(res)
             return None
-
-
-
-#%%
-if __name__ == '__main__':
-    pass

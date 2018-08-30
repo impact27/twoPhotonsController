@@ -106,7 +106,7 @@ class fake_controller(stage_controller):
 #==============================================================================
 
 
-class linear_controller(fake_controller):
+class Linear_controller(fake_controller):
     def __init__(self):
         super().__init__()
         self.position = np.array([25, 25]) * 1000
@@ -129,7 +129,7 @@ class linear_controller(fake_controller):
 class CubeError(BaseException):
     pass
 
-class cube_controller(fake_controller):
+class Cube_controller(fake_controller):
 
     stageConnected = QtCore.pyqtSignal()
 

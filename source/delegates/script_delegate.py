@@ -61,12 +61,19 @@ class Parser():
 
     def __init__(self):
         super().__init__()
+        self.file = None
 
     def parse(self, filename):
         with open(filename) as f:
-            for line in f.readlines():
+            self.file = f
+            fun = 0
+            while fun is not None:
+                line = self.file.readline()
+                fun, args = self.readline(line)
+                if fun is None:
+                    break
                 try:
-                    self.readline(line)
+                    fun(args)
                 except BaseException:
                     print('')
                     print("Error while parsing line:")
@@ -74,18 +81,26 @@ class Parser():
                     print(sys.exc_info())
                     print('')
                     raise
+            self.file = None
 
     def readline(self, line):
+        if line == '':
+            return None, None
         line = line.strip()
         line = line.split(' ')
         command = line[0]
-        arg = line[1:]
+        args = line[1:]
         if command.lower() in ['laser', 'focus', 'camera', 'focusint']:
-            getattr(self, command)(arg)
+            pass
         elif command.lower() in ['piezoslope', 'piezoreset']:
-            getattr(self, command)()
+            args = tuple()
         elif command.lower() in ['piezo', 'motor']:
-            getattr(self, command)(*self.read_move_args(arg))
+            args = self.read_move_args(args)
+        else:
+            raise RuntimeError(f"Unknown command {command}")
+        
+        fun = getattr(self, command)
+        return fun, args
 
     def focusint(self, args):
         pass
@@ -104,6 +119,7 @@ class Parser():
         pos_re = '([XYZF])([-\.\d]+)'
         pos = np.ones(3) * np.nan
         speed = np.nan
+        intensity = np.nan
         for arg in args:
             for found in re.findall(pos_re, arg):
                 if found[0] == 'X':
@@ -114,7 +130,9 @@ class Parser():
                     pos[2] = float(found[1])
                 elif found[0] == 'F':
                     speed = float(found[1])
-        return pos, speed
+                elif found[0] == 'E':
+                    intensity = float(found[1])
+        return pos, speed, intensity
 
     def camera(self, args):
         if len(args) != 2:
@@ -135,10 +153,10 @@ class Parser():
     def focus(self, args):
         pass
 
-    def motor(self, pos, speed):
+    def motor(self, pos, speed, intensity):
         pass
 
-    def piezo(self, pos, speed):
+    def piezo(self, pos, speed, intensity):
         pass
 
     def laser_state(self, state):
@@ -187,24 +205,24 @@ class Execute_Parser(Parser):
         self.camera_delegate.set_exposure_time(exp_time)
 
     def focus(self, args):
-        piezo, start_offset, stop_offset, step = args
+        stage, start_offset, stop_offset, step = args
         start_offset, stop_offset, step = float(
             start_offset), float(stop_offset), float(step)
-        if piezo.lower() == 'piezo':
+        if stage.lower() == 'piezo':
             self.focus_delegate.focus(start_offset=start_offset,
                                       stop_offset=stop_offset,
                                       step=step,
                                       stage=self.md.piezo,
                                       Nloops=2, wait=True,
                                       checkid=self.lockid)
-        elif piezo.lower() == 'motor':
+        elif stage.lower() == 'motor':
             self.focus_delegate.focus(start_offset=start_offset,
                                       stop_offset=stop_offset,
                                       step=step,
                                       stage=self.md.motor,
                                       Nloops=1, wait=True,
                                       checkid=self.lockid)
-        elif piezo.lower() == 'both':
+        elif stage.lower() == 'both':
             self.focus_delegate.focus(start_offset=start_offset,
                                       stop_offset=stop_offset, 
                                       step=step,
@@ -219,7 +237,7 @@ class Execute_Parser(Parser):
                                       checkid=self.lockid)
         else:
             self.md.unlock()
-            raise RuntimeError(f"Don't know {piezo}")
+            raise RuntimeError(f"Don't know {stage}")
 
         self.focus_intensity = self.laser_delegate.get_intensity()
 
@@ -232,11 +250,11 @@ class Execute_Parser(Parser):
     def focusint(self, args):
         self.focus_intensity = float(args[0])
 
-    def motor(self, pos, speed):
+    def motor(self, pos, speed, intensity):
         self.motor_delegate.goto_position(pos, speed=speed, wait=True,
                                           checkid=self.lockid)
 
-    def piezo(self, pos, speed):
+    def piezo(self, pos, speed, intensity):
         self.piezo_delegate.goto_position(pos, speed=speed, wait=True,
                                            checkid=self.lockid)
 
@@ -284,12 +302,12 @@ class Draw_Parser(Parser):
             self.lines.append([start[:2], pos[:2]])
             self.colors.append(self.color)
 
-    def piezo(self, pos, speed):
+    def piezo(self, pos, speed, intensity):
         piezo_to = self.move(self.piezo_position, pos)
         self.plotto(piezo_to + self.motor_position)
         self.piezo_position = piezo_to
 
-    def motor(self, pos, speed):
+    def motor(self, pos, speed, intensity):
         motor_to = self.move(self.motor_position, pos)
         self.plotto(motor_to + self.piezo_position)
         self.motor_position = motor_to
