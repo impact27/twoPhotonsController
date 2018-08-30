@@ -25,7 +25,8 @@ from PyQt5 import QtCore
 from functools import partial
 import clr
 
-from . import HW_conf
+#from . import HW_conf
+import HW_conf
 
 import sys
 from System import Decimal
@@ -181,7 +182,7 @@ class linethread(QtCore.QThread):
 #==============================================================================
 # Cube Controller
 #==============================================================================
-class E727_controller():
+class E727_controller(QtCore.QObject):
     """Singleton to connect stage"""
     stageConnected = QtCore.pyqtSignal()
     E727 = None
@@ -281,8 +282,8 @@ class Cube_controller(stage_controller):
     def MAC_DEL(self, name):
         self.cube.MAC_DEL(name)
         
-    def is_macro_runnung(self):
-        return self.cube.qRMC() != ''
+    def is_macro_running(self):
+        return self.cube.qRMC() != '\n'
     
     def macro_wait(self):
         self.cube.send("WAC ONT? 1 = 1")
