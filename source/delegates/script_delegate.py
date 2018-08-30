@@ -183,6 +183,21 @@ class Execute_Parser(Parser):
         self.focus_delegate = app_delegate.focus_delegate
         self.coordinates_delegate = app_delegate.coordinates_delegate
         self.lockid = None
+        
+        self.recording_macro = False
+    
+    def start_macro(self):
+        if not self.recording_macro:
+            self.recording_macro = True
+            self.piezo_delegate.macro_begin('nextsteps')
+        
+    def end_macro(self):
+        if not self.recording_macro:
+            return
+        self.recording_macro = False
+        self.piezo_delegate.macro_end()
+        self.piezo_delegate.macro_start('nextsteps', wait=True)
+        self.piezo_delegate.macro_delete('nextsteps')
 
     def parse(self, filename):
         self.lockid = self.md.lock()
@@ -190,6 +205,7 @@ class Execute_Parser(Parser):
             raise RuntimeError("Can't lock motion")
         try:
             super().parse(filename)
+            self.end_macro()
         except:
             self.laser_delegate.set_intensity(0)
             raise
@@ -197,14 +213,20 @@ class Execute_Parser(Parser):
         self.lockid = None
 
     def camera_grab(self, fname):
+        """no"""
+        self.end_macro()
         self.camera_delegate.extShutter(True)
         im = self.camera_delegate.get_image()
         tifffile.imsave(fname, im)
 
     def camera_exposure(self, exp_time):
+        """no"""
+        self.end_macro()
         self.camera_delegate.set_exposure_time(exp_time)
 
     def focus(self, args):
+        """no"""
+        self.end_macro()
         stage, start_offset, stop_offset, step = args
         start_offset, stop_offset, step = float(
             start_offset), float(stop_offset), float(step)
@@ -242,28 +264,47 @@ class Execute_Parser(Parser):
         self.focus_intensity = self.laser_delegate.get_intensity()
 
     def piezoslope(self):
+        """no"""
+        self.end_macro()
         self.coordinates_delegate.piezo_plane(checkid=self.lockid, wait=True)
         
     def piezoreset(self):
+        """no"""
+        self.end_macro()
         self.piezo_delegate.reset(checkid=self.lockid, wait=True)
         
     def focusint(self, args):
+        """no"""
+        self.end_macro()
         self.focus_intensity = float(args[0])
 
     def motor(self, pos, speed, intensity):
+        """no"""
+        self.end_macro()
+        if not np.isnan(intensity):
+            self.laser_power(intensity)
         self.motor_delegate.goto_position(pos, speed=speed, wait=True,
                                           checkid=self.lockid)
 
     def piezo(self, pos, speed, intensity):
-        self.piezo_delegate.goto_position(pos, speed=speed, wait=True,
-                                           checkid=self.lockid)
+        '''yes'''
+        self.start_macro()
+        if not np.isnan(intensity):
+            self.laser_power(intensity)
+        self.piezo_delegate.goto_position(
+                pos, speed=speed, wait=True,
+                checkid=self.lockid, useLastPos=True)
 
     def laser_state(self, state):
+        '''yes'''
+        self.start_macro()
         if state:
             self.camera_delegate.extShutter(False)
         self.laser_delegate.switch(state)
 
     def laser_power(self, power):
+        '''yes'''
+        self.start_macro()
         if power > 0:
             self.camera_delegate.extShutter(False)
         self.laser_delegate.set_intensity(power)
@@ -303,11 +344,15 @@ class Draw_Parser(Parser):
             self.colors.append(self.color)
 
     def piezo(self, pos, speed, intensity):
+        if not np.isnan(intensity):
+            self.laser_power(intensity)
         piezo_to = self.move(self.piezo_position, pos)
         self.plotto(piezo_to + self.motor_position)
         self.piezo_position = piezo_to
 
     def motor(self, pos, speed, intensity):
+        if not np.isnan(intensity):
+            self.laser_power(intensity)
         motor_to = self.move(self.motor_position, pos)
         self.plotto(motor_to + self.piezo_position)
         self.motor_position = motor_to

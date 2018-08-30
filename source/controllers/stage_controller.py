@@ -280,6 +280,14 @@ class Cube_controller(stage_controller):
     
     def MAC_DEL(self, name):
         self.cube.MAC_DEL(name)
+        
+    def is_macro_runnung(self):
+        return self.cube.qRMC() != ''
+    
+    def macro_wait(self):
+        self.cube.send("WAC ONT? 1 = 1")
+        self.cube.send("WAC ONT? 2 = 1")
+        self.cube.send("WAC ONT? 3 = 1")
 
 
 class cubethread(QtCore.QThread):

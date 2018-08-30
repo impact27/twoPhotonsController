@@ -197,7 +197,7 @@ class Stage(QtCore.QObject):
 
         return X
 
-    def goto_position(self, Xm, speed=np.nan, *, wait=False, checkid=None,
+    def goto_position(self, XTo, speed=np.nan, *, wait=False, checkid=None,
                       useLastPos=False, isRaw=False):
         """Moves to the position
         
@@ -225,12 +225,7 @@ class Stage(QtCore.QObject):
         # Check lock
         if not self._checklock(checkid):
             return
-
-        # Choose speed
-        if np.isnan(speed):
-            speed = self._speed
-
-
+            
         # get starting point
         XsFrom = None
         if useLastPos:
@@ -238,44 +233,58 @@ class Stage(QtCore.QObject):
         else:
             XsFrom = self._XSPOS()
             
-        Xm = np.asarray(Xm)    
-        # points to replace
-        toreplace = np.isnan(Xm)
-        # Get final point
-        if isRaw:
-            Xs = Xm
-            Xs[toreplace] = XsFrom[toreplace]
-            Xm = self.XstoXm(Xs)
-        else:
-            if np.any(toreplace):
-                Xm[toreplace] = self.XstoXm(XsFrom)[toreplace]
-            Xs = self.XmtoXs(Xm)
-        self._lastXs = Xs
+        XsTo, XmTo, Vs, travel_time = self.move_parameters(
+                XTo, XsFrom, speed, isRaw)
+        
+        self._lastXs = XsTo
 
         # Don't move if final = now
-        if np.linalg.norm(Xs - XsFrom) < 1e-3:
+        if np.linalg.norm(XsTo - XsFrom) < 1e-3:
             return
 
-        # Get correct speed for each axis
-        Xdist = (Xs - XsFrom)
-        Xtime = np.linalg.norm(Xdist) / speed
-        V = np.abs(Xdist / Xtime)
-
         # Move
-        
-        self.move_signal.emit(list(Xm), speed)
-        self._MOVVEL(Xs, V)
+        self.move_signal.emit(list(XmTo), speed)
+        self._MOVVEL(XsTo, Vs)
 
         # Wait for movment to end
         if wait:
-            time.sleep(Xtime)
-            self.wait_end_motion(10)
+            self.wait_end_motion(travel_time, 10)
 
+    def move_parameters(self, XTo, XsFrom, speed, isRaw):
+        """Get parameters needed to move the stages"""   
+        # Choose speed
+        if np.isnan(speed):
+            speed = self._speed
+            
+        XTo = np.asarray(XTo)    
+        # points to replace
+        toreplace = np.isnan(XTo)
+        # Get final point
+        if isRaw:
+            XsTo = XTo
+            XsTo[toreplace] = XsFrom[toreplace]
+            XmTo = self.XstoXm(XsTo)
+        else:
+            XmTo = XTo
+            if np.any(toreplace):
+                XmTo[toreplace] = self.XstoXm(XsFrom)[toreplace]
+            XsTo = self.XmtoXs(XmTo)
+            
+        # Get correct speed for each axis
+        Xdist = (XsTo - XsFrom)
+        travel_time = np.linalg.norm(Xdist) / speed
+        Vs = np.abs(Xdist / time)
+        
+        return XsTo, XmTo, Vs, travel_time
+            
+        
     position = property(get_position, goto_position)
 
-    def wait_end_motion(self, timeout=None):
+    def wait_end_motion(self, travel_time, timeout=None):
         """Wait hte ned of motion"""
         QtCore.QMutexLocker(self.mutex)
+        
+        time.sleep(travel_time)
         tstart = time.time()
         while not self.is_onTarget():
             if timeout is not None and time.time() - tstart > timeout:
@@ -515,6 +524,8 @@ class Piezo(Stage):
         self.XYZ_c = Cube_controller()
         self.XYZ_c.stageConnected.connect(self.reset)
         self.XYZ_c.connect()
+        
+        self.recording_macro = False
 
     def reset(self, checkid=None, wait=False):
 
@@ -534,6 +545,8 @@ class Piezo(Stage):
         QtCore.QMutexLocker(self.mutex)
         try:
             self.XYZ_c.MOVVEL(Xs, V)
+            if self.recording_macro:
+                self.XYZ_c.macro_wait()
         except self.XYZ_c.error:
             print("Error at ", Xs)
             raise
@@ -579,16 +592,26 @@ class Piezo(Stage):
         self.XYZ_c.reconnect()
         
     def macro_begin(self, name):
+        self.recording_macro = True
         self.XYZ_c.MAC_BEG(name)
         
     def macro_end(self):
+        self.recording_macro = False
         self.XYZ_c.MAC_END()
         
-    def macro_start(self, name):
+    def macro_start(self, name, wait=True):
         self.XYZ_c.MAC_START(name)
+        if wait:
+            time.sleep(1)
+            while self.is_macro_running():
+                time.sleep(1)
     
     def macro_delete(self, name):
         self.XYZ_c.MAC_DEL(name)
+        
+    def is_macro_running(self):
+        return self.XYZ_c.is_macro_runnung()
+        
         
         
 class Motor_z_switcher():
