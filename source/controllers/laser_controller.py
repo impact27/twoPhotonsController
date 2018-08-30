@@ -29,7 +29,7 @@ from .stage_controller import E727_controller
         
 class laser_controller():
 
-    def __init__(self, cube):
+    def __init__(self):
         self.cube = E727_controller()
         self.cube.stageConnected.connect(self.reconnect)
         self._V = 0
