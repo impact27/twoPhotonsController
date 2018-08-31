@@ -1,3 +1,4 @@
+focusint 0.5
 laser power 0
 laser ON
 piezoreset

@@ -25,8 +25,8 @@ from PyQt5 import QtCore
 from functools import partial
 import clr
 
-#from . import HW_conf
-import HW_conf
+from . import HW_conf
+#import HW_conf
 
 import sys
 from System import Decimal
@@ -186,29 +186,59 @@ class E727_controller(QtCore.QObject):
     """Singleton to connect stage"""
     stageConnected = QtCore.pyqtSignal()
     E727 = None
+    IsConnecting = False
+    mutex = QtCore.QMutex()
     def __init__(self):
         super().__init__()
+        self.thread = E727_thread(self.set_stage)
+        self.connect()
     
     def __getattr__(self, name):
-        if self.E727 is None:
+        if E727_controller.E727 is None:
             raise RuntimeError("E727 not connected")
         else:
-            return getattr(self.E727, name)
+            return getattr(E727_controller.E727, name)
     
     def IsConnected(self):
-        return self.E727 is not None
+        QtCore.QMutexLocker(E727_controller.mutex)
+        return E727_controller.E727 is not None
     
     def set_stage(self, stage):
-        if stage == self.E727:
+        QtCore.QMutexLocker(E727_controller.mutex)
+        if stage == E727_controller.E727:
             return 
-        
-        if self.E727 is not None:
-            self.E727.CloseConnection()
-            self.E727 = None
+        if stage is None:
+            self.disconnect()
             
-        self.E727 = stage
-        if self.E727 is not None:
+        E727_controller.E727 = stage
+        E727_controller.IsConnecting = False
+        if E727_controller.E727 is not None:
             self.stageConnected.emit()
+            
+    def connect(self):
+        QtCore.QMutexLocker(E727_controller.mutex)
+        if E727_controller.E727 is None and not E727_controller.IsConnecting:
+            E727_controller.IsConnecting = True
+            self.thread.start()
+            
+    def disconnect(self):
+        QtCore.QMutexLocker(E727_controller.mutex)
+        if E727_controller.E727 is not None:
+            E727_controller.E727.CloseConnection()
+            E727_controller.E727 = None
+        
+            
+class E727_thread(QtCore.QThread):
+    def __init__(self, callback):
+        super().__init__()
+        self.callback = callback
+
+    def run(self):
+        stage = GCSDevice(HW_conf.GCS_cube_controller_name)
+        stage.ConnectUSB(HW_conf.cubeName)
+        time.sleep(2)
+        print('Connected', stage.qIDN())
+        self.callback(stage)
 
 class Cube_controller(stage_controller):
     # Reverse y and z
@@ -216,28 +246,35 @@ class Cube_controller(stage_controller):
     
     def __init__(self):
         super().__init__()
-        self.cube = E727_controller()
-        self.thread = cubethread(HW_conf.cubeName, self.cube.set_stage)
+        self.__cube = E727_controller()
         self.error = pipython.gcserror.GCSError
         self.internal_offset = np.asarray([50, 50, 50])
-        self.cube.stageConnected.connect(lambda: self.stageConnected.emit())
+        self.__cube.stageConnected.connect(self.onStageConnect)
 
     def connect(self):
-        self.cube.set_stage(None)
-        self.thread.start()
+        self.__cube.connect()
+        
+    def onStageConnect(self):
+        if self.__cube.qCST()['1'] != HW_conf.GCS_cube_stage_name:
+            print(self.__cube.qCST()['1'])
+            raise RuntimeError("Incorrect stage connected")
+        
+        self.__cube.SVO([1, 2, 3], [True, True, True])
+        self.__cube.ATZ([1, 2, 3], [0, 0, 0])    
+        self.stageConnected.emit()
 
     def __del__(self):
-        self.cube.set_stage(None)
+        self.__cube.disconnect()
 
     def MOVVEL(self, X, V):
         X = X + self.internal_offset
         # Reverse y and z
         X[1:] = 100 - X[1:]
-        self.cube.VEL([1, 2, 3], list(np.abs(V)))
-        self.cube.MOV([1, 2, 3], list(X))
+        self.__cube.VEL([1, 2, 3], list(np.abs(V)))
+        self.__cube.MOV([1, 2, 3], list(X))
 
     def get_position(self):
-        X = np.asarray(list(self.cube.qPOS([1, 2, 3]).values()), dtype=float)
+        X = np.asarray(list(self.__cube.qPOS([1, 2, 3]).values()), dtype=float)
         # Reverse y and z
         X[1:] = 100 - X[1:]
         
@@ -246,18 +283,18 @@ class Cube_controller(stage_controller):
 
     def stop(self):
         try:
-            self.cube.HLT()
+            self.__cube.HLT()
         except BaseException:
             pass
 
     def ESTOP(self):
         try:
-            self.cube.HLT()
+            self.__cube.HLT()
         except BaseException:
             pass
 
     def is_onTarget(self):
-        return np.all(np.array(self.cube.qONT([1, 2, 3]).values()))
+        return np.all(np.array(self.__cube.qONT([1, 2, 3]).values()))
 
     def get_pos_range(self, axis):
         return np.array([-50., 50.])
@@ -266,48 +303,32 @@ class Cube_controller(stage_controller):
         return np.array([0., 4000.])
 
     def is_ready(self):
-        if not self.cube.IsConnected():
+        if not self.__cube.IsConnected():
             return False
-        return self.cube.IsControllerReady()
+        return self.__cube.IsControllerReady()
     
     def MAC_BEG(self, name):
-        self.cube.MAC_BEG(name)
+        self.__cube.MAC_BEG(name)
         
     def MAC_END(self):
-        self.cube.MAC_END()
+        self.__cube.MAC_END()
         
     def MAC_START(self, name):
-        self.cube.MAC_START(name)
+        self.__cube.MAC_START(name)
     
     def MAC_DEL(self, name):
-        self.cube.MAC_DEL(name)
+        self.__cube.MAC_DEL(name)
         
     def is_macro_running(self):
-        return self.cube.qRMC() != '\n'
+        return self.__cube.qRMC() != '\n'
     
     def macro_wait(self):
-        self.cube.send("WAC ONT? 1 = 1")
-        self.cube.send("WAC ONT? 2 = 1")
-        self.cube.send("WAC ONT? 3 = 1")
+        self.__cube.send("WAC ONT? 1 = 1")
+        self.__cube.send("WAC ONT? 2 = 1")
+        self.__cube.send("WAC ONT? 3 = 1")
 
 
-class cubethread(QtCore.QThread):
-    def __init__(self, StageName, callback):
-        super().__init__()
-        self.StageName = StageName
-        self.callback = callback
 
-    def run(self):
-        stage = GCSDevice(HW_conf.GCS_cube_controller_name)
-        stage.ConnectUSB(self.StageName)
-        time.sleep(1)
-        if stage.qCST()['1'] != HW_conf.GCS_cube_stage_name:
-            print(stage.qCST()['1'])
-            raise RuntimeError("Incorrect stage connected")
-        print('Connected', stage.qIDN())
-        stage.SVO([1, 2, 3], [True, True, True])
-        stage.ATZ([1, 2, 3], [0, 0, 0])
-        self.callback(stage)
 
 # =============================================================================
 # Z Controller
@@ -500,3 +521,10 @@ def getPIListDevices():
 
 if __name__ == "__main__":
     print(getPIListDevices())
+    #%%
+    cc = Cube_controller()
+    cc.connect()
+    import time
+    time.sleep(5)
+    #%%
+    cc.MAC_BEG('test')

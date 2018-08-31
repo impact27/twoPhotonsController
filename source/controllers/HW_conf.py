@@ -10,7 +10,7 @@ GCS_lin_stage_name = 'M-404.2DG'
 
 cubeName = 'PI E-727 Controller SN 0118041546'
 GCS_cube_controller_name = 'E-727'
-GCS_cube_stage_name = '0'
+GCS_cube_stage_name = 'P-611.3S'
 
 kinesis_cube_serial = '27502020'
 

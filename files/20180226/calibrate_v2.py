@@ -11,7 +11,7 @@ powers = np.exp(np.linspace(np.log(1.95), np.log(4), 21))  # V
 write_power = 468
 speeds = np.array([50, 100, 200, 400, 800])  # umps
 z_offsets = np.arange(0, 5.1, .5)  # um
-fn = '20180226_slopes.txt'
+fn = '20180326_slopes_olli.txt'
 
 off_speed = 1000
 
@@ -23,14 +23,14 @@ text_height = 100
 
 def write_lines_piezo(lines, yPos, z_from, z_to, off_speed, power, length, speed):
     lines.append("piezo X{x:.3f} Y{y:.3f} Z{z:.3f} F{f:d}".format(
-        x=-50,
+        x=-45,
         y=yPos - 50,
         z=z_from,
         f=off_speed))
 
     lines.append("laser power {:f}".format(power))
     lines.append("piezo X{x:.3f} Y{y:.3f} Z{z:.3f} F{f:d}".format(
-        x=length - 50,
+        x=length - 55,
         y=yPos - 50,
         z=z_to,
         f=speed))
@@ -57,8 +57,8 @@ def calibrate(lines, powers, speeds, z_offsets, off_speed, motor_step, motor_ori
         
         
         for ypos, power in enumerate(powers):
-            length = 100
-            ypos = ypos * 100 / (len(powers) - 1)
+            length = 90
+            ypos = ypos * 90 / (len(powers) - 1)
             
             write_lines_piezo(lines, ypos, 0, -3, off_speed, power,
                                    length, speed)

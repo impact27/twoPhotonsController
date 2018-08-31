@@ -497,20 +497,11 @@ laser power 0
 motor X250.00 Y-200.00 Z20.00 F1000
 focus motor 0 -41 -1
 laser power 0.000000
-motor X250.00 Y-100.00 F1000
+motor X250.00 Y-200.00 F1000
 laser power 4.000000
-motor X300.00 Y-100.00 F50
-motor X250.00 Y-200.00 F50
 motor X300.00 Y-200.00 F50
-laser power 0
-motor X325.00 Y-200.00 Z20.00 F1000
-focus motor 0 -41 -1
-laser power 0.000000
-motor X325.00 Y-200.00 F1000
-laser power 4.000000
-motor X375.00 Y-200.00 F50
-motor X375.00 Y-100.00 F50
-motor X325.00 Y-100.00 F50
-motor X325.00 Y-200.00 F50
+motor X300.00 Y-100.00 F50
+motor X250.00 Y-100.00 F50
+motor X250.00 Y-200.00 F50
 laser power 0
 laser power 0

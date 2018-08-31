@@ -21,7 +21,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import numpy as np
 
 
-class laser_controller():
+class Laser_controller():
     def __init__(self):
         self.range = np.array([0, 10])
         self.intensity = 0

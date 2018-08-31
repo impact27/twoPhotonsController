@@ -22,9 +22,9 @@ import sys
 from PyQt5 import QtCore
 
 if sys.platform == "darwin":
-    from controllers.laser_controller_placeholder import laser_controller
+    from controllers.laser_controller_placeholder import Laser_controller
 else:
-    from controllers.laser_controller import laser_controller
+    from controllers.laser_controller import Laser_controller
 
 
 class laser_delegate(QtCore.QObject):
@@ -35,8 +35,8 @@ class laser_delegate(QtCore.QObject):
     def __init__(self):
         super().__init__()
         self.mutex = QtCore.QMutex()
-        self.controller = laser_controller()
-        self.I = self.controller.get_intensity()
+        self.controller = Laser_controller()
+        self.I = 0
         self.state = self.controller.get_state()
 
     def reconnect(self):
