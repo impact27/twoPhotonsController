@@ -29,7 +29,7 @@ import sys
 import time
 import json
 
-from .coordinates_solver import XmtoXs, XstoXm
+from delegates.coordinates_solver import XmtoXs, XstoXm
 
 #If I am on my mac, the stages are not connected
 _TEST_ = False
@@ -66,8 +66,6 @@ class movement_delegate(QtCore.QObject):
         self._motor = Motor(self._checklock)
         
         self.motor_z_switcher = Motor_z_switcher(self._motor, self._piezo)
-
-        self.error = self.parent.error
 
         self.coordinatesCorrected = self.motor.coordinatesCorrected
         
@@ -611,6 +609,16 @@ class Piezo(Stage):
         
     def is_macro_running(self):
         return self.XYZ_c.is_macro_runnung()
+        
+    def new_waveform(self, rate, Npoints, X):
+        assert X.shape == (Npoints, 3)
+        
+        # Get stage coordinates
+        X = self.XmtoXs(X)
+        
+        self.XYZ_c.run_wave(rate, X)
+        
+        
         
         
         

@@ -328,7 +328,36 @@ class Cube_controller(stage_controller):
         self.__cube.send("WAC ONT? 3 = 1")
 
 
-
+    def run_wave(self, rate, X):
+        # Reverse y and z
+        X[:, 1:] = 100 - X[:, 1:]
+        
+        #Set rate
+        self.__cube.send(f"WTR 0 {rate} 1")
+        
+        #Send data
+        for i in range(3):
+            self.__cube.send(f"WAV {i+1} X PNT 1 {X.shape[0]} " + 
+                             " ".join(str(e) for e in X[:, i]))
+        
+        #Connect to wave generator
+        self.__cube.send("WSL 1 1 2 2 3 3")
+        
+        # limit to 1 scan
+        self.__cube.send('WGC 1 1 2 1 3 1')
+        
+        # GO
+        self.__cube.send('WGO 1 0x101 2 0x101 3 0x101')
+        
+        #wait
+        time.sleep(50e-6 * rate * X.shape[0])
+        while(self.__cube.IsGeneratorRunning()):
+            time.sleep(0.1)
+            
+        # Clear tables
+        self.__cube.send("WCL 1 2 3")
+        
+        
 
 # =============================================================================
 # Z Controller
