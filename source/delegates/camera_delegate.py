@@ -19,8 +19,7 @@ class camera_delegate(QtCore.QObject):
     state_auto_exposure_time = QtCore.pyqtSignal(bool)
     ext_shutterState = QtCore.pyqtSignal(bool)
     new_roi = QtCore.pyqtSignal()
-      
-    
+
     def __init__(self):
         super().__init__()
         self.mutex = QtCore.QMutex()
@@ -28,7 +27,7 @@ class camera_delegate(QtCore.QObject):
         self.isAuto = False
         self.reset_bg()
         self.roi0 = self.controller.roi
-        
+
     def set_relative_roi(self, roi):
         QtCore.QMutexLocker(self.mutex)
         roi = np.array(roi)
@@ -36,7 +35,7 @@ class camera_delegate(QtCore.QObject):
         roi[:2] += cur_roi[:2]
         self.controller.roi = roi
         self.new_roi.emit()
-        
+
     def reset_roi(self):
         QtCore.QMutexLocker(self.mutex)
         self.controller.roi = self.roi0

@@ -31,11 +31,11 @@ import json
 
 from delegates.coordinates_solver import XmtoXs, XstoXm
 
-#If I am on my mac, the stages are not connected
+# If I am on my mac, the stages are not connected
 _TEST_ = False
 if sys.platform == "darwin":
     _TEST_ = True
-    
+
 if _TEST_:
     from controllers.stage_controller_placeholder import (Linear_controller,
                                                           Cube_controller,
@@ -64,12 +64,12 @@ class movement_delegate(QtCore.QObject):
 
         self._piezo = Piezo(self._checklock)
         self._motor = Motor(self._checklock)
-        
+
         self.motor_z_switcher = Motor_z_switcher(self._motor, self._piezo)
 
         self.coordinatesCorrected = self.motor.coordinatesCorrected
-        
-    #Normal things
+
+    # Normal things
     @property
     def piezo(self):
         return self._piezo
@@ -135,15 +135,15 @@ class movement_delegate(QtCore.QObject):
 
         return self.motor.is_ready() and self.piezo.is_ready()
 
-    #==========================================================================
+    # ==========================================================================
     #     Corrections
-    #==========================================================================
+    # ==========================================================================
 
-    def save_corrections(self, fn = 'corrections.txt'):
+    def save_corrections(self, fn='corrections.txt'):
         """Saves the corrections"""
         QtCore.QMutexLocker(self.mutex)
         mydict = {'motor': self.motor.corrections,
-                      'piezo': self.piezo.corrections}
+                  'piezo': self.piezo.corrections}
 
         def ndtolist(array):
             if isinstance(array, np.ndarray):
@@ -152,10 +152,10 @@ class movement_delegate(QtCore.QObject):
         with open(fn, 'w') as f:
             json.dump(mydict, f, indent=4, default=ndtolist)
 
-    def load_corrections(self, fn = 'corrections.txt'):
+    def load_corrections(self, fn='corrections.txt'):
         """Loads the corrections"""
         QtCore.QMutexLocker(self.mutex)
-        
+
         try:
             with open(fn, 'r') as f:
                 corrections = json.load(f)
@@ -182,8 +182,8 @@ class Stage(QtCore.QObject):
         self._ndim = 3
         self._corrections = {}
         self.reset_corrections()
-        
-    #Positions
+
+    # Positions
 
     def get_position(self, raw=False):
         """Returns the (raw?) position"""
@@ -198,7 +198,7 @@ class Stage(QtCore.QObject):
     def goto_position(self, XTo, speed=np.nan, *, wait=False, checkid=None,
                       useLastPos=False, isRaw=False):
         """Moves to the position
-        
+
         Parameters:
         ----------
             Xm:
@@ -214,7 +214,7 @@ class Stage(QtCore.QObject):
                 (Might be useless)
             isRaw:
                 Is Xm raw or corrected?
-                
+
         Note:
             Any value of Xm set to nan will not be moved
         """
@@ -223,17 +223,17 @@ class Stage(QtCore.QObject):
         # Check lock
         if not self._checklock(checkid):
             return
-            
+
         # get starting point
         XsFrom = None
         if useLastPos:
             XsFrom = self._lastXs
         else:
             XsFrom = self._XSPOS()
-            
+
         XsTo, XmTo, Vs, travel_time = self.move_parameters(
-                XTo, XsFrom, speed, isRaw)
-        
+            XTo, XsFrom, speed, isRaw)
+
         self._lastXs = XsTo
 
         # Don't move if final = now
@@ -249,12 +249,12 @@ class Stage(QtCore.QObject):
             self.wait_end_motion(travel_time, 10)
 
     def move_parameters(self, XTo, XsFrom, speed, isRaw):
-        """Get parameters needed to move the stages"""   
+        """Get parameters needed to move the stages"""
         # Choose speed
         if np.isnan(speed):
             speed = self._speed
-            
-        XTo = np.asarray(XTo)    
+
+        XTo = np.asarray(XTo)
         # points to replace
         toreplace = np.isnan(XTo)
         # Get final point
@@ -267,21 +267,20 @@ class Stage(QtCore.QObject):
             if np.any(toreplace):
                 XmTo[toreplace] = self.XstoXm(XsFrom)[toreplace]
             XsTo = self.XmtoXs(XmTo)
-            
+
         # Get correct speed for each axis
         Xdist = (XsTo - XsFrom)
         travel_time = np.linalg.norm(Xdist) / speed
         Vs = np.abs(Xdist / travel_time)
-        
+
         return XsTo, XmTo, Vs, travel_time
-            
-        
+
     position = property(get_position, goto_position)
 
     def wait_end_motion(self, travel_time, timeout=None):
         """Wait hte ned of motion"""
         QtCore.QMutexLocker(self.mutex)
-        
+
         time.sleep(travel_time)
         tstart = time.time()
         while not self.is_onTarget():
@@ -364,7 +363,7 @@ class Stage(QtCore.QObject):
     def set_correction_key(self, key, value):
         self._corrections[key] = value
         self.coordinatesCorrected.emit(self._corrections)
-        
+
     def reset_corrections(self):
         self.corrections = {
             "offset": np.zeros(3, float),
@@ -394,10 +393,10 @@ class Stage(QtCore.QObject):
     def set_Z_zero(self):
 
         QtCore.QMutexLocker(self.mutex)
-        
+
         actualZ = self.position[2]
         offset = np.asarray(self.corrections["offset"], float)
-        
+
         offset[2] += actualZ
         self.corrections["offset"] = offset
         self.coordinatesCorrected.emit(self.corrections)
@@ -436,10 +435,9 @@ class Stage(QtCore.QObject):
         pass
 
 
-
-    
 class Motor(Stage):
     """Motor stage"""
+
     def __init__(self, checklock):
         super().__init__(1000, checklock)
         self.mutex = QtCore.QMutex()
@@ -457,7 +455,7 @@ class Motor(Stage):
         return X
 
     def _MOVVEL(self, Xs, V):
-        
+
         QtCore.QMutexLocker(self.mutex)
 
         self.XY_c.MOVVEL(Xs[:2], V[:2])
@@ -516,13 +514,14 @@ class Motor(Stage):
 
 class Piezo(Stage):
     """Piezo stage"""
+
     def __init__(self, checklock):
         super().__init__(1000, checklock)
         self.mutex = QtCore.QMutex()
         self.XYZ_c = Cube_controller()
         self.XYZ_c.stageConnected.connect(self.reset)
         self.XYZ_c.connect()
-        
+
         self.recording_macro = False
 
     def reset(self, checkid=None, wait=False):
@@ -588,60 +587,57 @@ class Piezo(Stage):
         QtCore.QMutexLocker(self.mutex)
 
         self.XYZ_c.reconnect()
-        
+
     def macro_begin(self, name):
         self.recording_macro = True
         self.XYZ_c.MAC_BEG(name)
-        
+
     def macro_end(self):
         self.recording_macro = False
         self.XYZ_c.MAC_END()
-        
+
     def macro_start(self, name, wait=True):
         self.XYZ_c.MAC_START(name)
         if wait:
             time.sleep(1)
             while self.is_macro_running():
                 time.sleep(1)
-    
+
     def macro_delete(self, name):
         self.XYZ_c.MAC_DEL(name)
-        
+
     def is_macro_running(self):
-        return self.XYZ_c.is_macro_runnung()
-        
-    def new_waveform(self, rate, Npoints, X):
-        assert X.shape == (Npoints, 3)
-        
+        return self.XYZ_c.is_macro_running()
+
+    def run_waveform(self, time_step, X):
+
         # Get stage coordinates
-        X = self.XmtoXs(X)
-        
-        self.XYZ_c.run_wave(rate, X)
-        
-        
-        
-        
-        
+        X[:, :3] = self.XmtoXs(X[:, :3])
+
+        self.XYZ_c.run_waveform(time_step, X)
+
+
 class Motor_z_switcher():
     """Thus class is tasked with changing the z controller of the motor stage.
     This is slightly ugly so don't look too closely.
-    
+
     It will basically mix motor and piezo.
     """
+
     def __init__(self, motor, piezo):
         super().__init__()
         self.motor = motor
         self.piezo = piezo
         self.piezo_z_controller = Piezo_z(piezo)
         self.motor_z_controller = motor.Z_c
-        
-    #Change Z slice
+
+    # Change Z slice
     def moved_z_controller(self, Zs):
         motor_pos = self.motor.get_position(raw=True)
         motor_pos[2] = Zs
         self.motor.move_signal.emit(list(self.motor.XstoXm(motor_pos)),
                                     self.motor._speed)
-        
+
     def switch(self, piezo):
         if piezo:
             self.motor.wait_end_motion()
@@ -651,49 +647,50 @@ class Motor_z_switcher():
         else:
             self.motor.Z_c = self.motor_z_controller
 #            self.piezo_z_controller.move_signal.disconnect(self.moved_z_controller)
-            
+
         self.motor.coordinatesCorrected.emit(self.motor._corrections)
-        
+
+
 class Piezo_z(stage_controller):
     """Singled out z direction to mix with the motor stage (see Motor_z_switcher)"""
     move_signal = QtCore.pyqtSignal(float)
-    
+
     def __init__(self, piezo_controller):
         super().__init__()
         self.piezo = piezo_controller
         self.offset = 0
         piezo_controller.move_signal.connect(self.piezo_moved)
-        
+
     def set_offset(self, offset):
         self.offset = offset
-        
+
     def piezo_moved(self, Xm, V):
         self.move_signal.emit(self.offset + self.piezo.XmtoXs(Xm)[2])
-    
+
     def get_position(self):
         return self.offset + self.piezo.XYZ_c.get_position()[2]
-    
+
     def MOVVEL(self, Xs, V):
         piezo_pos = self.piezo.get_position(raw=True)
         piezo_pos[2] = Xs[0] - self.offset
         self.piezo.XYZ_c.MOVVEL(piezo_pos.copy(), [0, 0, V[0]])
         self.piezo.move_signal.emit(list(self.piezo.XstoXm(piezo_pos)), V)
-    
+
     def get_pos_range(self, axis):
         return self.piezo.XYZ_c.get_pos_range(2) + self.offset
-    
+
     def get_vel_range(self, axis):
         return self.piezo.XYZ_c.get_vel_range(2)
-    
+
     def is_onTarget(self,):
         return self.piezo.XYZ_c.is_onTarget()
-    
+
     def stop(self,):
         self.piezo.XYZ_c.stop()
-        
+
     def ESTOP(self,):
         self.piezo.XYZ_c.ESTOP()
-        
+
     def is_ready(self,):
         return self.piezo.XYZ_c.is_ready()
 

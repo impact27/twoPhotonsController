@@ -16,4 +16,4 @@ kinesis_cube_serial = '27502020'
 
 pixeLINK_SN = 729002025
 
-HW_param_ID =  0xd000200
+HW_param_ID = 0xd000200

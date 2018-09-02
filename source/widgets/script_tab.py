@@ -15,18 +15,18 @@ class Script_tab(QtWidgets.QWidget):
 
         self.sd = application_delegate.script_delegate
 
-        #======================================================================
+        # ======================================================================
         #       Create Widgets
-        #======================================================================
+        # ======================================================================
         script_label = QtWidgets.QLabel("Script")
         path_field = QtWidgets.QLineEdit()
         browse_button = QtWidgets.QPushButton('Browse')
         run_button = QtWidgets.QPushButton('Run')
         draw_button = QtWidgets.QPushButton('Draw')
 
-        #======================================================================
+        # ======================================================================
         #     Layout
-        #======================================================================
+        # ======================================================================
 
         main_layout = QtWidgets.QVBoxLayout()
         main_layout.addWidget(script_label)
@@ -41,16 +41,16 @@ class Script_tab(QtWidgets.QWidget):
 #        main_layout.addStretch()
         self.setLayout(main_layout)
 
-        #======================================================================
+        # ======================================================================
         #      Connections
-        #======================================================================
+        # ======================================================================
         browse_button.clicked.connect(self.browse_file)
         run_button.clicked.connect(lambda: self.sd.execute(path_field.text()))
         draw_button.clicked.connect(lambda: self.sd.draw(path_field.text()))
 
-        #======================================================================
+        # ======================================================================
         #         Save variables
-        #======================================================================
+        # ======================================================================
 
         self.path_field = path_field
 

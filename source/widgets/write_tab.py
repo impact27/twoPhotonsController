@@ -11,9 +11,9 @@ import numpy as np
 class Write_tab(QtWidgets.QWidget):
     def __init__(self, application_delegate, *args, **kwargs):
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
-        #======================================================================
+        # ======================================================================
         #       Create Widgets
-        #======================================================================
+        # ======================================================================
 
         gcode_label = QtWidgets.QLabel("GCode:")
         path_field = QtWidgets.QLineEdit()
@@ -49,9 +49,9 @@ class Write_tab(QtWidgets.QWidget):
 #        dx_input.setValidator(QtGui.QDoubleValidator(-1e6, 1e6, 3))
 #        dy_input.setValidator(QtGui.QDoubleValidator(-1e6, 1e6, 3))
 
-        #======================================================================
+        # ======================================================================
         #     Layout
-        #======================================================================
+        # ======================================================================
 
         settings_layout = QtWidgets.QGridLayout()
         settings_layout.addWidget(origin_label, 0, 0)
@@ -86,9 +86,9 @@ class Write_tab(QtWidgets.QWidget):
 #        main_layout.addStretch()
         self.setLayout(main_layout)
 
-        #======================================================================
+        # ======================================================================
         #      Connections
-        #======================================================================
+        # ======================================================================
 
         def write_infos():
             settings = {}
@@ -116,9 +116,9 @@ class Write_tab(QtWidgets.QWidget):
 #        application_delegate.newXRange.connect(X_validator.setRange)
 #        application_delegate.newYRange.connect(Y_validator.setRange)
 
-        #======================================================================
+        # ======================================================================
         #         Save variables
-        #======================================================================
+        # ======================================================================
 
         self.path_field = path_field
 

@@ -8,10 +8,9 @@ import tifffile
 import numpy as np
 import re
 import matplotlib
-import sys
 cmap = matplotlib.cm.get_cmap('viridis')
 from PyQt5 import QtCore
-from matplotlib import collections  as mc
+from matplotlib import collections as mc
 
 
 class Script_delegate():
@@ -50,7 +49,6 @@ class Parse_thread(QtCore.QThread):
         self._filename = filename
 
     def run(self):
-        #        self._parser.parse(self._filename)
         try:
             self._parser.parse(self._filename)
         except BaseException as e:
@@ -73,7 +71,7 @@ class Parser():
                 if fun is None:
                     break
                 try:
-                    fun(args)
+                    fun(*args)
                 except BaseException:
                     print('')
                     print("Error while parsing line:")
@@ -90,7 +88,7 @@ class Parser():
         line = line.split(' ')
         command = line[0]
         args = line[1:]
-        if command.lower() in ['laser', 'focus', 'camera', 'focusint']:
+        if command.lower() in ['laser', 'focus', 'camera', 'focusint', 'begin']:
             pass
         elif command.lower() in ['piezoslope', 'piezoreset']:
             args = tuple()
@@ -98,14 +96,14 @@ class Parser():
             args = self.read_move_args(args)
         else:
             raise RuntimeError(f"Unknown command {command}")
-        
+
         fun = getattr(self, command)
         return fun, args
 
     def focusint(self, args):
         pass
 
-    def laser(self, args):
+    def laser(self, *args):
         if len(args) == 0:
             print("No args for laser")
         if args[0].lower() == "on":
@@ -116,22 +114,23 @@ class Parser():
             self.laser_power(float(args[1]))
 
     def read_move_args(self, args):
-        pos_re = '([XYZF])([-\.\d]+)'
+
+        args_dic = self.single_letter_arg(*args)
+
         pos = np.ones(3) * np.nan
         speed = np.nan
         intensity = np.nan
-        for arg in args:
-            for found in re.findall(pos_re, arg):
-                if found[0] == 'X':
-                    pos[0] = float(found[1])
-                elif found[0] == 'Y':
-                    pos[1] = float(found[1])
-                elif found[0] == 'Z':
-                    pos[2] = float(found[1])
-                elif found[0] == 'F':
-                    speed = float(found[1])
-                elif found[0] == 'E':
-                    intensity = float(found[1])
+
+        if 'X' in args_dic:
+            pos[0] = args_dic['X']
+        if 'Y' in args_dic:
+            pos[1] = args_dic['Y']
+        if 'Z' in args_dic:
+            pos[2] = args_dic['Z']
+        if 'E' in args_dic:
+            speed = args_dic['E']
+        if 'F' in args_dic:
+            intensity = args_dic['F']
         return pos, speed, intensity
 
     def camera(self, args):
@@ -167,8 +166,43 @@ class Parser():
 
     def piezoslope(self):
         pass
-    
+
     def piezoreset(self):
+        pass
+
+    def single_letter_arg(self, *args):
+        ret = {}
+        pos_re = '([A-Z])([-\.\d]+)'
+        for arg in args:
+            for found in re.findall(pos_re, arg):
+                ret[found[0]] = float(found[1])
+        return ret
+
+    def BEGIN(self, *args):
+        assert args[0].lower() == 'waveform'
+
+        args_dic = self.single_letter_arg(*args[1:])
+
+        time_step = args_dic['R']
+        Npos = args_dic['N']
+        line = self.file.readline()
+        data = {}
+        while line != 'END\n' and line != '':
+            line = line.split(' ')
+            data[line[0]] = np.asarray(line[1:], float)
+            line = self.file.readline()
+        if line != 'END\n':
+            raise RuntimeError('Can\'t find end')
+        if 'E' in data:
+            indices = ['X', 'Y', 'Z', 'E']
+        else:
+            indices = ['X', 'Y', 'Z']
+        X = np.asarray([data[idx] for idx in indices])
+
+        assert np.shape(X)[1] == Npos
+        self.run_waveform(time_step, X)
+
+    def run_waveform(self, time_step, X):
         pass
 
 
@@ -183,14 +217,14 @@ class Execute_Parser(Parser):
         self.focus_delegate = app_delegate.focus_delegate
         self.coordinates_delegate = app_delegate.coordinates_delegate
         self.lockid = None
-        
+
         self.recording_macro = False
-    
+
     def start_macro(self):
         if not self.recording_macro:
             self.recording_macro = True
             self.piezo_delegate.macro_begin('nextsteps')
-        
+
     def end_macro(self):
         if not self.recording_macro:
             return
@@ -246,7 +280,7 @@ class Execute_Parser(Parser):
                                       checkid=self.lockid)
         elif stage.lower() == 'both':
             self.focus_delegate.focus(start_offset=start_offset,
-                                      stop_offset=stop_offset, 
+                                      stop_offset=stop_offset,
                                       step=step,
                                       stage=self.md.motor,
                                       Nloops=1, wait=True,
@@ -267,12 +301,12 @@ class Execute_Parser(Parser):
         """no"""
         self.end_macro()
         self.coordinates_delegate.piezo_plane(checkid=self.lockid, wait=True)
-        
+
     def piezoreset(self):
         """no"""
         self.end_macro()
         self.piezo_delegate.reset(checkid=self.lockid, wait=True)
-        
+
     def focusint(self, args):
         """no"""
         self.end_macro()
@@ -292,8 +326,8 @@ class Execute_Parser(Parser):
         if not np.isnan(intensity):
             self.laser_power(intensity)
         self.piezo_delegate.goto_position(
-                pos, speed=speed, wait=True,
-                checkid=self.lockid, useLastPos=True)
+            pos, speed=speed, wait=True,
+            checkid=self.lockid, useLastPos=True)
 
     def laser_state(self, state):
         '''yes'''
@@ -309,14 +343,18 @@ class Execute_Parser(Parser):
             self.camera_delegate.extShutter(False)
         self.laser_delegate.set_intensity(power)
 
+    def run_waveform(self, time_step, X):
+        self.start_macro()
+        self.piezo_delegate.run_waveform(time_step, X)
+
 
 class Draw_Parser(Parser):
     def __init__(self, canvas):
         super().__init__()
         self.canvas = canvas
         self.writing = False
-        self.motor_position = np.zeros(3) * np.nan
-        self.piezo_position = np.zeros(3) * np.nan
+        self.motor_position = np.zeros(3)
+        self.piezo_position = np.zeros(3)
         self.color = cmap(0)
         self.colors = []
         self.lines = []
@@ -339,7 +377,7 @@ class Draw_Parser(Parser):
     def plotto(self, pos):
         if self.writing:
             start = self.motor_position + self.piezo_position
-            
+
             self.lines.append([start[:2], pos[:2]])
             self.colors.append(self.color)
 
@@ -356,7 +394,6 @@ class Draw_Parser(Parser):
         motor_to = self.move(self.motor_position, pos)
         self.plotto(motor_to + self.piezo_position)
         self.motor_position = motor_to
-        
 
     def move(self, start_position, pos):
         pos[np.isnan(pos)] = start_position[np.isnan(pos)]
@@ -367,6 +404,14 @@ class Draw_Parser(Parser):
 
     def laser_power(self, power):
         self.color = cmap(power / 10)
-        
+
     def piezoreset(self):
         self.piezo_position = np.zeros(3)
+
+    def run_waveform(self, time_step, X):
+        for pos in X.T:
+            I = np.nan
+            if len(pos) > 3:
+                I = pos[3]
+                pos = pos[:3]
+            self.piezo(pos, 3000, I)

@@ -51,7 +51,7 @@ class coordinates_delegate(QtCore.QObject):
 
         if wait:
             self.plane_thread.wait()
-            
+
     def motor_plane(self, checkid=None, wait=False):
         if len(self._positions) < 3:
             return
@@ -62,7 +62,6 @@ class coordinates_delegate(QtCore.QObject):
         if checkid is not None:
             self.plane_thread.checkid = checkid
         self.plane_thread.start()
-        
 
     def ESTOP(self):
         self.plane_thread.terminate()
@@ -114,13 +113,13 @@ class coordinates_delegate(QtCore.QObject):
         fn = QtWidgets.QFileDialog.getSaveFileName(
             QtWidgets.QApplication.topLevelWidgets()[0], 'TXT file',
             QtCore.QDir.homePath(), "Text (*.txt)")[0]
-        
+
         if len(self._positions) == 0:
             return
-        
+
         if len(fn) == 0:
             return
-        
+
         ret = np.zeros((len(self._positions), 3)) * np.nan
         for i, pos in enumerate(self._positions):
             if pos['Xs'] is not None:
@@ -178,6 +177,7 @@ class coordinates_delegate(QtCore.QObject):
         # use saved info to correct coordinates
         self.updatelist.emit(self._positions)
 
+
 class plane_thread(QtCore.QThread):
 
     def __init__(self, application_delegate):
@@ -186,14 +186,13 @@ class plane_thread(QtCore.QThread):
         self._fd = application_delegate.focus_delegate
         self.laser_delegate = application_delegate.laser_delegate
         self.checkid = None
-        
-        
+
     def settings(self, *, stage, XYpos):
-        
+
         XYpos = np.asarray(XYpos)
         self._pos = np.zeros((len(XYpos), 3))
         self._pos[:, :2] = XYpos
-        
+
         self._stage = stage
 
     def run(self):
@@ -201,21 +200,21 @@ class plane_thread(QtCore.QThread):
             start = self._fd._settings["From"]
             stop = self._fd._settings["To"]
             step = self._fd._settings["Step"]
-            
+
             positions = np.zeros((len(self._pos), 3))
             for i, corner in enumerate(self._pos):
                 corner[2] = start
                 self._stage.goto_position(corner, speed=1000, wait=True,
-                                              checkid=self.checkid)
-                self._fd.focus(start_offset=0, 
+                                          checkid=self.checkid)
+                self._fd.focus(start_offset=0,
                                stop_offset=(stop - start),
                                step=step,
                                stage=self._stage,
                                wait=True, checkid=self.checkid,
                                change_coordinates=False)
-    
+
                 positions[i] = self._stage.get_position(raw=True)
-    
+
             corrections = self._stage.corrections
             offset, rotation_angles = solve_z(
                 positions, offset=corrections["offset"],

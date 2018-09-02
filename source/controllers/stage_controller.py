@@ -40,9 +40,9 @@ import Thorlabs.MotionControl.Controls
 from Thorlabs.MotionControl.DeviceManagerCLI import DeviceManagerCLI
 from Thorlabs.MotionControl.KCube.DCServoCLI import KCubeDCServo
 
-#==============================================================================
+# ==============================================================================
 # Stage controller
-#==============================================================================
+# ==============================================================================
 
 
 class stage_controller(QtCore.QObject):
@@ -77,9 +77,9 @@ class stage_controller(QtCore.QObject):
     def is_ready(self):
         pass
 
-#==============================================================================
+# ==============================================================================
 # Linear stages controller
-#==============================================================================
+# ==============================================================================
 
 
 class Linear_controller(stage_controller):
@@ -179,55 +179,58 @@ class linethread(QtCore.QThread):
             print("Reference move")
             stage.FRF(1)
         self.stage_callback(stage)
-#==============================================================================
+# ==============================================================================
 # Cube Controller
-#==============================================================================
+# ==============================================================================
+
+
 class E727_controller(QtCore.QObject):
     """Singleton to connect stage"""
     stageConnected = QtCore.pyqtSignal()
     E727 = None
     IsConnecting = False
     mutex = QtCore.QMutex()
+
     def __init__(self):
         super().__init__()
         self.thread = E727_thread(self.set_stage)
         self.connect()
-    
+
     def __getattr__(self, name):
         if E727_controller.E727 is None:
             raise RuntimeError("E727 not connected")
         else:
             return getattr(E727_controller.E727, name)
-    
+
     def IsConnected(self):
         QtCore.QMutexLocker(E727_controller.mutex)
         return E727_controller.E727 is not None
-    
+
     def set_stage(self, stage):
         QtCore.QMutexLocker(E727_controller.mutex)
         if stage == E727_controller.E727:
-            return 
+            return
         if stage is None:
             self.disconnect()
-            
+
         E727_controller.E727 = stage
         E727_controller.IsConnecting = False
         if E727_controller.E727 is not None:
             self.stageConnected.emit()
-            
+
     def connect(self):
         QtCore.QMutexLocker(E727_controller.mutex)
         if E727_controller.E727 is None and not E727_controller.IsConnecting:
             E727_controller.IsConnecting = True
             self.thread.start()
-            
+
     def disconnect(self):
         QtCore.QMutexLocker(E727_controller.mutex)
         if E727_controller.E727 is not None:
             E727_controller.E727.CloseConnection()
             E727_controller.E727 = None
-        
-            
+
+
 class E727_thread(QtCore.QThread):
     def __init__(self, callback):
         super().__init__()
@@ -240,27 +243,30 @@ class E727_thread(QtCore.QThread):
         print('Connected', stage.qIDN())
         self.callback(stage)
 
+
 class Cube_controller(stage_controller):
     # Reverse y and z
     stageConnected = QtCore.pyqtSignal()
-    
+
     def __init__(self):
         super().__init__()
         self.__cube = E727_controller()
         self.error = pipython.gcserror.GCSError
         self.internal_offset = np.asarray([50, 50, 50])
         self.__cube.stageConnected.connect(self.onStageConnect)
+        self.Servo_Update_Time = 50e-6  # s 0x0E000200
+        self.max_points = 250000  # 0x13000004
 
     def connect(self):
         self.__cube.connect()
-        
+
     def onStageConnect(self):
         if self.__cube.qCST()['1'] != HW_conf.GCS_cube_stage_name:
             print(self.__cube.qCST()['1'])
             raise RuntimeError("Incorrect stage connected")
-        
+
         self.__cube.SVO([1, 2, 3], [True, True, True])
-        self.__cube.ATZ([1, 2, 3], [0, 0, 0])    
+        self.__cube.ATZ([1, 2, 3], [0, 0, 0])
         self.stageConnected.emit()
 
     def __del__(self):
@@ -277,7 +283,7 @@ class Cube_controller(stage_controller):
         X = np.asarray(list(self.__cube.qPOS([1, 2, 3]).values()), dtype=float)
         # Reverse y and z
         X[1:] = 100 - X[1:]
-        
+
         X -= self.internal_offset
         return X
 
@@ -306,58 +312,62 @@ class Cube_controller(stage_controller):
         if not self.__cube.IsConnected():
             return False
         return self.__cube.IsControllerReady()
-    
+
     def MAC_BEG(self, name):
         self.__cube.MAC_BEG(name)
-        
+
     def MAC_END(self):
         self.__cube.MAC_END()
-        
+
     def MAC_START(self, name):
         self.__cube.MAC_START(name)
-    
+
     def MAC_DEL(self, name):
         self.__cube.MAC_DEL(name)
-        
+
     def is_macro_running(self):
         return self.__cube.qRMC() != '\n'
-    
+
     def macro_wait(self):
         self.__cube.send("WAC ONT? 1 = 1")
         self.__cube.send("WAC ONT? 2 = 1")
         self.__cube.send("WAC ONT? 3 = 1")
 
+    def run_waveform(self, time_step, X):
+        assert X.size < self.max_points
+        assert np.shape(X)[1] == 3 or np.shape(X)[1] == 4
 
-    def run_wave(self, rate, X):
+        rate = int(np.round(time_step / self.Servo_Update_Time))
         # Reverse y and z
-        X[:, 1:] = 100 - X[:, 1:]
-        
-        #Set rate
+        X[:, 1:3] = 100 - X[:, 1:3]
+
+        # Set rate
         self.__cube.send(f"WTR 0 {rate} 1")
-        
-        #Send data
-        for i in range(3):
-            self.__cube.send(f"WAV {i+1} X PNT 1 {X.shape[0]} " + 
+
+        # Send data
+        for i in range(np.shape(X)[1]):
+            self.__cube.send(f"WAV {i+1} X PNT 1 {X.shape[0]} " +
                              " ".join(str(e) for e in X[:, i]))
-        
-        #Connect to wave generator
-        self.__cube.send("WSL 1 1 2 2 3 3")
-        
+
+        idx = np.arange(np.shape(X)[1]) + 1
+
+        # Connect to wave generator
+        self.__cube.send("WSL " + " ".join(str(e) for e in np.repeat(idx, 2)))
+
         # limit to 1 scan
-        self.__cube.send('WGC 1 1 2 1 3 1')
-        
+        self.__cube.send('WGC ' + " ".join(str(e) + ' 1' for e in idx))
+
         # GO
-        self.__cube.send('WGO 1 0x101 2 0x101 3 0x101')
-        
-        #wait
+        self.__cube.send('WGO ' + " ".join(str(e) + ' 0x101' for e in idx))
+
+        # wait
         time.sleep(50e-6 * rate * X.shape[0])
         while(self.__cube.IsGeneratorRunning()):
             time.sleep(0.1)
-            
+
         # Clear tables
-        self.__cube.send("WCL 1 2 3")
-        
-        
+        self.__cube.send("WCL " + " ".join(str(e) for e in idx))
+
 
 # =============================================================================
 # Z Controller
@@ -490,9 +500,9 @@ class z_controller(stage_controller):
             raise RuntimeError("Stage is None")
         self._kCubeDCServoMotor = stage
         self._posmin = float(str(self._kCubeDCServoMotor.AdvancedMotorLimits
-                                .LengthMinimum)) * 1e3
+                                 .LengthMinimum)) * 1e3
         self._posmax = float(str(self._kCubeDCServoMotor.AdvancedMotorLimits
-                                .LengthMaximum)) * 1e3
+                                 .LengthMaximum)) * 1e3
 
 
 class Zthread(QtCore.QThread):
@@ -538,9 +548,9 @@ class Zthread(QtCore.QThread):
 
         self.stage_callback(kCubeDCServoMotor)
 
-#==============================================================================
+# ==============================================================================
 # Helper functions
-#==============================================================================
+# ==============================================================================
 
 
 def getPIListDevices():
@@ -550,10 +560,10 @@ def getPIListDevices():
 
 if __name__ == "__main__":
     print(getPIListDevices())
-    #%%
+    # %%
     cc = Cube_controller()
     cc.connect()
     import time
     time.sleep(5)
-    #%%
+    # %%
     cc.MAC_BEG('test')

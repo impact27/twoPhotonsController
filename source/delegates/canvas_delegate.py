@@ -52,25 +52,26 @@ class Canvas_delegate(QtCore.QObject):
             'button_release_event', self.set_roi)
         self._canvas.figure.canvas.mpl_connect(
             'motion_notify_event', self.set_roi)
-        
+
         self._click_pos = np.array([[np.nan, np.nan], [np.nan, np.nan]])
-        
+
         self.ROI_select = None
         self.rescale_factor = 2
         self.cd = parent.camera_delegate
+
         def new_roi():
             self.clear()
             self.show_frame()
         self.cd.new_roi.connect(new_roi)
-        
+
     def get_frame(self):
         frame = self._parent.camera_delegate.get_image()
-        frame = cv2.resize(frame, 
+        frame = cv2.resize(frame,
                            (frame.shape[1] // self.rescale_factor,
                             frame.shape[0] // self.rescale_factor),
                            interpolation=cv2.INTER_AREA)
         return frame
-    
+
     def show_frame(self, frame=None):
 
         QtCore.QMutexLocker(self.mutex)
@@ -86,7 +87,7 @@ class Canvas_delegate(QtCore.QObject):
                 frame, vmin=self._vmin, vmax=self._vmax, extent=extent)
         except BaseException:
             print("Can't show frame", sys.exc_info())
-            
+
     def update_image(self, im, *args, **kwargs):
 
         QtCore.QMutexLocker(self.mutex)
@@ -99,15 +100,15 @@ class Canvas_delegate(QtCore.QObject):
 
             if self._crosshandle is not None:
                 self._axes.draw_artist(self._crosshandle[0])
-                
+
             if self._recthandle is not None:
                 self._axes.draw_artist(self._recthandle[0])
 
             self._canvas.blit(self._axes.bbox)
         else:
             self.clear()
-            self.imshow(im, *args, **kwargs)  
-            
+            self.imshow(im, *args, **kwargs)
+
     def clear(self):
 
         QtCore.QMutexLocker(self.mutex)
@@ -118,14 +119,7 @@ class Canvas_delegate(QtCore.QObject):
         self._twinx = None
         self._canvas.figure.clear()
         self._axes = self._canvas.figure.add_subplot(111)
-        self._canvas.draw()        
-            
-            
-            
-            
-            
-            
-            
+        self._canvas.draw()
 
     def draw_current_position(self):
 
@@ -238,8 +232,6 @@ class Canvas_delegate(QtCore.QObject):
 
         self._canvas.draw()
 
-    
-
     def plot(self, X, Y, fmt='-', axis='normal',
              twinx=False, draw=True, **kwargs):
 
@@ -280,7 +272,7 @@ class Canvas_delegate(QtCore.QObject):
         # Are we displaying an image?
         if self._imhandle is None or event.ydata is None or event.xdata is None:
             return
-        
+
         if QtWidgets.QApplication.keyboardModifiers() != QtCore.Qt.ControlModifier:
             return
         # What button was that?
@@ -301,11 +293,11 @@ class Canvas_delegate(QtCore.QObject):
                 self._click_pos[:, 1], self._click_pos[:, 0], 'r-x')
         self.show_frame(self.get_last_im())
         self.newclick.emit(self._click_pos)
-        
+
     def set_roi(self, event):
         if (self._canvas.toolbar._active == "ZOOM" or self._canvas.toolbar._active == "PAN"):
             return
-        
+
         # Are we displaying an image?
         if self._imhandle is None or event.ydata is None or event.xdata is None:
             return
@@ -313,13 +305,13 @@ class Canvas_delegate(QtCore.QObject):
             return
         p0 = self.ROI_select
         p1 = [event.ydata, event.xdata]
-        
+
         if event.name == 'button_press_event':
             self.ROI_select = p1
-        
+
         if p0 is None:
             return
-        
+
         if event.name == 'motion_notify_event':
             if self._recthandle is not None:
                 self._recthandle[0].set_data(
@@ -330,7 +322,7 @@ class Canvas_delegate(QtCore.QObject):
                     [p0[1], p1[1], p1[1], p0[1], p0[1]],
                     [p0[0], p0[0], p1[0], p1[0], p0[0]], 'r')
             self.show_frame(self.get_last_im())
-            
+
         elif event.name == 'button_release_event':
             self._recthandle = None
             self.ROI_select = None
@@ -344,7 +336,7 @@ class Canvas_delegate(QtCore.QObject):
             roi = np.round(roi)
             roi = np.array(roi, int)
             self.cd.set_relative_roi((*roi,))
-            
+
     def clear_click(self):
 
         QtCore.QMutexLocker(self.mutex)

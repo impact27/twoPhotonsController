@@ -19,9 +19,9 @@ class Canvas_widget(QtWidgets.QWidget):
 
     def __init__(self, application_delegate, *args, **kwargs):
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
-        #======================================================================
+        # ======================================================================
         #       Range
-        #======================================================================
+        # ======================================================================
         min_label = QtWidgets.QLabel("Min:")
         min_input = QtWidgets.QLineEdit('0')
         max_label = QtWidgets.QLabel("Max:")

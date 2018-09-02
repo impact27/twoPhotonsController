@@ -39,7 +39,7 @@ class Application_delegate(QtCore.QObject):
         super().__init__()
         self.camera_delegate = camera_delegate()
         self.laser_delegate = laser_delegate()
-        
+
         # Create delegates for I/O
         self.canvas_delegate = Canvas_delegate(self)
         self.movement_delegate = movement_delegate(self)
@@ -51,7 +51,6 @@ class Application_delegate(QtCore.QObject):
         self.script_delegate = Script_delegate(self)
 
         self.mainWindow = ApplicationWindow(self, self.canvas_delegate._canvas)
-        
 
     def ESTOP(self):
         self.focus_delegate.ESTOP()

@@ -126,7 +126,7 @@ class write_thread(QtCore.QThread):
 
              # Focus with z stage
             self.focus_delegate.focus(start_offset=-focus_range / 2,
-                                      stop_offset=focus_range / 2, 
+                                      stop_offset=focus_range / 2,
                                       step=focus_step,
                                       stage=self.md.motor,
                                       Nloops=1,

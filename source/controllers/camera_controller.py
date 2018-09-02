@@ -22,6 +22,7 @@ import serial
 from .HW_conf import camera_shutter_COM, pixeLINK_SN
 import numpy as np
 
+
 class camera_controller():
     def __init__(self):
         self.cam = None
@@ -69,16 +70,16 @@ class camera_controller():
             self._ext_shutter.write('ON\n'.encode())
         else:
             self._ext_shutter.write('OFF\n'.encode())
-           
+
     @property
     def roi(self):
         return self.cam.roi
-    
+
     @roi.setter
     def roi(self, roi):
         roi = np.asarray(roi)
         roi[:2] = self.shape - (roi[:2]+roi[2:])
-        
+
         streaming = self.cam.streaming
         self.cam.streaming = False
         try:
@@ -88,13 +89,12 @@ class camera_controller():
             print(e)
         self.cam.streaming = streaming
 
-#%%
+# %%
 #from matplotlib.pyplot import figure, imshow
 #cc = camera_controller()
-#cc.ext_shutter(True)
-#print(cc.roi)
-##%%
+# cc.ext_shutter(True)
+# print(cc.roi)
+# %%
 #cc.roi = (500, 500, 1023,1005)
-#print(cc.get_image().shape)
-#imshow(cc.get_image())
-    
+# print(cc.get_image().shape)
+# imshow(cc.get_image())

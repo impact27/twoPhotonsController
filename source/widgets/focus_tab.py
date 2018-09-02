@@ -23,9 +23,9 @@ class Focus_tab(QtWidgets.QWidget):
 
         self.fd = application_delegate.focus_delegate
 
-        #======================================================================
+        # ======================================================================
         #       Create Widgets
-        #======================================================================
+        # ======================================================================
         back_label = QtWidgets.QLabel("Start: Pos +")
         back_input = QtWidgets.QLineEdit('0')
 
@@ -37,7 +37,7 @@ class Focus_tab(QtWidgets.QWidget):
 
         Nloops_label = QtWidgets.QLabel("Loops:")
         Nloops_input = QtWidgets.QLineEdit('0')
-        
+
         intensity_label = QtWidgets.QLabel("Intensity:")
         intensity_input = QtWidgets.QLineEdit('0')
 
@@ -55,9 +55,9 @@ class Focus_tab(QtWidgets.QWidget):
 
         clear_list_button = QtWidgets.QPushButton("Clear List")
         save_button = QtWidgets.QPushButton('Save')
-        #======================================================================
+        # ======================================================================
         #     Layout
-        #======================================================================
+        # ======================================================================
 
         focus_grid = QtWidgets.QGridLayout()
         focus_grid.addWidget(back_label, 0, 0)
@@ -74,7 +74,7 @@ class Focus_tab(QtWidgets.QWidget):
         bottom_layout = QtWidgets.QHBoxLayout()
         bottom_layout.addWidget(save_button)
         bottom_layout.addWidget(clear_list_button)
-        
+
         focus_layout = QtWidgets.QHBoxLayout()
         focus_layout.addWidget(focus_piezo_button)
         focus_layout.addWidget(focus_motor_button)
@@ -86,22 +86,22 @@ class Focus_tab(QtWidgets.QWidget):
         main_layout.addLayout(bottom_layout)
         self.setLayout(main_layout)
 
-        #======================================================================
+        # ======================================================================
         #      Connections
-        #======================================================================
+        # ======================================================================
 
         self.deleterow.connect(self.fd.delete_pos)
         self.displayrow.connect(self.fd.display_pos)
 
         pos_list.cellClicked.connect(self.cellClicked)
         pos_list.verticalHeader().sectionClicked.connect(self.rowClicked)
-        
+
         def focus(piezo):
             if piezo:
                 stage = application_delegate.movement_delegate.piezo
             else:
                 stage = application_delegate.movement_delegate.motor
-                
+
             self.fd.focus(
                 start_offset=float(back_input.text()),
                 stop_offset=float(forth_input.text()),
@@ -109,7 +109,7 @@ class Focus_tab(QtWidgets.QWidget):
                 stage=stage,
                 intensity=float(intensity_input.text()),
                 Nloops=int(float(Nloops_input.text())))
-            
+
         def update_settings(settings):
             back_input.setText(str(settings["From"]))
             forth_input.setText(str(settings["To"]))
@@ -117,8 +117,8 @@ class Focus_tab(QtWidgets.QWidget):
             Nloops_input.setText(str(settings["NLoops"]))
             intensity_input.setText(str(settings["Intensity"]))
 
-        focus_piezo_button.clicked.connect(lambda: focus(True)) 
-        focus_motor_button.clicked.connect(lambda: focus(False)) 
+        focus_piezo_button.clicked.connect(lambda: focus(True))
+        focus_motor_button.clicked.connect(lambda: focus(False))
 
         clear_list_button.clicked.connect(self.fd.clear)
         save_button.clicked.connect(self.fd.save)
@@ -127,9 +127,9 @@ class Focus_tab(QtWidgets.QWidget):
         self.fd.update_settings.connect(update_settings)
         update_settings(self.fd._settings)
 
-        #======================================================================
+        # ======================================================================
         #         Save variables
-        #======================================================================
+        # ======================================================================
         self.pos_list = pos_list
 
     def cellClicked(self, row, column):

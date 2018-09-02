@@ -24,18 +24,16 @@ from .HW_conf import laser_power_COM
 from .stage_controller import E727_controller
 
 
-
-        
 class Laser_controller():
 
     def __init__(self):
         self.cube = E727_controller()
         self.cube.stageConnected.connect(self.onConnect)
         self._V = 0
-        
+
     def reconnect(self):
         pass
-    
+
     def onConnect(self):
         self.cube.SVO(4, False)
         self.cube.SVA(4, 0)
@@ -68,13 +66,13 @@ class Laser_controller():
 
 
 
-#%%
+# %%
 if __name__ == '__main__':
     lc = Laser_controller()
 
 #import time
 #import serial
-#class old_laser_controller():
+# class old_laser_controller():
 #
 #    def __init__(self):
 #        self.ser = None

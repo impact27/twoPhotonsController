@@ -43,7 +43,6 @@ class Bottom_widget(QtWidgets.QWidget):
         buttons_layout.addWidget(save_im_button, 0, 2)
         buttons_layout.addWidget(reset_roi_button, 1, 2)
         buttons_layout.addWidget(ESTOP_button, 0, 3, 2, 3)
-        
 
         ESTOP_button.clicked.connect(application_delegate.ESTOP)
         clear_button.clicked.connect(
@@ -60,15 +59,15 @@ class Bottom_widget(QtWidgets.QWidget):
                 application_delegate.camera_delegate.reset_bg()
         bg_button.toggled.connect(switchBGButton)
 
-        #======================================================================
+        # ======================================================================
         #      Layout
-        #======================================================================
+        # ======================================================================
 
         self.setLayout(buttons_layout)
 
-        #======================================================================
+        # ======================================================================
         #         Save variables
-        #======================================================================
+        # ======================================================================
         self.live_button = live_button
         self.draw_button = draw_button
 
@@ -81,9 +80,9 @@ class Bottom_widget(QtWidgets.QWidget):
             self.switch_live)
         application_delegate.canvas_delegate.drawSwitched.connect(
             self.switch_draw)
-        
+
         reset_roi_button.clicked.connect(
-                application_delegate.camera_delegate.reset_roi)
+            application_delegate.camera_delegate.reset_roi)
 
     def switch_live(self, on):
         if on:

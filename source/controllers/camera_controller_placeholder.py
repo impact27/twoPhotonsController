@@ -51,11 +51,11 @@ class camera_controller():
 
     def restart_streaming(self):
         pass
-    
+
     @property
     def roi(self):
         return self._roi
-    
+
     @roi.setter
     def roi(self, ltwhTuple):
         self._roi = ltwhTuple

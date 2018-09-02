@@ -25,12 +25,12 @@ class Focus_delegate(QtCore.QObject):
         self.app_delegate = app_delegate
         self.init_thread()
         self._settings = {
-                "From": 5,
-                "To": -5,
-                "Step": -0.5,
-                "NLoops": 1,
-                "Intensity": 0.5
-                }
+            "From": 5,
+            "To": -5,
+            "Step": -0.5,
+            "NLoops": 1,
+            "Intensity": 0.5
+        }
 
         self.md.motor.coordinatesCorrected.connect(lambda x: self._update())
         self.md.piezo.coordinatesCorrected.connect(lambda x: self._update())
@@ -71,7 +71,7 @@ class Focus_delegate(QtCore.QObject):
             print("Can't Plot!!!", sys.exc_info()[0])
             raise
 
-    def focus(self, stage, *, start_offset=None, stop_offset=None, step=None, 
+    def focus(self, stage, *, start_offset=None, stop_offset=None, step=None,
               intensity=None, Nloops=None,
               wait=False, checkid=None, change_coordinates=True):
 
@@ -89,7 +89,7 @@ class Focus_delegate(QtCore.QObject):
         wait default False:
             Should the thread wait for completion
         """
-        
+
         if intensity is not None:
             self._settings["Intensity"] = intensity
         if start_offset is not None:
@@ -100,9 +100,9 @@ class Focus_delegate(QtCore.QObject):
             self._settings["Step"] = step
         if Nloops is not None:
             self._settings["NLoops"] = Nloops
-        
+
         self.update_settings.emit(self._settings)
-            
+
         self.thread.set_args(
             self._settings,
             stage,
@@ -114,14 +114,14 @@ class Focus_delegate(QtCore.QObject):
             self.thread.wait()
 
     def addGraph(self, graphs):
-        
+
         if graphs is None:
             self.app_delegate.error.emit("Focus Failed")
             return
 
         QtCore.QMutexLocker(self.mutex)
         intensity = self.app_delegate.laser_delegate.get_intensity()
-        if np.abs(intensity - self._settings["Intensity"]) > 1e-3: 
+        if np.abs(intensity - self._settings["Intensity"]) > 1e-3:
             self._settings["Intensity"] = intensity
             self.update_settings.emit(self._settings)
 
@@ -199,7 +199,7 @@ class zThread(QtCore.QThread):
         try:
             if self._settings is None:
                 raise RuntimeError("Settings not initialised!")
-    
+
             if self._checkid is None:
                 lockid = self._md.lock()
                 if lockid is None:
@@ -207,10 +207,10 @@ class zThread(QtCore.QThread):
                     return
             else:
                 lockid = self._checkid
-    
+
             graphs = self._zcorrector.focus(
-                    self._settings, checkid=lockid,
-                    change_coordinates=self._change_coordinates)
+                self._settings, checkid=lockid,
+                change_coordinates=self._change_coordinates)
             self._md.unlock()
             self._settings = None
             self.addGraph(graphs)
@@ -243,11 +243,11 @@ class Zcorrector():
         self.laser.set_intensity(intensity)
         self.laser.switch(True)
         self.camera.extShutter(True)
-    
+
     def endlaser(self):
         """Stop laser"""
         pass
-    
+
     def get_intensity(self):
         """get intensity from camera"""
         self.camera.restart_streaming()
@@ -265,11 +265,11 @@ class Zcorrector():
         for i, z in enumerate(zPos):
             self.stage.goto_position([np.nan, np.nan, z],
                                      wait=True, checkid=self.lockid, isRaw=True)
-            
+
             intensity = self.get_intensity()
-            
+
             data[i, 1] = intensity
-            
+
             if intensity == 255:
                 if i > 1:
                     start = zPos[i - 2]
@@ -277,50 +277,50 @@ class Zcorrector():
                 return self.get_intensity_range(start, stop, step)
 
             if intensity < np.max(data[:, 1]) / 3:
-                
+
                 return data[:i+1]
 
-        #Failed focus
+        # Failed focus
         if 2*np.min(data[:, 1]) > np.max(data[:, 1]):
             raise RuntimeError("Can't focus")
-            
+
         return data
 
     def focus_range(self, z_start, z_stop, current_step):
         data = self.get_intensity_range(
             z_start, z_stop, current_step)
-            
+
         argbest = np.argmax(data[..., 1])
         zBest = data[..., 0][argbest]
-        
-        #If on side
+
+        # If on side
         if argbest == 0 or argbest == len(data) - 1:
             return self.focus_range(
-                    zBest - 2*current_step,
-                    zBest + 2.1*current_step,
-                    current_step)
-            
-        #Check intensity is high enough
+                zBest - 2*current_step,
+                zBest + 2.1*current_step,
+                current_step)
+
+        # Check intensity is high enough
         if np.max(data[..., 1]) < 150:
-            
+
             self.stage.goto_position([np.nan, np.nan, zBest],
-                             wait=True, checkid=self.lockid, isRaw=True)
-            
+                                     wait=True, checkid=self.lockid, isRaw=True)
+
             intensity = self.get_intensity()
             intensity_old = 0
             while intensity < 150 and intensity > 1.05*intensity_old:
                 intensity_old = intensity
                 self.change_power(1.2)
                 intensity = self.get_intensity()
-            
+
             if intensity_old > 0:
                 return self.focus_range(
-                        zBest - 2*current_step,
-                        zBest + 2.1*current_step,
-                        current_step)
-            
+                    zBest - 2*current_step,
+                    zBest + 2.1*current_step,
+                    current_step)
+
         return data
-        
+
     def focus(self, settings, checkid=None, change_coordinates=True):
         """ Go to the best focal point for the laser
         """
@@ -329,7 +329,7 @@ class Zcorrector():
         step = settings["Step"]
         N_loops = settings["NLoops"]
         intensity = settings["Intensity"]
-        
+
         self.lockid = checkid
         self.startlaser(intensity)
 
@@ -345,7 +345,7 @@ class Zcorrector():
         for i in range(N_loops):
             data = self.focus_range(z_start, z_stop, current_step)
             zPos, intensities = data.T
-            
+
             argbest = np.argmax(intensities)
             current_step /= 10
             z_start = zPos[argbest - 1]

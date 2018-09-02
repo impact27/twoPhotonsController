@@ -22,9 +22,9 @@ class Coordinates_tab(QtWidgets.QWidget):
     def __init__(self, application_delegate, *args, **kwargs):
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
 
-        #======================================================================
+        # ======================================================================
         #       Create Widgets
-        #======================================================================
+        # ======================================================================
 
         motor_label = QtWidgets.QLabel("Motor")
         motor_label.setStyleSheet("font: bold large")
@@ -70,9 +70,9 @@ class Coordinates_tab(QtWidgets.QWidget):
         correction_label_piezo = QtWidgets.QLabel('')
         self.correction_label_piezo = correction_label_piezo
 
-        #======================================================================
+        # ======================================================================
         #     Layout
-        #======================================================================
+        # ======================================================================
 
         coord = QtWidgets.QHBoxLayout()
         coord.addWidget(QtWidgets.QLabel("x, y, z:"))
@@ -130,7 +130,7 @@ class Coordinates_tab(QtWidgets.QWidget):
         line.setFrameShape(QtWidgets.QFrame.HLine)
         line.setFrameShadow(QtWidgets.QFrame.Sunken)
         main_layout.addWidget(line)
-        
+
         load_layout = QtWidgets.QHBoxLayout()
         load_layout.addWidget(correction_save)
         load_layout.addWidget(correction_load)
@@ -138,9 +138,9 @@ class Coordinates_tab(QtWidgets.QWidget):
 
         self.setLayout(main_layout)
 
-        #======================================================================
+        # ======================================================================
         #      Connections
-        #======================================================================
+        # ======================================================================
         cd = application_delegate.coordinates_delegate
         md = application_delegate.movement_delegate
         self.md = md
@@ -155,10 +155,9 @@ class Coordinates_tab(QtWidgets.QWidget):
 
         def newpos():
             cd.add_position(np.fromstring(Xinput.text(), sep=','))
-            
+
         newpos_button.clicked.connect(newpos)
         Xinput.returnPressed.connect(newpos)
-        
 
         pos_file_button.clicked.connect(self.open_position_file)
 
@@ -181,12 +180,11 @@ class Coordinates_tab(QtWidgets.QWidget):
         save_errors.clicked.connect(cd.save_errors)
 
         offset_button.clicked.connect(lambda: md.motor.offset_origin(
-                            np.fromstring(offset_input.text(), sep=',')))
-            
+            np.fromstring(offset_input.text(), sep=',')))
 
-        #======================================================================
+        # ======================================================================
         #         Save variables
-        #======================================================================
+        # ======================================================================
 
         self.xinput = Xinput
         self.pos_list = pos_list
@@ -194,18 +192,18 @@ class Coordinates_tab(QtWidgets.QWidget):
 
     def open_correction_file(self):
         fn = QtWidgets.QFileDialog.getOpenFileName(
-            self, 'Position File', QtCore.QDir.homePath() +'/correction.txt',
+            self, 'Position File', QtCore.QDir.homePath() + '/correction.txt',
             'Text File (*.txt)')[0]
         if len(fn) > 0:
             self.md.load_corrections(fn)
-        
+
     def save_correction_file(self):
         fn = QtWidgets.QFileDialog.getSaveFileName(
-            self, 'Position File', QtCore.QDir.homePath() +'/correction.txt' ,
+            self, 'Position File', QtCore.QDir.homePath() + '/correction.txt',
             'Text File (*.txt)')[0]
         if len(fn) > 0:
             self.md.save_corrections(fn)
-        
+
     def open_position_file(self):
         fn = QtWidgets.QFileDialog.getOpenFileName(
             self, 'Position File', QtCore.QDir.homePath())[0]

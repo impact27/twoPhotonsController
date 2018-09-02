@@ -18,9 +18,9 @@ class Controls_tab(QtWidgets.QWidget):
         md = application_delegate.movement_delegate
         ld = application_delegate.laser_delegate
         cd = application_delegate.camera_delegate
-        #======================================================================
+        # ======================================================================
         #       Create Widgets
-        #======================================================================
+        # ======================================================================
 
         monitor_switch = QtWidgets.QPushButton('Set')
         monitor_switch.setCheckable(True)
@@ -72,7 +72,7 @@ class Controls_tab(QtWidgets.QWidget):
 
         goto_motor_button = QtWidgets.QPushButton("GO")
         getcurr_motor_button = QtWidgets.QPushButton("Get Current")
-        
+
         motor_z_piezo_button = QtWidgets.QPushButton("Z Piezo")
         motor_z_piezo_button.setCheckable(True)
 
@@ -101,9 +101,9 @@ class Controls_tab(QtWidgets.QWidget):
         cam_extshutter = QtWidgets.QPushButton('Shutter')
         cam_autoexposure_time.setCheckable(True)
         cam_extshutter.setCheckable(True)
-        #======================================================================
+        # ======================================================================
         #     Layout
-        #======================================================================
+        # ======================================================================
 
         laser_H_layout = QtWidgets.QHBoxLayout()
         laser_H_layout.addWidget(laser_label)
@@ -203,9 +203,9 @@ class Controls_tab(QtWidgets.QWidget):
         main_layout.addStretch()
 
         self.setLayout(main_layout)
-        #======================================================================
+        # ======================================================================
         #      Connections
-        #======================================================================
+        # ======================================================================
         laser_reconnect.clicked.connect(ld.reconnect)
         laser_switch.toggled.connect(ld.switch)
         laser_setV.newValue.connect(ld.set_intensity)
@@ -267,9 +267,9 @@ class Controls_tab(QtWidgets.QWidget):
         md.piezo.move_signal.connect(
             self.set_target_piezo)
 
-        #======================================================================
+        # ======================================================================
         #         Save variables
-        #======================================================================
+        # ======================================================================
         self.application_delegate = application_delegate
         self.vel_motor_selector = vel_motor_selector
         self.motor_selectors = motor_selectors

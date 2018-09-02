@@ -10,9 +10,9 @@ from matplotlib.backends.backend_qt5 import NavigationToolbar2QT as NavigationTo
 from matplotlib.figure import Figure
 import matplotlib
 cmap = matplotlib.cm.get_cmap('plasma')
-#==============================================================================
+# ==============================================================================
 # Plot canevas
-#==============================================================================
+# ==============================================================================
 
 
 class MyMplCanvas(FigureCanvas):

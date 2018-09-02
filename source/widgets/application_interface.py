@@ -54,9 +54,9 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         # create appication delegate
         self.application_delegate = application_delegate
 
-        #======================================================================
+        # ======================================================================
         #       Create Widgets
-        #======================================================================
+        # ======================================================================
 
         # Create main widget
         self.main_widget = QtWidgets.QWidget(self)
@@ -86,9 +86,9 @@ class ApplicationWindow(QtWidgets.QMainWindow):
         tabs_widget.setMaximumWidth(300)
 
         control_widget = Controls_tab(self.application_delegate)
-        #======================================================================
+        # ======================================================================
         #     Layout
-        #======================================================================
+        # ======================================================================
         vertical = QtWidgets.QVBoxLayout()
         vertical.addWidget(imCanvas.toolbar, 1)
         vertical.addWidget(imCanvas, 1)

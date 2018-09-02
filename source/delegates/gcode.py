@@ -71,7 +71,7 @@ class gcode_reader:
         pass
 
 
-#%%
+# %%
 class gcode_checker(gcode_reader):
     def __init__(self, intensityRange, posRange, speedRange):
         super().__init__()

@@ -21,9 +21,9 @@ import time
 import numpy as np
 from PyQt5 import QtCore
 
-#==============================================================================
+# ==============================================================================
 # Stage controller
-#==============================================================================
+# ==============================================================================
 
 
 class stage_controller(QtCore.QObject):
@@ -56,6 +56,27 @@ class stage_controller(QtCore.QObject):
         pass
 
     def is_ready(self):
+        pass
+
+    def MAC_BEG(self, name):
+        pass
+
+    def MAC_END(self):
+        pass
+
+    def MAC_START(self, name):
+        pass
+
+    def MAC_DEL(self, name):
+        pass
+
+    def is_macro_running(self):
+        return False
+
+    def macro_wait(self):
+        pass
+
+    def run_waveform(self, time_step, X):
         pass
 
 
@@ -101,9 +122,13 @@ class fake_controller(stage_controller):
     def is_ready(self):
         return self.is_onTarget()
 
-#==============================================================================
+    def run_waveform(self, time_step, X):
+        self.position = X[:, -1]
+        self.target = X[:, -1]
+
+# ==============================================================================
 # Linear stages controller
-#==============================================================================
+# ==============================================================================
 
 
 class Linear_controller(fake_controller):
@@ -123,11 +148,14 @@ class Linear_controller(fake_controller):
     def waitState(self, timeout=30):
         return
 
-#==============================================================================
+# ==============================================================================
 # Cube Controller
-#==============================================================================
+# ==============================================================================
+
+
 class CubeError(BaseException):
     pass
+
 
 class Cube_controller(fake_controller):
 
@@ -150,9 +178,9 @@ class Cube_controller(fake_controller):
     def get_vel_range(self, axis):
         return np.array([0, 4000])
 
-#==============================================================================
+# ==============================================================================
 # Z Controller
-#==============================================================================
+# ==============================================================================
 
 
 class z_controller(fake_controller):
