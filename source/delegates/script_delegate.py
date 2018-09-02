@@ -11,6 +11,7 @@ import matplotlib
 cmap = matplotlib.cm.get_cmap('viridis')
 from PyQt5 import QtCore
 from matplotlib import collections as mc
+import sys
 
 
 class Script_delegate():
