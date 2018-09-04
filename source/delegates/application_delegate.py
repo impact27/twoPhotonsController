@@ -20,11 +20,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import sys
 from PyQt5 import QtCore
 
-from .coordinates_delegate import coordinates_delegate
-from .movement_delegate import movement_delegate
-from .write_delegate import write_delegate
-from .laser_delegate import laser_delegate
-from .camera_delegate import camera_delegate
+from .coordinates_delegate import Coordinates_delegate
+from .movement_delegate import Movement_delegate
+from .write_delegate import Write_delegate
+from .laser_delegate import Laser_delegate
+from .camera_delegate import Camera_delegate
 from .focus_delegate import Focus_delegate
 from .canvas_delegate import Canvas_delegate
 from .script_delegate import Script_delegate
@@ -37,17 +37,18 @@ class Application_delegate(QtCore.QObject):
 
     def __init__(self):
         super().__init__()
-        self.camera_delegate = camera_delegate()
-        self.laser_delegate = laser_delegate()
+        self.camera_delegate = Camera_delegate()
+        self.laser_delegate = Laser_delegate()
 
         # Create delegates for I/O
         self.canvas_delegate = Canvas_delegate(self)
-        self.movement_delegate = movement_delegate(self)
+        self.movement_delegate = Movement_delegate()
+        self.movement_delegate.error.connect(self.error.emit)
         self.focus_delegate = Focus_delegate(self)
 
         # Create delegates for actions
-        self.coordinates_delegate = coordinates_delegate(self)
-        self.write_delegate = write_delegate(self)
+        self.coordinates_delegate = Coordinates_delegate(self)
+        self.write_delegate = Write_delegate(self)
         self.script_delegate = Script_delegate(self)
 
         self.mainWindow = ApplicationWindow(self, self.canvas_delegate._canvas)

@@ -10,11 +10,10 @@ import numpy as np
 
 from delegates.script_delegate import Draw_Parser, Execute_Parser
 
-
+ad = Application_delegate()
 class Test_script(unittest.TestCase):
     def setUp(self):
-        self.ad = Application_delegate()
-        self.fn = '/Users/quentinpeter/Documents/PHD/Projects/2Photons/Python/files/test/test.txt'
+        self.fn = '../../../files/test/test.txt'
 
     def test_Draw(self):
 
@@ -34,7 +33,7 @@ class Test_script(unittest.TestCase):
 
     def test_execute(self):
 
-        parser = Execute_Parser(self.ad)
+        parser = Execute_Parser(ad)
         parser.parse(self.fn)
         self.assertTrue(
             np.max(np.abs(

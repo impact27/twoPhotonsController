@@ -13,7 +13,7 @@ else:
     from controllers.camera_controller import camera_controller
 
 
-class camera_delegate(QtCore.QObject):
+class Camera_delegate(QtCore.QObject):
 
     new_exposure_time = QtCore.pyqtSignal(float)
     state_auto_exposure_time = QtCore.pyqtSignal(bool)

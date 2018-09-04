@@ -26,7 +26,7 @@ from serial.serialutil import SerialTimeoutException
 from .gcode import gcode_reader, gcode_checker, gcode_draw
 
 
-class write_delegate(QtCore.QObject):
+class Write_delegate(QtCore.QObject):
     def __init__(self, parent):
         super().__init__()
         self.parent = parent

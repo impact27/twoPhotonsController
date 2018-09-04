@@ -48,19 +48,18 @@ else:
                                               stage_controller)
 
 
-class movement_delegate(QtCore.QObject):
+class Movement_delegate(QtCore.QObject):
     """Delegate for movement. 
     Pretty empty as the motion is done through motor and piezo
     """
     updatePosition = QtCore.pyqtSignal()
-
-    def __init__(self, parent):
+    error = QtCore.pyqtSignal(str)
+    
+    def __init__(self):
         super().__init__()
         self.mutex = QtCore.QMutex()
         self.locked = False
         self.lockid = None
-
-        self.parent = parent
 
         self._piezo = Piezo(self._checklock)
         self._motor = Motor(self._checklock)
@@ -160,7 +159,7 @@ class movement_delegate(QtCore.QObject):
             with open(fn, 'r') as f:
                 corrections = json.load(f)
         except FileNotFoundError:
-            self.parent.error.emit('No saved correction')
+            self.error.emit('No saved correction')
         self.motor.corrections = corrections['motor']
         self.piezo.corrections = corrections['piezo']
 
@@ -555,7 +554,7 @@ class Piezo(Stage):
 
         QtCore.QMutexLocker(self.mutex)
 
-        return self.XYZ_c.is_onTarget()
+        return np.all(self.XYZ_c.is_onTarget())
 
     def _XSRANGE(self, axis):
 

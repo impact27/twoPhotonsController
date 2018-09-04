@@ -27,7 +27,7 @@ else:
     from controllers.laser_controller import Laser_controller
 
 
-class laser_delegate(QtCore.QObject):
+class Laser_delegate(QtCore.QObject):
 
     switched = QtCore.pyqtSignal(bool)
     newIntensity = QtCore.pyqtSignal(float)
@@ -60,7 +60,7 @@ class laser_delegate(QtCore.QObject):
         if V != self.I:
             self.newIntensity.emit(V)
             self.controller.set_intensity(V)
-            self.I = self.controller.get_intensity()
+            self.I = V
 
     def get_intensity(self):
 

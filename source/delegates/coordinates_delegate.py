@@ -24,7 +24,7 @@ from PyQt5 import QtCore, QtWidgets
 from .coordinates_solver import solve_z, solve_xyz
 
 
-class coordinates_delegate(QtCore.QObject):
+class Coordinates_delegate(QtCore.QObject):
 
     updatelist = QtCore.pyqtSignal(list)
 

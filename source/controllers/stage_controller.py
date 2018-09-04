@@ -201,6 +201,9 @@ class E727_controller(QtCore.QObject):
             raise RuntimeError("E727 not connected")
         else:
             return getattr(E727_controller.E727, name)
+    
+    def __del__(self):
+        self.disconnect()
 
     def IsConnected(self):
         QtCore.QMutexLocker(E727_controller.mutex)
