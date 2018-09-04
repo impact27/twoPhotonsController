@@ -71,15 +71,16 @@ class Parser():
                 fun, args = self.readline(line)
                 if fun is None:
                     break
-                try:
-                    fun(*args)
-                except BaseException:
-                    print('')
-                    print("Error while parsing line:")
-                    print(line)
-                    print(sys.exc_info())
-                    print('')
-                    raise
+                fun(*args)
+                # try:
+                    # fun(*args)
+                # except BaseException:
+                #     print('')
+                #     print("Error while parsing line:")
+                #     print(line)
+                #     print(sys.exc_info())
+                #     print('')
+                #     raise
             self.file = None
 
     def readline(self, line):
@@ -134,11 +135,7 @@ class Parser():
             intensity = args_dic['F']
         return pos, speed, intensity
 
-    def camera(self, args):
-        if len(args) != 2:
-            raise RuntimeError(f"{args} not understood")
-        subcommand, arg = args
-
+    def camera(self, subcommand, arg):
         if subcommand.lower() == 'grab':
             self.camera_grab(arg)
         elif subcommand.lower() == 'exposure':
@@ -150,7 +147,7 @@ class Parser():
     def camera_exposure(self, exp_time):
         pass
 
-    def focus(self, args):
+    def focus(self, stage, start_offset, stop_offset, step):
         pass
 
     def motor(self, pos, speed, intensity):
@@ -220,6 +217,22 @@ class Execute_Parser(Parser):
         self.lockid = None
 
         self.recording_macro = False
+        
+    class macro():
+        def __init__(self, compatible):
+            self._compatible = compatible
+            
+        def __call__(self, f):
+            if self._compatible:
+                def ret(*args):
+                    args[0].start_macro()
+                    f(*args)
+            else:
+                def ret(*args):
+                    args[0].end_macro()
+                    f(*args)
+            return ret
+
 
     def start_macro(self):
         if not self.recording_macro:
@@ -247,22 +260,18 @@ class Execute_Parser(Parser):
         self.md.unlock()
         self.lockid = None
 
+    @macro(False)
     def camera_grab(self, fname):
-        """no"""
-        self.end_macro()
         self.camera_delegate.extShutter(True)
         im = self.camera_delegate.get_image()
         tifffile.imsave(fname, im)
 
+    @macro(False)
     def camera_exposure(self, exp_time):
-        """no"""
-        self.end_macro()
         self.camera_delegate.set_exposure_time(exp_time)
 
-    def focus(self, args):
-        """no"""
-        self.end_macro()
-        stage, start_offset, stop_offset, step = args
+    @macro(False)
+    def focus(self, stage, start_offset, stop_offset, step):
         start_offset, stop_offset, step = float(
             start_offset), float(stop_offset), float(step)
         if stage.lower() == 'piezo':
@@ -298,54 +307,47 @@ class Execute_Parser(Parser):
 
         self.focus_intensity = self.laser_delegate.get_intensity()
 
+    @macro(False)
     def piezoslope(self):
-        """no"""
-        self.end_macro()
         self.coordinates_delegate.piezo_plane(checkid=self.lockid, wait=True)
 
+    @macro(False)
     def piezoreset(self):
-        """no"""
-        self.end_macro()
         self.piezo_delegate.reset(checkid=self.lockid, wait=True)
 
+    @macro(False)
     def focusint(self, args):
-        """no"""
-        self.end_macro()
         self.focus_intensity = float(args[0])
 
+    @macro(False)
     def motor(self, pos, speed, intensity):
-        """no"""
-        self.end_macro()
         if not np.isnan(intensity):
             self.laser_power(intensity)
         self.motor_delegate.goto_position(pos, speed=speed, wait=True,
                                           checkid=self.lockid)
 
+    @macro(True)
     def piezo(self, pos, speed, intensity):
-        '''yes'''
-        self.start_macro()
         if not np.isnan(intensity):
             self.laser_power(intensity)
         self.piezo_delegate.goto_position(
             pos, speed=speed, wait=True,
             checkid=self.lockid, useLastPos=True)
 
+    @macro(True)
     def laser_state(self, state):
-        '''yes'''
-        self.start_macro()
         if state:
             self.camera_delegate.extShutter(False)
         self.laser_delegate.switch(state)
 
+    @macro(True)
     def laser_power(self, power):
-        '''yes'''
-        self.start_macro()
         if power > 0:
             self.camera_delegate.extShutter(False)
         self.laser_delegate.set_intensity(power)
 
+    @macro(False)
     def run_waveform(self, time_step, X):
-        self.start_macro()
         self.piezo_delegate.run_waveform(time_step, X)
 
 

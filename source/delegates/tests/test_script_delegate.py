@@ -14,7 +14,7 @@ from delegates.script_delegate import Draw_Parser, Execute_Parser
 class Test_script(unittest.TestCase):
     def setUp(self):
         self.ad = Application_delegate()
-        self.fn = '/Users/quentinpeter/Documents/PHD/Projects/2Photons/Python/files/wave.txt'
+        self.fn = '/Users/quentinpeter/Documents/PHD/Projects/2Photons/Python/files/test/test.txt'
 
     def test_Draw(self):
 

@@ -271,7 +271,10 @@ class Stage(QtCore.QObject):
         # Get correct speed for each axis
         Xdist = (XsTo - XsFrom)
         travel_time = np.linalg.norm(Xdist) / speed
-        Vs = np.abs(Xdist / travel_time)
+        if travel_time > 0:
+            Vs = np.abs(Xdist / travel_time)
+        else:
+            Vs = np.abs(Xdist)
 
         return XsTo, XmTo, Vs, travel_time
 
