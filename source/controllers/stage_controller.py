@@ -24,8 +24,7 @@ import numpy as np
 from PyQt5 import QtCore
 import clr
 
-from . import HW_conf
-#import HW_conf
+
 
 import sys
 from System import Decimal
@@ -39,7 +38,14 @@ import Thorlabs.MotionControl.Controls
 from Thorlabs.MotionControl.DeviceManagerCLI import DeviceManagerCLI
 from Thorlabs.MotionControl.KCube.DCServoCLI import KCubeDCServo
 
-from .hardware_singleton import Hardware_Singleton
+if __name__ == "__main__":
+    import HW_conf
+    from hardware_singleton import Hardware_Singleton
+    
+else:
+    from . import HW_conf
+    from .hardware_singleton import Hardware_Singleton
+
 
 # ==============================================================================
 # Stage controller
@@ -180,14 +186,17 @@ class HW_E727(Hardware_Singleton):
     def _open_connection(self):
         stage = GCSDevice(HW_conf.GCS_cube_controller_name)
         stage.ConnectUSB(HW_conf.cubeName)
-        time.sleep(2)
+#        time.sleep(2)
+        stage.WGO([1, 2, 3, 4], [0, 0, 0, 0])
         print('Connected', stage.qIDN())
-        if self.__cube.qCST()['1'] != HW_conf.GCS_cube_stage_name:
-            print(self.__cube.qCST()['1'])
+        if stage.qCST()['1'] != HW_conf.GCS_cube_stage_name:
+            print(stage.qCST()['1'])
             raise RuntimeError("Incorrect stage connected")
-
-        self.__cube.SVO([1, 2, 3], [True, True, True])
-        self.__cube.ATZ([1, 2, 3], [0, 0, 0])
+        
+        stage.SVO([1, 2, 3, 4], [True, True, True, False])
+        stage.ATZ([1, 2, 3], [0, 0, 0])
+        while not stage.IsControllerReady():
+            time.sleep(0.1)
         return stage
 
     def _close_connection(self):
@@ -205,6 +214,9 @@ class Cube_controller(stage_controller):
         self.Servo_Update_Time = 50e-6  # s 0x0E000200
         self.max_points = 250000  # 0x13000004
 
+    def controller(self):
+        return self.__cube
+    
     def MOVVEL(self, X, V):
         X = X + self.internal_offset
         # Reverse y and z
@@ -271,18 +283,28 @@ class Cube_controller(stage_controller):
         assert np.shape(X)[1] == 3 or np.shape(X)[1] == 4
 
         rate = int(np.round(time_step / self.Servo_Update_Time))
+        
+        X = X + self.internal_offset
         # Reverse y and z
         X[:, 1:3] = 100 - X[:, 1:3]
-
+        
+        assert np.all(X > 0) and np.all(X < 100)
         # Set rate
         self.__cube.send(f"WTR 0 {rate} 1")
-
-        # Send data
-        for i in range(np.shape(X)[1]):
-            self.__cube.send(f"WAV {i+1} X PNT 1 {X.shape[0]} " +
-                             " ".join(str(e) for e in X[:, i]))
-
+        
         idx = np.arange(np.shape(X)[1]) + 1
+        
+        # Clear tables
+        self.__cube.send("WCL " + " ".join(str(e) for e in idx))
+        
+        # Send data
+        slice_size = 10
+        for i in range(np.shape(X)[1]):
+            append = 'X'
+            for point_idx in np.arange(0, np.shape(X)[0], slice_size):
+                self.__cube.send(f"WAV {i+1} {append} PNT 1 {slice_size} " +
+                             " ".join(str(e) for e in X[point_idx:point_idx + slice_size, i]))
+                append = '&'
 
         # Connect to wave generator
         self.__cube.send("WSL " + " ".join(str(e) for e in np.repeat(idx, 2)))
@@ -295,11 +317,12 @@ class Cube_controller(stage_controller):
 
         # wait
         time.sleep(50e-6 * rate * X.shape[0])
-        while(self.__cube.IsGeneratorRunning()):
+        print(self.__cube.IsControllerReady())
+        while(self.__cube.IsGeneratorRunning()[1]):
             time.sleep(0.1)
 
         # Clear tables
-        self.__cube.send("WCL " + " ".join(str(e) for e in idx))
+#        self.__cube.send("WCL " + " ".join(str(e) for e in idx))
 
 
 # =============================================================================
@@ -461,10 +484,7 @@ def getPIListDevices():
 
 
 if __name__ == "__main__":
-    print(getPIListDevices())
+#    print(getPIListDevices())
     # %%
     cc = Cube_controller()
-    cc.connect()
-    time.sleep(5)
-    # %%
-    cc.MAC_BEG('test')
+    print(cc.is_ready())

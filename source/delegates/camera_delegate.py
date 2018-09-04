@@ -23,9 +23,11 @@ class Camera_delegate(QtCore.QObject):
     def __init__(self):
         super().__init__()
         self.mutex = QtCore.QMutex()
-        self.controller = camera_controller()
+        self.controller = camera_controller(self.onConnect)
         self.isAuto = False
         self.reset_bg()
+        
+    def onConnect(self):
         self.roi0 = self.controller.roi
 
     def set_relative_roi(self, roi):

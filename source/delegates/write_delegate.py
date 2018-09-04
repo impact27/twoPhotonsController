@@ -206,7 +206,6 @@ class gwriter(gcode_reader):
 
     def __del__(self):
         self.ld.set_intensity(0)
-        self.ld.switch(False)
 
     def setIntensity(self, E):
         self.ld.set_intensity(E)
@@ -221,4 +220,4 @@ class gwriter(gcode_reader):
         self.motor.set_velocity(F, checkid=self.lockid)
 
     def stop(self):
-        self.ld.switch(False)
+        self.ld.set_intensity(0)

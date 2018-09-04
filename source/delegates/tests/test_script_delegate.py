@@ -37,7 +37,7 @@ class Test_script(unittest.TestCase):
         parser.parse(self.fn)
         self.assertTrue(
             np.max(np.abs(
-                self.ad.movement_delegate.piezo.position - [40, 0, 0])) < 1)
+                ad.movement_delegate.piezo.position - [40, 0, 0])) < 1)
 
 
 if __name__ == '__main__':

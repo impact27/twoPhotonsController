@@ -1,10 +1,7 @@
 focusint 0.5
 motor X25000.00 Y25000.00 Z0
-laser ON
 laser power 4.000000
-focus motor 0 -41 -1
 camera grab test.tiff
-piezoslope
 piezoreset
 piezo X-40 Y0 Z0
 BEGIN waveform R0.0005 N1600

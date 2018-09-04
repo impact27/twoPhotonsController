@@ -28,11 +28,6 @@ class Controls_tab(QtWidgets.QWidget):
         laser_label = QtWidgets.QLabel("Laser")
         laser_label.setStyleSheet("font: bold large")
         laser_reconnect = QtWidgets.QPushButton('Reconnect')
-        laser_switch = QtWidgets.QPushButton('Off')
-        laser_switch.setCheckable(True)
-        laser_switch.setChecked(ld.get_state())
-        if ld.get_state():
-            laser_switch.setText("On")
         laser_V_label = QtWidgets.QLabel("I [V]:")
         laser_setV = doubleSelector(ld.get_range(), ld.get_intensity())
 
@@ -189,7 +184,6 @@ class Controls_tab(QtWidgets.QWidget):
 
         main_layout.addLayout(laser_H_layout)
         main_layout.addLayout(laser_layout)
-        main_layout.addWidget(laser_switch)
 
         line = QtWidgets.QFrame()
         line.setFrameShape(QtWidgets.QFrame.HLine)
@@ -206,8 +200,7 @@ class Controls_tab(QtWidgets.QWidget):
         # ======================================================================
         #      Connections
         # ======================================================================
-        laser_reconnect.clicked.connect(ld.reconnect)
-        laser_switch.toggled.connect(ld.switch)
+#        laser_reconnect.clicked.connect(ld.reconnect)
         laser_setV.newValue.connect(ld.set_intensity)
 
         stage_motor_reconnect.clicked.connect(md.motor.reconnect)
@@ -229,16 +222,7 @@ class Controls_tab(QtWidgets.QWidget):
 
         cd.state_auto_exposure_time.connect(self.setCamShutter)
 
-        def switchLaserText(on):
-            if on:
-                laser_switch.setText("On")
-            else:
-                laser_switch.setText("Off")
-
-        laser_switch.toggled.connect(switchLaserText)
-
         ld.newIntensity.connect(laser_setV.setValue)
-        ld.switched.connect(laser_switch.setChecked)
 
         cd.new_exposure_time.connect(cam_exposure_selector.setValue)
 

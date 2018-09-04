@@ -28,8 +28,6 @@ else:
 
 
 class Laser_delegate(QtCore.QObject):
-
-    switched = QtCore.pyqtSignal(bool)
     newIntensity = QtCore.pyqtSignal(float)
 
     def __init__(self):
@@ -37,13 +35,6 @@ class Laser_delegate(QtCore.QObject):
         self.mutex = QtCore.QMutex()
         self.controller = Laser_controller()
         self.I = 0
-        self.state = self.controller.get_state()
-
-    def reconnect(self):
-
-        QtCore.QMutexLocker(self.mutex)
-
-        self.controller.reconnect()
 
     def get_range(self):
 
@@ -67,18 +58,3 @@ class Laser_delegate(QtCore.QObject):
         QtCore.QMutexLocker(self.mutex)
 
         return self.controller.get_intensity()
-
-    def switch(self, state):
-
-        QtCore.QMutexLocker(self.mutex)
-
-        if state != self.state:
-            self.state = state
-            self.controller.switch(state)
-            self.switched.emit(state)
-
-    def get_state(self):
-
-        QtCore.QMutexLocker(self.mutex)
-
-        return self.state

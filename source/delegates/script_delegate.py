@@ -331,14 +331,8 @@ class Execute_Parser(Parser):
         if not np.isnan(intensity):
             self.laser_power(intensity)
         self.piezo_delegate.goto_position(
-            pos, speed=speed, wait=True,
+            pos, speed=speed, wait=False,
             checkid=self.lockid, useLastPos=True)
-
-    @macro(True)
-    def laser_state(self, state):
-        if state:
-            self.camera_delegate.extShutter(False)
-        self.laser_delegate.switch(state)
 
     @macro(True)
     def laser_power(self, power):
@@ -348,7 +342,7 @@ class Execute_Parser(Parser):
 
     @macro(False)
     def run_waveform(self, time_step, X):
-        self.piezo_delegate.run_waveform(time_step, X)
+        self.piezo_delegate.run_waveform(time_step, X.T)
 
 
 class Draw_Parser(Parser):

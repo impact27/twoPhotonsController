@@ -444,7 +444,6 @@ class Motor(Stage):
         super().__init__(1000, checklock)
         self.mutex = QtCore.QMutex()
         self.XY_c = Linear_controller()
-        self.XY_c.waitState()
         self.Z_c = z_controller()
 
     def _XSPOS(self):
@@ -522,7 +521,6 @@ class Piezo(Stage):
         self.mutex = QtCore.QMutex()
         self.XYZ_c = Cube_controller()
         self.XYZ_c.stageConnected.connect(self.reset)
-        self.XYZ_c.connect()
 
         self.recording_macro = False
 

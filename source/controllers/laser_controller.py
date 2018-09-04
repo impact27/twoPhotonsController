@@ -18,13 +18,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 import numpy as np
-
-
-from .HW_conf import laser_power_COM
 from .stage_controller import HW_E727
-
-
-
 
 class Laser_controller():
 
@@ -52,12 +46,6 @@ class Laser_controller():
         if not self.cube.IsConnected():
             return 0
         return float(self.cube.qVOL(4)[4])
-
-    def switch(self, on):
-        if on:
-            self.set_intensity(self._V)
-        else:
-            self.cube.SVA(4, 0)
 
     def get_state(self):
         return self.cube.IsConnected() and self.cube.IsControllerReady()

@@ -241,7 +241,6 @@ class Zcorrector():
         self.camera.auto_exposure_time(False)
         self.camera.set_exposure_time(self.camera.exposure_time_range()[0])
         self.laser.set_intensity(intensity)
-        self.laser.switch(True)
         self.camera.extShutter(True)
 
     def endlaser(self):

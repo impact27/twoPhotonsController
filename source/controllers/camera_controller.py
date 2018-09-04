@@ -26,8 +26,8 @@ from .hardware_singleton import Hardware_Singleton
 
 
 class HW_camera(Hardware_Singleton):
-    def __init__(self):
-        super().__init__("Camera")
+    def __init__(self, callback):
+        super().__init__("Camera", callback)
         
     def _open_connection(self):
         return PixeLINK(serialNumber=pixeLINK_SN)
@@ -48,11 +48,16 @@ class HW_shutter(Hardware_Singleton):
         self.close()
 
 class camera_controller():
-    def __init__(self):
-        self.cam = HW_camera()
-        self._ext_shutter = HW_shutter()
+    def __init__(self, callback):
         self.shape = np.asarray([3840, 2484])
+        self.cam = HW_camera(self.onCamConnect)
+        self._ext_shutter = HW_shutter()
+        
+        self.callback = callback
+        
+    def onCamConnect(self):
         self.roi = (0, 0, 3840, 2484)
+        self.callback()
 
     def exposure_time_range(self):
         return [1.9e-5, .1]

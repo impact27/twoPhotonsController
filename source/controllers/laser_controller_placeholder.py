@@ -38,9 +38,6 @@ class Laser_controller():
 
     def get_intensity(self):
         return self.intensity
-
-    def switch(self, on):
-        self.state = on
-
+    
     def get_state(self):
         return self.state
