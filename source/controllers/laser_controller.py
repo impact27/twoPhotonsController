@@ -21,18 +21,16 @@ import numpy as np
 
 
 from .HW_conf import laser_power_COM
-from .stage_controller import E727_controller
+from .stage_controller import HW_E727
+
+
 
 
 class Laser_controller():
 
     def __init__(self):
-        self.cube = E727_controller()
-        self.cube.stageConnected.connect(self.onConnect)
+        self.cube = HW_E727(self.onConnect)
         self._V = 0
-
-    def reconnect(self):
-        pass
 
     def onConnect(self):
         self.cube.SVO(4, False)

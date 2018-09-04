@@ -22,22 +22,37 @@ import serial
 from .HW_conf import camera_shutter_COM, pixeLINK_SN
 import numpy as np
 
+from .hardware_singleton import Hardware_Singleton
+
+
+class HW_camera(Hardware_Singleton):
+    def __init__(self):
+        super().__init__("Camera")
+        
+    def _open_connection(self):
+        return PixeLINK(serialNumber=pixeLINK_SN)
+    
+    def _close_connection(self):
+        self.close()
+    
+class HW_shutter(Hardware_Singleton):
+    def __init__(self):
+        super().__init__("Shutter")
+        
+    def _open_connection(self):
+        shutter = serial.Serial(camera_shutter_COM)
+        shutter.write('OFF\n'.encode())
+        return shutter
+    
+    def _close_connection(self):
+        self.close()
 
 class camera_controller():
     def __init__(self):
-        self.cam = None
-        self.reconnect()
-        self._ext_shutter = serial.Serial(camera_shutter_COM)
-        self._ext_shutter.write('OFF\n'.encode())
+        self.cam = HW_camera()
+        self._ext_shutter = HW_shutter()
         self.shape = np.asarray([3840, 2484])
         self.roi = (0, 0, 3840, 2484)
-
-    def __del__(self):
-        self._ext_shutter.close()
-
-    def reconnect(self):
-        del self.cam
-        self.cam = PixeLINK(serialNumber=pixeLINK_SN)
 
     def exposure_time_range(self):
         return [1.9e-5, .1]
