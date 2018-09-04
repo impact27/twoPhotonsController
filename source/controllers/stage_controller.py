@@ -22,7 +22,6 @@ import pipython
 import time
 import numpy as np
 from PyQt5 import QtCore
-from functools import partial
 import clr
 
 from . import HW_conf
@@ -39,6 +38,8 @@ clr.AddReference("Thorlabs.MotionControl.KCube.DCServoCLI")
 import Thorlabs.MotionControl.Controls
 from Thorlabs.MotionControl.DeviceManagerCLI import DeviceManagerCLI
 from Thorlabs.MotionControl.KCube.DCServoCLI import KCubeDCServo
+
+from .hardware_singleton import Hardware_Singleton
 
 # ==============================================================================
 # Stage controller
@@ -80,35 +81,44 @@ class stage_controller(QtCore.QObject):
 # ==============================================================================
 # Linear stages controller
 # ==============================================================================
+class HW_line(Hardware_Singleton):
+    def __init__(self, name, ID):
+        super().__init__(name)
+        self._ID = ID
 
+    def _open_connection(self):
+        stage = GCSDevice(HW_conf.GCS_lin_controller_name)
+        stage.ConnectUSB(self._ID)
+        time.sleep(1)
+        if stage.qCST()['1'] != HW_conf.GCS_lin_stage_name:
+            print(stage.qCST()['1'])
+            raise RuntimeError("Incorrect stage connected")
+        print('Connected', stage.qIDN())
+        stage.SVO(1, True)
+        if not stage.qFRF()['1']:
+            print("Reference move")
+            stage.FRF(1)
+        return stage
+
+    def _close_connection(self):
+        self.CloseConnection()
+
+class Xline(HW_line):
+    def __init__(self):
+        super().__init__('X Line', HW_conf.XStageName)
+
+class Yline(HW_line):
+    def __init__(self):
+        super().__init__('Y Line', HW_conf.YStageName)
 
 class Linear_controller(stage_controller):
     def __init__(self):
         super().__init__()
-        self.lines = [None, None]
-        self.threads = []
-        for i, sn in enumerate([HW_conf.XStageName, HW_conf.YStageName]):
-            self.threads.append(linethread(sn, partial(self.set_stage, i)))
-        self.reconnect()
-
-    def set_stage(self, axis, stage):
-        if stage is None:
-            raise RuntimeError("Stage is None")
-        self.lines[axis] = stage
+        self.lines = [Xline(), Yline()]
 
     @property
     def connected(self):
-        return np.all([l is not None for l in self.lines])
-
-    def reconnect(self):
-        for i in range(2):
-            if self.lines[i] is not None:
-                self.lines[i].CloseConnection()
-                self.lines[i] = None
-        [t.start() for t in self.threads]
-
-    def __del__(self):
-        [l.CloseConnection() for l in self.lines]
+        return np.all([l._isConnected for l in self.lines])
 
     def waitState(self, timeout=30):
         self.is_ready()
@@ -158,94 +168,30 @@ class Linear_controller(stage_controller):
         if np.any([l is None for l in self.lines]):
             return False
         return np.all([l.IsControllerReady() for l in self.lines])
-
-
-class linethread(QtCore.QThread):
-    def __init__(self, StageName, stage_callback):
-        super().__init__()
-        self.StageName = StageName
-        self.stage_callback = stage_callback
-
-    def run(self):
-        stage = GCSDevice(HW_conf.GCS_lin_controller_name)
-        stage.ConnectUSB(self.StageName)
-        time.sleep(1)
-        if stage.qCST()['1'] != HW_conf.GCS_lin_stage_name:
-            print(stage.qCST()['1'])
-            raise RuntimeError("Incorrect stage connected")
-        print('Connected', stage.qIDN())
-        stage.SVO(1, True)
-        if not stage.qFRF()['1']:
-            print("Reference move")
-            stage.FRF(1)
-        self.stage_callback(stage)
 # ==============================================================================
 # Cube Controller
 # ==============================================================================
 
+class HW_E727(Hardware_Singleton):
 
-class E727_controller(QtCore.QObject):
-    """Singleton to connect stage"""
-    stageConnected = QtCore.pyqtSignal()
-    E727 = None
-    IsConnecting = False
-    mutex = QtCore.QMutex()
+    def __init__(self, callback=None):
+        super().__init__('E727', callback)
 
-    def __init__(self):
-        super().__init__()
-        self.thread = E727_thread(self.set_stage)
-        self.connect()
-
-    def __getattr__(self, name):
-        if E727_controller.E727 is None:
-            raise RuntimeError("E727 not connected")
-        else:
-            return getattr(E727_controller.E727, name)
-    
-    def __del__(self):
-        self.disconnect()
-
-    def IsConnected(self):
-        QtCore.QMutexLocker(E727_controller.mutex)
-        return E727_controller.E727 is not None
-
-    def set_stage(self, stage):
-        QtCore.QMutexLocker(E727_controller.mutex)
-        if stage == E727_controller.E727:
-            return
-        if stage is None:
-            self.disconnect()
-
-        E727_controller.E727 = stage
-        E727_controller.IsConnecting = False
-        if E727_controller.E727 is not None:
-            self.stageConnected.emit()
-
-    def connect(self):
-        QtCore.QMutexLocker(E727_controller.mutex)
-        if E727_controller.E727 is None and not E727_controller.IsConnecting:
-            E727_controller.IsConnecting = True
-            self.thread.start()
-
-    def disconnect(self):
-        QtCore.QMutexLocker(E727_controller.mutex)
-        if E727_controller.E727 is not None:
-            E727_controller.E727.CloseConnection()
-            E727_controller.E727 = None
-
-
-class E727_thread(QtCore.QThread):
-    def __init__(self, callback):
-        super().__init__()
-        self.callback = callback
-
-    def run(self):
+    def _open_connection(self):
         stage = GCSDevice(HW_conf.GCS_cube_controller_name)
         stage.ConnectUSB(HW_conf.cubeName)
         time.sleep(2)
         print('Connected', stage.qIDN())
-        self.callback(stage)
+        if self.__cube.qCST()['1'] != HW_conf.GCS_cube_stage_name:
+            print(self.__cube.qCST()['1'])
+            raise RuntimeError("Incorrect stage connected")
 
+        self.__cube.SVO([1, 2, 3], [True, True, True])
+        self.__cube.ATZ([1, 2, 3], [0, 0, 0])
+        return stage
+
+    def _close_connection(self):
+        self.CloseConnection()
 
 class Cube_controller(stage_controller):
     # Reverse y and z
@@ -253,27 +199,11 @@ class Cube_controller(stage_controller):
 
     def __init__(self):
         super().__init__()
-        self.__cube = E727_controller()
+        self.__cube = HW_E727(self.stageConnected.emit)
         self.error = pipython.gcserror.GCSError
         self.internal_offset = np.asarray([50, 50, 50])
-        self.__cube.stageConnected.connect(self.onStageConnect)
         self.Servo_Update_Time = 50e-6  # s 0x0E000200
         self.max_points = 250000  # 0x13000004
-
-    def connect(self):
-        self.__cube.connect()
-
-    def onStageConnect(self):
-        if self.__cube.qCST()['1'] != HW_conf.GCS_cube_stage_name:
-            print(self.__cube.qCST()['1'])
-            raise RuntimeError("Incorrect stage connected")
-
-        self.__cube.SVO([1, 2, 3], [True, True, True])
-        self.__cube.ATZ([1, 2, 3], [0, 0, 0])
-        self.stageConnected.emit()
-
-    def __del__(self):
-        self.__cube.disconnect()
 
     def MOVVEL(self, X, V):
         X = X + self.internal_offset
@@ -376,21 +306,58 @@ class Cube_controller(stage_controller):
 # Z Controller
 # =============================================================================
 
+class HW_zline(Hardware_Singleton):
+    def __init__(self, callback):
+        super().__init__('Z Line', callback)
+        self._SN = HW_conf.kinesis_cube_serial
+
+    def _open_connection(self):
+        # Instructs the DeviceManager to build and maintain the list of
+        # devices connected.
+        DeviceManagerCLI.BuildDeviceList()
+
+        kCubeDCServoMotor = KCubeDCServo.CreateKCubeDCServo(self._SN)
+
+        # Establish a connection with the device.
+        kCubeDCServoMotor.Connect(self._SN)
+
+        # Wait for the device settings to initialize. We ask the device to
+        # throw an exception if this takes more than 5000ms (5s) to complete.
+        kCubeDCServoMotor.WaitForSettingsInitialized(5000)
+
+        # Initialize the DeviceUnitConverter object required for real world
+        # unit parameters.
+        kCubeDCServoMotor.GetMotorConfiguration(self._SN)
+
+        # This starts polling the device at intervals of 250ms (0.25s).
+        kCubeDCServoMotor.StartPolling(20)
+
+        # We are now able to enable the device for commands.
+        kCubeDCServoMotor.EnableDevice()
+
+        assert(kCubeDCServoMotor.IsActuatorDefined)
+
+        print("Zstage Connected")
+
+        velocity_parameters = kCubeDCServoMotor.GetVelocityParams()
+        velocity_parameters.MaxVelocity = Decimal(1)
+        kCubeDCServoMotor.SetVelocityParams(velocity_parameters)
+
+        if not kCubeDCServoMotor.Status.IsHomed:
+            kCubeDCServoMotor.Home(0)
+
+        return kCubeDCServoMotor
+
+    def _close_connection(self):
+        self.ShutDown()
+
 class z_controller(stage_controller):
     # Reverse z
-    def __init__(self, serial=HW_conf.kinesis_cube_serial):
+    def __init__(self):
         super().__init__()
-        self._kCubeDCServoMotor = None
-        self.thread = Zthread(serial, self.set_stage)
-        if serial is not None:
-            self.connect(serial)
+        self._kCubeDCServoMotor = HW_zline(self.onConnect)
         self.posmin = -12000
         self.posmax = 0
-
-    def reconnect(self):
-        if self._kCubeDCServoMotor is not None:
-            self.disconnect()
-        self.connect()
 
     def get_position(self):
         Z = float(str(self._kCubeDCServoMotor.Position)) * 1e3
@@ -440,27 +407,6 @@ class z_controller(stage_controller):
         except Thorlabs.MotionControl.DeviceManagerCLI.DeviceException as exc:
             print("Can't set velocity {}".format(V))
 
-    def connect(self, serialNumber=HW_conf.kinesis_cube_serial):
-
-        if self._kCubeDCServoMotor is not None:
-            print("Cube already connected")
-            return
-
-        self.thread.run()
-
-    def disconnect(self):
-        if self._kCubeDCServoMotor is None:
-            print("Cube not connected")
-            return
-        try:
-            # Shuts down this device and frees any resources it is using.
-            self._kCubeDCServoMotor.ShutDown()
-
-            self._kCubeDCServoMotor = None
-        except BaseException:
-            print("Can't disconnect")
-            raise
-
     def home(self):
         try:
             # We pass in a wait timeout of zero to indicates we don't care how
@@ -498,58 +444,11 @@ class z_controller(stage_controller):
     def is_homing(self):
         return self._kCubeDCServoMotor.Status.IsHoming
 
-    def set_stage(self, stage):
-        if stage is None:
-            raise RuntimeError("Stage is None")
-        self._kCubeDCServoMotor = stage
+    def onConnect(self):
         self._posmin = float(str(self._kCubeDCServoMotor.AdvancedMotorLimits
                                  .LengthMinimum)) * 1e3
         self._posmax = float(str(self._kCubeDCServoMotor.AdvancedMotorLimits
                                  .LengthMaximum)) * 1e3
-
-
-class Zthread(QtCore.QThread):
-    def __init__(self, SN, stage_callback):
-        super().__init__()
-        self.SN = SN
-        self.stage_callback = stage_callback
-
-    def run(self):
-        # Instructs the DeviceManager to build and maintain the list of
-        # devices connected.
-        DeviceManagerCLI.BuildDeviceList()
-
-        kCubeDCServoMotor = KCubeDCServo.CreateKCubeDCServo(self.SN)
-
-        # Establish a connection with the device.
-        kCubeDCServoMotor.Connect(self.SN)
-
-        # Wait for the device settings to initialize. We ask the device to
-        # throw an exception if this takes more than 5000ms (5s) to complete.
-        kCubeDCServoMotor.WaitForSettingsInitialized(5000)
-
-        # Initialize the DeviceUnitConverter object required for real world
-        # unit parameters.
-        kCubeDCServoMotor.GetMotorConfiguration(self.SN)
-
-        # This starts polling the device at intervals of 250ms (0.25s).
-        kCubeDCServoMotor.StartPolling(20)
-
-        # We are now able to enable the device for commands.
-        kCubeDCServoMotor.EnableDevice()
-
-        assert(kCubeDCServoMotor.IsActuatorDefined)
-
-        print("Zstage Connected")
-
-        velocity_parameters = kCubeDCServoMotor.GetVelocityParams()
-        velocity_parameters.MaxVelocity = Decimal(1)
-        kCubeDCServoMotor.SetVelocityParams(velocity_parameters)
-
-        if not kCubeDCServoMotor.Status.IsHomed:
-            kCubeDCServoMotor.Home(0)
-
-        self.stage_callback(kCubeDCServoMotor)
 
 # ==============================================================================
 # Helper functions
@@ -566,7 +465,6 @@ if __name__ == "__main__":
     # %%
     cc = Cube_controller()
     cc.connect()
-    import time
     time.sleep(5)
     # %%
     cc.MAC_BEG('test')
