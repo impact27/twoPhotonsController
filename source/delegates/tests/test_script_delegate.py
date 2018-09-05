@@ -16,7 +16,6 @@ class Test_script(unittest.TestCase):
         self.fn = '../../../files/test/test.txt'
 
     def test_Draw(self):
-
         def test():
             pass
         fig = plt.figure()
@@ -32,13 +31,11 @@ class Test_script(unittest.TestCase):
                 parser.piezo_position - [40, 0, 0])) < 1)
 
     def test_execute(self):
-
         parser = Execute_Parser(ad)
         parser.parse(self.fn)
         self.assertTrue(
             np.max(np.abs(
                 ad.movement_delegate.piezo.position - [40, 0, 0])) < 1)
-
 
 if __name__ == '__main__':
     unittest.main()

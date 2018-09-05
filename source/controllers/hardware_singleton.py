@@ -70,7 +70,7 @@ class Hardware_Singleton(QtCore.QObject):
     def _disconnect(self):
         QtCore.QMutexLocker(type(self)._mutex)
         if self._isConnected():
-            self.close_connection()
+            self._close_connection()
             type(self)._hardware = None
             
     def _open_connection(self):

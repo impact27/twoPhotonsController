@@ -281,6 +281,9 @@ class Cube_controller(stage_controller):
     def run_waveform(self, time_step, X):
         assert X.size < self.max_points
         assert np.shape(X)[1] == 3 or np.shape(X)[1] == 4
+        
+        # Go to first pos
+        self.MOVVEL(X[0, :3], np.ones(3) * 1000)
 
         rate = int(np.round(time_step / self.Servo_Update_Time))
         
@@ -289,6 +292,9 @@ class Cube_controller(stage_controller):
         X[:, 1:3] = 100 - X[:, 1:3]
         
         assert np.all(X > 0) and np.all(X < 100)
+        
+        
+        
         # Set rate
         self.__cube.send(f"WTR 0 {rate} 1")
         
@@ -311,13 +317,15 @@ class Cube_controller(stage_controller):
 
         # limit to 1 scan
         self.__cube.send('WGC ' + " ".join(str(e) + ' 1' for e in idx))
+        
+        # Offset to 0
+        self.__cube.send('WOS ' + " ".join(str(e) + ' 0' for e in idx))
 
         # GO
         self.__cube.send('WGO ' + " ".join(str(e) + ' 0x101' for e in idx))
 
         # wait
         time.sleep(50e-6 * rate * X.shape[0])
-        print(self.__cube.IsControllerReady())
         while(self.__cube.IsGeneratorRunning()[1]):
             time.sleep(0.1)
 
