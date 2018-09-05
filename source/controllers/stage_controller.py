@@ -99,11 +99,11 @@ class Stage_controller(QtCore.QObject):
 class HW_line(Hardware_Singleton):
     def __init__(self, name, ID):
         super().__init__(name)
-        self._ID = ID
+        type(self)._ID = ID
 
     def _open_connection(self):
         stage = GCSDevice(HW_conf.GCS_lin_controller_name)
-        stage.ConnectUSB(self._ID)
+        stage.ConnectUSB(type(self)._ID)
         time.sleep(1)
         if stage.qCST()['1'] != HW_conf.GCS_lin_stage_name:
             print(stage.qCST()['1'])
@@ -163,17 +163,18 @@ class HW_E727(Hardware_Singleton):
 class HW_zline(Hardware_Singleton):
     def __init__(self, callback):
         super().__init__('Z Line', callback)
-        self._SN = HW_conf.kinesis_cube_serial
 
     def _open_connection(self):
+        _SN = HW_conf.kinesis_cube_serial
+        
         # Instructs the DeviceManager to build and maintain the list of
         # devices connected.
         DeviceManagerCLI.BuildDeviceList()
 
-        kCubeDCServoMotor = KCubeDCServo.CreateKCubeDCServo(self._SN)
+        kCubeDCServoMotor = KCubeDCServo.CreateKCubeDCServo(_SN)
 
         # Establish a connection with the device.
-        kCubeDCServoMotor.Connect(self._SN)
+        kCubeDCServoMotor.Connect(_SN)
 
         # Wait for the device settings to initialize. We ask the device to
         # throw an exception if this takes more than 5000ms (5s) to complete.
@@ -181,7 +182,7 @@ class HW_zline(Hardware_Singleton):
 
         # Initialize the DeviceUnitConverter object required for real world
         # unit parameters.
-        kCubeDCServoMotor.GetMotorConfiguration(self._SN)
+        kCubeDCServoMotor.GetMotorConfiguration(_SN)
 
         # This starts polling the device at intervals of 250ms (0.25s).
         kCubeDCServoMotor.StartPolling(20)

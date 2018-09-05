@@ -32,26 +32,29 @@ class Hardware_Singleton(QtCore.QObject):
     def __getattr__(self, name):
         if type(self)._isConnecting and not self._isConnected():
             type(self)._mutex.lock()
-            print(f"Waiting because of a call to {self._name}")
+            print(f"Waiting because of a call to {type(self)._name}")
             type(self)._mutex.unlock()
             type(self)._thread.wait(60000)
             time.sleep(1)
         if not self._isConnected():
-            raise RuntimeError(f"{self._name} not connected")
+            raise RuntimeError(f"{type(self)._name} not connected")
         else:
             return getattr(type(self)._hardware, name)
         
     def __setattr__(self, name, value):
+        if name == '_connect_callback':
+            super().__setattr__(name, value)
+            return
         if type(self)._isConnecting and not self._isConnected():
             type(self)._mutex.lock()
-            print(f"Waiting because of a call to {self._name}")
+            print(f"Waiting because of a call to {type(self)._name}")
             type(self)._mutex.unlock()
             type(self)._thread.wait(60000)
             time.sleep(1)
         if not self._isConnected():
-            raise RuntimeError(f"{self._name} not connected")
+            raise RuntimeError(f"{type(self)._name} not connected")
         else:
-            getattr(type(self)._hardware, name) = value
+            setattr(type(self)._hardware, name, value)
         
         
     def __del__(self):
