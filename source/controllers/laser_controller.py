@@ -23,32 +23,34 @@ from .stage_controller import HW_E727
 class Laser_controller():
 
     def __init__(self):
-        self.cube = HW_E727(self.onConnect)
+        self._HW = HW_E727(self.onConnect)
         self._V = 0
 
     def onConnect(self):
-        self.cube.SVO(4, False)
-        self.cube.SVA(4, 0)
+        self._HW.SVO(4, False)
+        self._HW.SVA(4, 0)
 
     def get_range(self):
         return np.array([0, 10])
+    
+    @property
+    def intensity(self):
+        if not self._HW.IsConnected():
+            return 0
+        return float(self._HW.qVOL(4)[4]) 
 
-    def set_intensity(self, V):
+    @intensity.setter
+    def intensity(self, V):
         amin, amax = self.get_range()
         if V < amin:
             V = amin
         if V > amax:
             V = amax
         self._V = V
-        self.cube.SVA(4, V)
-
-    def get_intensity(self):
-        if not self.cube.IsConnected():
-            return 0
-        return float(self.cube.qVOL(4)[4])
+        self._HW.SVA(4, V)
 
     def get_state(self):
-        return self.cube.IsConnected() and self.cube.IsControllerReady()
+        return self._HW.IsConnected() and self._HW.IsControllerReady()
 
 
 

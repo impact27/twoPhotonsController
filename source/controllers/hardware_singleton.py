@@ -86,4 +86,5 @@ class Hardware_Thread(QtCore.QThread):
         self._newConnection = newConnection
 
     def run(self):
-        self._callback(self._newConnection())
+        HW = self._newConnection()
+        self._callback(HW)

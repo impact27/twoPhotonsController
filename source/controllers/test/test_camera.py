@@ -22,11 +22,18 @@ class Test_Camera(unittest.TestCase):
         
     def test_grab(self):
         im = self.cam.get_image()
-        self.assertTrue(im.shape == self.cam.roi[2:])
+        self.assertTrue(np.all(im.shape == self.cam.roi[2:][::-1]))
         
     def test_exposure_time(self):
         self.cam.exposure_time = 1e-2
         self.assertTrue(self.cam.exposure_time == 1e-2)
-
+        
+    def test_reconnect(self):
+        roi = self.cam.roi
+        self.cam.cam._disconnect()
+        self.assertFalse(self.cam.cam._isConnected())
+        self.cam.cam._connect()
+        self.assertTrue(np.all(self.cam.roi == roi))
+        
 if __name__ == '__main__':
     unittest.main()

@@ -145,7 +145,7 @@ class Linear_controller(fake_controller):
     def get_vel_range(self, axis):
         return np.array([0, 1.5]) * 1000
 
-    def waitState(self, timeout=30):
+    def waitReady(self, timeout=30):
         return
 
 # ==============================================================================
