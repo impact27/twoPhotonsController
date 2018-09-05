@@ -129,10 +129,10 @@ class Parser():
             pos[1] = args_dic['Y']
         if 'Z' in args_dic:
             pos[2] = args_dic['Z']
-        if 'E' in args_dic:
-            speed = args_dic['E']
         if 'F' in args_dic:
-            intensity = args_dic['F']
+            speed = args_dic['F']
+        if 'E' in args_dic:
+            intensity = args_dic['E']
         return pos, speed, intensity
 
     def camera(self, subcommand, arg):
@@ -400,7 +400,7 @@ class Draw_Parser(Parser):
         self.writing = state
 
     def laser_power(self, power):
-        self.color = cmap(power / 10)
+        self.color = cmap(power / 4)
 
     def piezoreset(self):
         self.piezo_position = np.zeros(3)
