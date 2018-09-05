@@ -288,14 +288,22 @@ class Cube_controller(Stage_controller):
     # Reverse y and z
     stageConnected = QtCore.pyqtSignal()
     
-    class no_macro():
-        def __init__(self, f):
-            self.f = f
-        def __call__(self, *args):
+#    class no_macro():
+#        def __init__(self, f):
+#            self.f = f
+#        def __call__(self, *args):
+##            if args[0].isRecordingMacro:
+##                raise RuntimeError("Can't use that function while recording a macro")
+##            else:
+#                self.f(*args)
+    def no_macro(f):
+        def ret(*args):
             if args[0].isRecordingMacro:
                 raise RuntimeError("Can't use that function while recording a macro")
             else:
-                self.f(*args)
+                return f(*args)
+        return ret
+            
 
     def __init__(self):
         super().__init__()
