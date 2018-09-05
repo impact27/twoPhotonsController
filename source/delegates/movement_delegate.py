@@ -40,12 +40,12 @@ if _TEST_:
     from controllers.stage_controller_placeholder import (Linear_controller,
                                                           Cube_controller,
                                                           z_controller,
-                                                          stage_controller)
+                                                          Stage_controller)
 else:
     from controllers.stage_controller import (Linear_controller,
                                               Cube_controller,
                                               z_controller,
-                                              stage_controller)
+                                              Stage_controller)
 
 
 class Movement_delegate(QtCore.QObject):
@@ -651,7 +651,7 @@ class Motor_z_switcher():
         self.motor.coordinatesCorrected.emit(self.motor._corrections)
 
 
-class Piezo_z(stage_controller):
+class Piezo_z(Stage_controller):
     """Singled out z direction to mix with the motor stage (see Motor_z_switcher)"""
     move_signal = QtCore.pyqtSignal(float)
 

@@ -57,6 +57,15 @@ class Camera_controller():
         
         self.flip_image = True
         
+    def connect(self):
+        self.cam._connect()
+    
+    def disconnect(self):
+        self.cam._disconnect()
+        
+    def isConnected(self):
+        return self.cam._isConnected()
+    
     def onCamConnect(self):
         self.roi_reset()
         if self.callback is not None:

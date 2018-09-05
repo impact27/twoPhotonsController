@@ -20,10 +20,10 @@ class Test_Camera(unittest.TestCase):
         self.laser.intensity = 0
         
     def test_reconnect(self):
-        self.laser._HW._disconnect()
-        self.assertFalse(self.laser._HW._isConnected())
+        self.laser.disconnect()
+        self.assertFalse(self.laser.isConnected())
         
-        self.laser._HW._connect()
+        self.laser.connect()
         self.assertTrue(np.abs(
                 self.laser.intensity - 0) < 1e-5)
         
