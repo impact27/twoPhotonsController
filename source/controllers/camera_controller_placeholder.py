@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import numpy as np
 
 
-class camera_controller():
+class Camera_controller():
     def __init__(self):
         self.exposure_time = .01
         self._roi = (0, 0, 100, 100)

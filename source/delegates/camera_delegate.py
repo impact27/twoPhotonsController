@@ -8,9 +8,9 @@ from PyQt5 import QtCore
 import sys
 import numpy as np
 if sys.platform == "darwin":
-    from controllers.camera_controller_placeholder import camera_controller
+    from controllers.camera_controller_placeholder import Camera_controller
 else:
-    from controllers.camera_controller import camera_controller
+    from controllers.camera_controller import Camera_controller
 
 
 class Camera_delegate(QtCore.QObject):
@@ -23,13 +23,18 @@ class Camera_delegate(QtCore.QObject):
     def __init__(self):
         super().__init__()
         self.mutex = QtCore.QMutex()
-        self.controller = camera_controller(self.onConnect)
+        self.controller = Camera_controller(self._onConnect)
         self.isAuto = False
         self.reset_bg()
         
-    def onConnect(self):
+    def _onConnect(self):
         self.roi0 = self.controller.roi
 
+    @property
+    def roi(self):
+        """Return """
+        return np.asarray(self.controller.roi)
+    
     def set_relative_roi(self, roi):
         QtCore.QMutexLocker(self.mutex)
         roi = np.array(roi)
