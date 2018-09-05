@@ -48,23 +48,27 @@ class HW_shutter(Hardware_Singleton):
         self.close()
 
 class Camera_controller():
-    def __init__(self, callback):
+    def __init__(self, callback=None):
         self.shape = np.asarray(pixeLINK_MaxROI)
         self.cam = HW_camera(self.onCamConnect)
         self._ext_shutter = HW_shutter()
         
         self.callback = callback
         
+        self.flip_image = True
+        
     def onCamConnect(self):
         self.roi_reset()
-        self.callback()
+        if self.callback is not None:
+            self.callback()
 
     def exposure_time_range(self):
         return [1.9e-5, .1]
 
     def get_image(self):
         im = self.cam.grab()
-        im = im[::-1, ::-1]
+        if self.flip_image:
+            im = im[::-1, ::-1]
         return im
 
     def set_exposure_time(self, time):
@@ -93,12 +97,16 @@ class Camera_controller():
 
     @property
     def roi(self):
-        return self.cam.roi
+        roi = np.asarray(self.cam.roi)
+        if self.flip_image:
+            roi[:2] = self.shape - (roi[:2]+roi[2:])
+        return roi
 
     @roi.setter
     def roi(self, roi):
         roi = np.asarray(roi)
-        roi[:2] = self.shape - (roi[:2]+roi[2:])
+        if self.flip_image:
+            roi[:2] = self.shape - (roi[:2]+roi[2:])
 
         streaming = self.cam.streaming
         self.cam.streaming = False
