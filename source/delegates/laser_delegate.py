@@ -58,3 +58,14 @@ class Laser_delegate(QtCore.QObject):
         QtCore.QMutexLocker(self.mutex)
 
         return self.controller.intensity
+    
+    def VtoI(self, V):
+        pass
+    
+    def ItoV(self, I):
+        pass
+        
+    def set_calibration_curve(self, C):
+        pass
+        
+        
