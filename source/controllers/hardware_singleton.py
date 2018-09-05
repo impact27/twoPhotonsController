@@ -41,6 +41,19 @@ class Hardware_Singleton(QtCore.QObject):
         else:
             return getattr(type(self)._hardware, name)
         
+    def __setattr__(self, name, value):
+        if type(self)._isConnecting and not self._isConnected():
+            type(self)._mutex.lock()
+            print(f"Waiting because of a call to {self._name}")
+            type(self)._mutex.unlock()
+            type(self)._thread.wait(60000)
+            time.sleep(1)
+        if not self._isConnected():
+            raise RuntimeError(f"{self._name} not connected")
+        else:
+            getattr(type(self)._hardware, name) = value
+        
+        
     def __del__(self):
         type(self)._number_instances -= 1
         if type(self)._number_instances == 0:
