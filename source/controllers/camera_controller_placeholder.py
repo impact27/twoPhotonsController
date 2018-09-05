@@ -23,7 +23,7 @@ import numpy as np
 class Camera_controller():
     def __init__(self):
         self.exposure_time = .01
-        self._roi = (0, 0, 100, 100)
+        self.roi_reset()
 
     def reconnect(self):
         print('Connected Camera')
@@ -59,3 +59,6 @@ class Camera_controller():
     @roi.setter
     def roi(self, ltwhTuple):
         self._roi = ltwhTuple
+        
+    def roi_reset(self):
+        self._roi = (0, 0, 100, 100)

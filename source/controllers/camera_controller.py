@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 from .pixelink import PixeLINK
 import serial
-from .HW_conf import camera_shutter_COM, pixeLINK_SN
+from .HW_conf import camera_shutter_COM, pixeLINK_SN, pixeLINK_MaxROI
 import numpy as np
 
 from .hardware_singleton import Hardware_Singleton
@@ -47,16 +47,16 @@ class HW_shutter(Hardware_Singleton):
     def _close_connection(self):
         self.close()
 
-class camera_controller():
+class Camera_controller():
     def __init__(self, callback):
-        self.shape = np.asarray([3840, 2484])
+        self.shape = np.asarray(pixeLINK_MaxROI)
         self.cam = HW_camera(self.onCamConnect)
         self._ext_shutter = HW_shutter()
         
         self.callback = callback
         
     def onCamConnect(self):
-        self.roi = (0, 0, 3840, 2484)
+        self.roi_reset()
         self.callback()
 
     def exposure_time_range(self):
@@ -108,6 +108,9 @@ class camera_controller():
             print(roi[0] + roi[2], roi[1]+roi[3])
             print(e)
         self.cam.streaming = streaming
+        
+    def roi_reset(self):
+        self.roi = (0, 0, *self.shape)
 
 # %%
 #from matplotlib.pyplot import figure, imshow

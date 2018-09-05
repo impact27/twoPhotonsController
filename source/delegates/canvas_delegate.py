@@ -335,7 +335,7 @@ class Canvas_delegate(QtCore.QObject):
             roi *= self.rescale_factor
             roi = np.round(roi)
             roi = np.array(roi, int)
-            self.cd.set_relative_roi((*roi,))
+            self.cd.roi_zoom((*roi,))
 
     def clear_click(self):
 

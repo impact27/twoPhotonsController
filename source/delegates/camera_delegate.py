@@ -35,7 +35,7 @@ class Camera_delegate(QtCore.QObject):
         """Return """
         return np.asarray(self.controller.roi)
     
-    def set_relative_roi(self, roi):
+    def roi_zoom(self, roi):
         QtCore.QMutexLocker(self.mutex)
         roi = np.array(roi)
         cur_roi = np.array(self.controller.roi)
@@ -43,7 +43,7 @@ class Camera_delegate(QtCore.QObject):
         self.controller.roi = roi
         self.new_roi.emit()
 
-    def reset_roi(self):
+    def roi_reset(self):
         QtCore.QMutexLocker(self.mutex)
         self.controller.roi = self.roi0
         self.new_roi.emit()

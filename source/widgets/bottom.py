@@ -82,7 +82,7 @@ class Bottom_widget(QtWidgets.QWidget):
             self.switch_draw)
 
         reset_roi_button.clicked.connect(
-            application_delegate.camera_delegate.reset_roi)
+            application_delegate.camera_delegate.roi_reset)
 
     def switch_live(self, on):
         if on:
