@@ -26,6 +26,18 @@ class Laser_controller():
         self.range = np.array([0, 10])
         self.intensity = 0
         self.state = False
+        self.__connected = True
+
+    def connect(self):
+        print('Connected Laser')
+        self.__connected = True
+    
+    def disconnect(self):
+        print('Disconnected Laser')
+        self.__connected = False
+        
+    def isConnected(self):
+        return self.__connected
 
     def reconnect(self):
         print("Connected Laser")

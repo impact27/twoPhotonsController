@@ -24,15 +24,10 @@ from PyQt5 import QtCore
 # ==============================================================================
 # Stage controller
 # ==============================================================================
-
-
-class stage_controller(QtCore.QObject):
+class Stage_controller(QtCore.QObject):
 
     def __init__(self):
         super().__init__()
-
-    def reconnect(self):
-        pass
 
     def get_position(self):
         pass
@@ -57,38 +52,39 @@ class stage_controller(QtCore.QObject):
 
     def is_ready(self):
         pass
+    
+    def wait_end_motion(self, timeout=10):
+        """Wait end of motion"""
+        time.sleep(0.1)
+        tstart = time.time()
+        while self.is_moving():
+            if timeout is not None and time.time() - tstart > timeout:
+                raise RuntimeError('The motion took too long to complete')
+            time.sleep(.01)
+    
+    def is_moving(self):
+        raise RuntimeError("is_moving not implemented")
 
-    def MAC_BEG(self, name):
-        pass
-
-    def MAC_END(self):
-        pass
-
-    def MAC_START(self, name):
-        pass
-
-    def MAC_DEL(self, name):
-        pass
-
-    def is_macro_running(self):
-        return False
-
-    def macro_wait(self):
-        pass
-
-    def run_waveform(self, time_step, X):
-        pass
-
-
-class fake_controller(stage_controller):
+class fake_controller(Stage_controller):
     def __init__(self):
         super().__init__()
         self.normV = 1000
+        self.__connected = True
 
-    def reconnect(self):
-        print("Connected stage")
+    def connect(self):
+        print('Connected Stage')
+        self.__connected = True
+    
+    def disconnect(self):
+        print('Disconnected Stage')
+        self.__connected = False
+        
+    def isConnected(self):
+        return self.__connected
 
     def MOVVEL(self, X, V):
+        X = np.asarray(X)
+        V = np.asarray(V)
         self.position = self.get_position()
         self.V = V * np.sign(X - self.position)
         self.startTime = time.time()
@@ -121,10 +117,9 @@ class fake_controller(stage_controller):
 
     def is_ready(self):
         return self.is_onTarget()
-
-    def run_waveform(self, time_step, X):
-        self.position = X[:, -1]
-        self.target = X[:, -1]
+        
+    def is_moving(self):
+        return not self.is_onTarget()
 
 # ==============================================================================
 # Linear stages controller
@@ -177,7 +172,28 @@ class Cube_controller(fake_controller):
 
     def get_vel_range(self, axis):
         return np.array([0, 4000])
+    
+    def MAC_BEG(self, name):
+        pass
 
+    def MAC_END(self):
+        pass
+
+    def MAC_START(self, name):
+        pass
+
+    def MAC_DEL(self, name):
+        pass
+
+    def is_macro_running(self):
+        return False
+
+    def macro_wait(self):
+        pass
+    
+    def run_waveform(self, time_step, X):
+        self.position = X[-1]
+        self.target = X[-1]
 # ==============================================================================
 # Z Controller
 # ==============================================================================

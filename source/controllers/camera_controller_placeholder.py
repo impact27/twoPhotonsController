@@ -21,12 +21,21 @@ import numpy as np
 
 
 class Camera_controller():
-    def __init__(self):
+    def __init__(self, callback):
         self.exposure_time = .01
         self.roi_reset()
+        self.__connected = True
 
-    def reconnect(self):
+    def connect(self):
         print('Connected Camera')
+        self.__connected = True
+    
+    def disconnect(self):
+        print('Disconnected Camera')
+        self.__connected = False
+        
+    def isConnected(self):
+        return self.__connected
 
     def get_image(self):
         data = np.exp(-(np.arange(100)-50)**2/(2*20))

@@ -26,6 +26,7 @@ class Camera_delegate(QtCore.QObject):
         self.controller = Camera_controller(self._onConnect)
         self.isAuto = False
         self.reset_bg()
+        self.roi0 = (0, 0, 100, 100)
         
     def _onConnect(self):
         self.roi0 = self.controller.roi

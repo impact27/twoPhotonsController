@@ -23,31 +23,31 @@ class Test_Linear(unittest.TestCase):
         pos = self.stage.get_position()
         self.stage.MOVVEL(pos+1, [10, 10])
         time.sleep(1)
-        self.stage.waitEndMotion()
+        self.stage.wait_end_motion()
         self.assertTrue(
                 np.all(np.abs(self.stage.get_position() - (pos + 1)) < 1e-1))
         
     def test_reconnect(self):
-        self.stage.waitEndMotion()
+        self.stage.wait_end_motion()
         pos = self.stage.get_position()
         self.stage.disconnect()
-        self.assertFalse(self.stage.connected())
+        self.assertFalse(self.stage.isConnected())
         self.stage.connect()
         self.assertTrue(
                 np.all(np.abs(self.stage.get_position() - (pos)) < 1e-1))
         
     def test_onTarget(self):
         self.stage.MOVVEL([25000, 25000], [1000, 1000])
-        self.stage.waitEndMotion()
+        self.stage.wait_end_motion()
         self.assertTrue(self.stage.is_onTarget())
         self.stage.MOVVEL([25001, 25001], [1, 1])
         self.assertFalse(self.stage.is_onTarget())
         time.sleep(1)
-        self.stage.waitEndMotion()
+        self.stage.wait_end_motion()
         
     def test_STOP(self):
         self.stage.MOVVEL([25000, 25000], [1000, 1000])
-        self.stage.waitEndMotion()
+        self.stage.wait_end_motion()
         self.assertTrue(self.stage.is_onTarget())
         self.stage.MOVVEL([25005, 25005], [1, 1])
         self.assertTrue(self.stage.is_moving())
@@ -56,7 +56,7 @@ class Test_Linear(unittest.TestCase):
         
     def test_ESTOP(self):
         self.stage.MOVVEL([25000, 25000], [1000, 1000])
-        self.stage.waitEndMotion()
+        self.stage.wait_end_motion()
         self.assertTrue(self.stage.is_onTarget())
         self.stage.MOVVEL([25005, 25005], [1, 1])
         self.assertTrue(self.stage.is_moving())
@@ -71,32 +71,32 @@ class Test_cube(unittest.TestCase):
         pos = self.stage.get_position()
         self.stage.MOVVEL(pos+1, [10, 10, 10])
         time.sleep(1)
-        self.stage.waitEndMotion(3)
+        self.stage.wait_end_motion(3)
         self.assertTrue(
                 np.all(np.abs(self.stage.get_position() - (pos + 1)) < 1e-1))
         
     def test_reconnect(self):
-        self.stage.waitEndMotion(3)
+        self.stage.wait_end_motion(3)
         self.stage.disconnect()
         self.assertFalse(self.stage.isConnected())
         self.stage.connect()
-        self.stage.waitEndMotion(3)
+        self.stage.wait_end_motion(3)
         self.assertTrue(self.stage.isConnected())
         
     def test_onTarget(self):
         self.stage.MOVVEL([0, 0, 0], [1000, 1000, 1000])
-        self.stage.waitEndMotion(3)
+        self.stage.wait_end_motion(3)
         self.assertTrue(self.stage.is_onTarget())
         self.stage.MOVVEL([5, 5, 5], [1, 1, 1])
         time.sleep(1) # Doesn't move right away
         self.assertTrue(self.stage.is_moving())
         self.assertFalse(self.stage.is_onTarget())
         time.sleep(1)
-        self.stage.waitEndMotion(3)
+        self.stage.wait_end_motion(3)
         
     def test_STOP(self):
         self.stage.MOVVEL([0, 0, 0], [1000, 1000, 1000])
-        self.stage.waitEndMotion(3)
+        self.stage.wait_end_motion(3)
         self.assertTrue(self.stage.is_onTarget())
         self.stage.MOVVEL([5, 5, 5], [1, 1, 1])
         time.sleep(1)
@@ -106,7 +106,7 @@ class Test_cube(unittest.TestCase):
         
     def test_ESTOP(self):
         self.stage.MOVVEL([0, 0, 0], [1000, 1000, 1000])
-        self.stage.waitEndMotion(3)
+        self.stage.wait_end_motion(3)
         self.assertTrue(self.stage.is_onTarget())
         self.stage.MOVVEL([5, 5, 5], [1, 1, 1])
         time.sleep(1)
@@ -116,7 +116,7 @@ class Test_cube(unittest.TestCase):
         
     def test_macro(self):
         self.stage.MOVVEL([20, 20, 20], [1000, 1000, 1000])
-        self.stage.waitEndMotion(3)
+        self.stage.wait_end_motion(3)
         self.stage.MAC_BEG('test')
         self.stage.MOVVEL([10, 10, 10], [10, 10, 10])
         self.stage.macro_wait()
@@ -137,11 +137,11 @@ class Test_cube(unittest.TestCase):
         
     def test_wave(self):
         self.stage.MOVVEL([0, 0, 0], [1000, 1000, 1000])
-        self.stage.waitEndMotion(3)
+        self.stage.wait_end_motion(3)
         X = np.linspace(0, 20, 1000)
         X = np.repeat(X[:, np.newaxis], 3, axis=1)
         self.stage.run_waveform(1e-3, X)
-        self.stage.waitEndMotion(3)
+        self.stage.wait_end_motion(3)
         self.assertTrue(
                 np.all(np.abs(self.stage.get_position() - ([20, 20, 20])) < 1e-1))
         
@@ -181,6 +181,10 @@ class Test_LinearZ(unittest.TestCase):
         self.assertFalse(self.stage.is_moving())
         self.stage.MOVVEL([pos - 10], [5])
         time.sleep(0.1)
+        elapsed = time.time() - self.stage.startTime
+        expected = np.linalg.norm((self.stage.target - self.stage.position)) / self.stage.normV
+        print('hello', elapsed, expected)
+        print(self.stage.target, self.stage.position,  self.stage.normV)
         self.assertTrue(self.stage.is_moving())
         self.stage.ESTOP()
         self.assertFalse(self.stage.is_moving())

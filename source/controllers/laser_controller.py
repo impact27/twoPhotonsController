@@ -25,6 +25,15 @@ class Laser_controller():
     def __init__(self):
         self._HW = HW_E727(self.onConnect)
         self._V = 0
+        
+    def connect(self):
+        self._HW._connect()
+    
+    def disconnect(self):
+        self._HW._disconnect()
+        
+    def isConnected(self):
+        return self._HW._isConnected()
 
     def onConnect(self):
         self._HW.SVO(4, False)

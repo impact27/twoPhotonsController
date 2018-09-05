@@ -30,9 +30,9 @@ class Test_Camera(unittest.TestCase):
         
     def test_reconnect(self):
         roi = self.cam.roi
-        self.cam.cam._disconnect()
-        self.assertFalse(self.cam.cam._isConnected())
-        self.cam.cam._connect()
+        self.cam.disconnect()
+        self.assertFalse(self.cam.isConnected())
+        self.cam.connect()
         self.assertTrue(np.all(self.cam.roi == roi))
         
 if __name__ == '__main__':

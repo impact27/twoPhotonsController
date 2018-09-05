@@ -52,7 +52,7 @@ else:
 # ==============================================================================
 
 
-class stage_controller(QtCore.QObject):
+class Stage_controller(QtCore.QObject):
 
     def __init__(self):
         super().__init__()
@@ -211,13 +211,13 @@ class HW_zline(Hardware_Singleton):
 # Linear stage
 # =============================================================================
 
-class Linear_controller(stage_controller):
+class Linear_controller(Stage_controller):
     def __init__(self):
         super().__init__()
         self.lines = [Xline(), Yline()]
 
     @property
-    def connected(self):
+    def isConnected(self):
         return np.all([l._isConnected for l in self.lines])
     
     def connect(self):
@@ -278,19 +278,11 @@ class Linear_controller(stage_controller):
     
     def is_moving(self):
         return np.any([l.IsMoving()['1'] for l in self.lines])
-    
-    def waitEndMotion(self, timeout=30):
-        startt = time.time()
-        self.waitReady(timeout)
-        while self.is_moving():
-            time.sleep(.1)
-            if time.time() - startt > timeout:
-                raise RuntimeError("Timeout waiting end motion")
 # ==============================================================================
 # Cube Controller
 # ==============================================================================
 
-class Cube_controller(stage_controller):
+class Cube_controller(Stage_controller):
     # Reverse y and z
     stageConnected = QtCore.pyqtSignal()
 
@@ -357,13 +349,7 @@ class Cube_controller(stage_controller):
     
     def is_moving(self):
         return np.any(list(self.__cube.IsMoving().values()))
-    
-    def waitEndMotion(self, timeout=30):
-        startt = time.time()
-        while self.is_moving():
-            time.sleep(.1)
-            if time.time() - startt > timeout:
-                raise RuntimeError("Timeout waiting end motion")
+
 
     def MAC_BEG(self, name):
         self.__cube.MAC_BEG(name)
@@ -445,7 +431,7 @@ class Cube_controller(stage_controller):
 # =============================================================================
 
 
-class z_controller(stage_controller):
+class z_controller(Stage_controller):
     # Reverse z
     def __init__(self):
         super().__init__()
