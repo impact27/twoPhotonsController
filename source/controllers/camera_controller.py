@@ -71,7 +71,12 @@ class Camera_controller():
             im = im[::-1, ::-1]
         return im
 
-    def set_exposure_time(self, time):
+    @property
+    def exposure_time(self):
+        return self.cam.shutter
+    
+    @exposure_time.setter
+    def exposure_time(self, time):
         amin, amax = self.exposure_time_range()
         if time < amin:
             time = amin
