@@ -608,6 +608,10 @@ class Piezo(Stage):
 
     def is_macro_running(self):
         return self.XYZ_c.is_macro_running()
+    
+    @property
+    def isRecordingMacro(self):
+        return self.XYZ_c.isRecordingMacro
 
     def run_waveform(self, time_step, X):
 

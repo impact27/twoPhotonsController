@@ -287,6 +287,15 @@ class Linear_controller(Stage_controller):
 class Cube_controller(Stage_controller):
     # Reverse y and z
     stageConnected = QtCore.pyqtSignal()
+    
+    class no_macro():
+        def __init__(self, f):
+            self.f = f
+        def __call__(self, *args):
+            if args[0].isRecordingMacro:
+                raise RuntimeError("Can't use that function while recording a macro")
+            else:
+                self.f(*args)
 
     def __init__(self):
         super().__init__()
@@ -295,6 +304,7 @@ class Cube_controller(Stage_controller):
         self.internal_offset = np.asarray([50, 50, 50])
         self.Servo_Update_Time = 50e-6  # s 0x0E000200
         self.max_points = 250000  # 0x13000004
+        self.isRecordingMacro = False
         
     def disconnect(self):
         self.__cube._disconnect()
@@ -315,6 +325,7 @@ class Cube_controller(Stage_controller):
         self.__cube.VEL([1, 2, 3], list(np.abs(V)))
         self.__cube.MOV([1, 2, 3], list(X))
 
+    @no_macro
     def get_position(self):
         X = np.asarray(list(self.__cube.qPOS([1, 2, 3]).values()), dtype=float)
         # Reverse y and z
@@ -323,18 +334,21 @@ class Cube_controller(Stage_controller):
         X -= self.internal_offset
         return X
 
+    @no_macro
     def stop(self):
         try:
             self.__cube.HLT()
         except BaseException:
             pass
 
+    @no_macro
     def ESTOP(self):
         try:
             self.__cube.HLT()
         except BaseException:
             pass
 
+    @no_macro
     def is_onTarget(self):
         return np.all(list(self.__cube.qONT([1, 2, 3]).values()))
 
@@ -344,20 +358,23 @@ class Cube_controller(Stage_controller):
     def get_vel_range(self, axis):
         return np.array([0., 4000.])
 
+    @no_macro
     def is_ready(self):
         if not self.__cube.IsConnected():
             return False
         return self.__cube.IsControllerReady()
     
+    @no_macro
     def is_moving(self):
         return np.any(list(self.__cube.IsMoving().values()))
 
-
     def MAC_BEG(self, name):
         self.__cube.MAC_BEG(name)
+        self.isRecordingMacro = True
 
     def MAC_END(self):
         self.__cube.MAC_END()
+        self.isRecordingMacro = False
 
     def MAC_START(self, name):
         self.__cube.MAC_START(name)

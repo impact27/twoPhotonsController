@@ -266,8 +266,9 @@ class Controls_tab(QtWidgets.QWidget):
         def updateStatus():
             motor_status.setOn(md.motor.is_ready())
             motor_target_status.setOn(md.motor.is_onTarget())
-            cube_status.setOn(md.piezo.is_ready())
-            cube_target_status.setOn(md.piezo.is_onTarget())
+            if not md.piezo.isRecordingMacro:
+                cube_status.setOn(md.piezo.is_ready())
+                cube_target_status.setOn(md.piezo.is_onTarget())
 
         self.status_timer = QtCore.QTimer()
         self.status_timer.timeout.connect(updateStatus)
@@ -311,10 +312,11 @@ class Controls_tab(QtWidgets.QWidget):
 
     def updateCube(self):
         md = self.application_delegate.movement_delegate
-        V = md.piezo.velocity
-        Pos = md.piezo.position
-        self.vel_cube_selector.setValue(V)
-        [s.setValue(x) for s, x in zip(self.cube_selectors, Pos)]
+        if not md.piezo.isRecordingMacro:
+            V = md.piezo.velocity
+            Pos = md.piezo.position
+            self.vel_cube_selector.setValue(V)
+            [s.setValue(x) for s, x in zip(self.cube_selectors, Pos)]
 
     def updatePos(self):
         self.update_motor()
