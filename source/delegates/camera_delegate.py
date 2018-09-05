@@ -42,6 +42,7 @@ class Camera_delegate(QtCore.QObject):
         roi[:2] += cur_roi[:2]
         self.controller.roi = roi
         self.new_roi.emit()
+        print("New ROI", self.controller.roi)
 
     def roi_reset(self):
         QtCore.QMutexLocker(self.mutex)
@@ -76,7 +77,7 @@ class Camera_delegate(QtCore.QObject):
         QtCore.QMutexLocker(self.mutex)
 
         self.new_exposure_time.emit(time)
-        self.controller.set_exposure_time(time)
+        self.controller.exposure_time = time
 
     def get_exposure_time(self):
 

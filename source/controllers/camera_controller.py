@@ -103,12 +103,15 @@ class Camera_controller():
     @property
     def roi(self):
         roi = np.asarray(self.cam.roi)
+        print("Get ROI", roi)
         if self.flip_image:
             roi[:2] = self.shape - (roi[:2]+roi[2:])
+        print("Getted ROI", roi)
         return roi
 
     @roi.setter
     def roi(self, roi):
+        print("Set ROI", roi)
         roi = np.asarray(roi)
         if self.flip_image:
             roi[:2] = self.shape - (roi[:2]+roi[2:])
@@ -121,6 +124,7 @@ class Camera_controller():
             print(roi[0] + roi[2], roi[1]+roi[3])
             print(e)
         self.cam.streaming = streaming
+        print("Setted ROI", self.cam.roi)
         
     def roi_reset(self):
         self.roi = (0, 0, *self.shape)
