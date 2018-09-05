@@ -261,6 +261,7 @@ class Controls_tab(QtWidgets.QWidget):
         self.cube_selectors = cube_selectors
         self.cam_autoexposure_time = cam_autoexposure_time
         self.steps = steps
+        self.laser_selector = laser_setV
 
         # Update status
         def updateStatus():
@@ -317,6 +318,9 @@ class Controls_tab(QtWidgets.QWidget):
             Pos = md.piezo.position
             self.vel_cube_selector.setValue(V)
             [s.setValue(x) for s, x in zip(self.cube_selectors, Pos)]
+            I = self.application_delegate.laser_delegate.intensity
+            self.laser_selector.setValue(I)
+            
 
     def updatePos(self):
         self.update_motor()
