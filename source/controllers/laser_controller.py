@@ -23,11 +23,11 @@ from .stage_controller import HW_E727
 class Laser_controller():
     
     def no_macro(f):
-        def ret(cls, *args):
+        def ret(cls, *args, **kargs):
             if cls.isRecordingMacro:
                 raise RuntimeError("Can't use that function while recording a macro")
             else:
-                return f(cls, *args)
+                return f(cls, *args, **kargs)
         return ret
             
 

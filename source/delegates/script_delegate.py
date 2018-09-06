@@ -224,13 +224,13 @@ class Execute_Parser(Parser):
             
         def __call__(self, f):
             if self._compatible:
-                def ret(*args):
+                def ret(*args, **kargs):
                     args[0].start_macro()
-                    f(*args)
+                    f(*args, **kargs)
             else:
-                def ret(*args):
+                def ret(*args, **kargs):
                     args[0].end_macro()
-                    f(*args)
+                    f(*args, **kargs)
             return ret
 
 

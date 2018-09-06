@@ -216,7 +216,7 @@ class Controls_tab(QtWidgets.QWidget):
 
         vel_cube_selector.newValue.connect(md.piezo.set_velocity)
 
-        cam_reconnect.clicked.connect(cd.reconnect)
+#        cam_reconnect.clicked.connect(cd.reconnect)
 
         cam_exposure_selector.newValue.connect(cd.set_exposure_time)
 

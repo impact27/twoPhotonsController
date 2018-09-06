@@ -35,7 +35,7 @@ clr.AddReference("Thorlabs.MotionControl.Controls")
 clr.AddReference("Thorlabs.MotionControl.DeviceManagerCLI")
 clr.AddReference("Thorlabs.MotionControl.KCube.DCServoCLI")
 import Thorlabs.MotionControl.Controls
-from Thorlabs.MotionControl.DeviceManagerCLI import DeviceManagerCLI
+from Thorlabs.MotionControl.DeviceManagerCLI import DeviceManagerCLI, DeviceNotReadyException
 from Thorlabs.MotionControl.KCube.DCServoCLI import KCubeDCServo
 
 if __name__ == "__main__":
@@ -96,6 +96,19 @@ class Stage_controller(QtCore.QObject):
 # ==============================================================================
 # Linear stages controller
 # ==============================================================================
+def try_connect(fconnect, Error, max_tests=20):
+    connected = False
+    Ntests = 0
+    while not connected and Ntests < max_tests:
+        try:
+            fconnect()
+            connected = True
+        except Error:
+            time.sleep(1)
+            Ntests +=1
+            if Ntests == max_tests:
+                raise
+                
 class HW_line(Hardware_Singleton):
     def __init__(self, name, ID):
         super().__init__(name)
@@ -103,7 +116,10 @@ class HW_line(Hardware_Singleton):
 
     def _open_connection(self):
         stage = GCSDevice(HW_conf.GCS_lin_controller_name)
-        stage.ConnectUSB(type(self)._ID)
+        
+        try_connect(lambda: stage.ConnectUSB(type(self)._ID),
+                    GCSError)
+        
         time.sleep(1)
         if stage.qCST()['1'] != HW_conf.GCS_lin_stage_name:
             print(stage.qCST()['1'])
@@ -132,18 +148,9 @@ class HW_E727(Hardware_Singleton):
         super().__init__('E727', callback)
 
     def _open_connection(self):
-        stage = GCSDevice(HW_conf.GCS_cube_controller_name)
-        
-        connected = False
-        Ntests = 0
-        while not connected and Ntests < 20:
-            try:
-                stage.ConnectUSB(HW_conf.cubeName)
-                connected = True
-            except GCSError:
-                time.sleep(1)
-                Ntests +=1
-            
+        stage = GCSDevice(HW_conf.GCS_cube_controller_name)        
+        try_connect(lambda: stage.ConnectUSB(HW_conf.cubeName),
+                    GCSError)            
 #        time.sleep(2)
         stage.WGO([1, 2, 3, 4], [0, 0, 0, 0])
         print('Connected', stage.qIDN())
@@ -176,7 +183,9 @@ class HW_zline(Hardware_Singleton):
         kCubeDCServoMotor = KCubeDCServo.CreateKCubeDCServo(_SN)
 
         # Establish a connection with the device.
-        kCubeDCServoMotor.Connect(_SN)
+        try_connect(lambda: kCubeDCServoMotor.Connect(_SN),
+                    DeviceNotReadyException)
+        
 
         # Wait for the device settings to initialize. We ask the device to
         # throw an exception if this takes more than 5000ms (5s) to complete.
@@ -290,17 +299,17 @@ class Cube_controller(Stage_controller):
     stageConnected = QtCore.pyqtSignal()
 
     def no_macro(f):
-        def ret(cls, *args):
+        def ret(cls, *args, **kargs):
             if cls.isRecordingMacro:
                 raise RuntimeError("Can't use that function while recording a macro")
             else:
-                return f(cls, *args)
+                return f(cls, *args, **kargs)
         return ret
             
     def mutex(f):
-        def ret(cls, *args):
+        def ret(cls, *args, **kargs):
             QtCore.QMutexLocker(cls.mutex)
-            return f(cls, *args)
+            return f(cls, *args, **kargs)
         return ret
     
     def __init__(self):

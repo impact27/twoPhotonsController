@@ -21,9 +21,9 @@ class Camera_delegate(QtCore.QObject):
     new_roi = QtCore.pyqtSignal()
 
     def mutex(f):
-        def ret(cls, *args):
+        def ret(cls, *args, **kargs):
             QtCore.QMutexLocker(cls.mutex)
-            return f(cls, *args)
+            return f(cls, *args, **kargs)
         return ret
     
     def __init__(self):

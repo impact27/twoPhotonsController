@@ -61,8 +61,8 @@ class Movement_delegate(QtCore.QObject):
         self.locked = False
         self.lockid = None
 
-        self._piezo = Piezo(self._checklock)
-        self._motor = Motor(self._checklock)
+        self._piezo = Piezo(self._checklock, self.error)
+        self._motor = Motor(self._checklock, self.error)
 
         self.motor_z_switcher = Motor_z_switcher(self._motor, self._piezo)
 
@@ -172,7 +172,7 @@ class Stage(QtCore.QObject):
     move_signal = QtCore.pyqtSignal(list, float)
     coordinatesCorrected = QtCore.pyqtSignal(dict)
 
-    def __init__(self, speed, checklock):
+    def __init__(self, speed, checklock, error_signal):
         super().__init__()
         self.mutex = QtCore.QMutex(QtCore.QMutex.Recursive)
         self._speed = speed
@@ -181,6 +181,7 @@ class Stage(QtCore.QObject):
         self._ndim = 3
         self._corrections = {}
         self.reset_corrections()
+        self.error_signal = error_signal
 
     # Positions
 
@@ -440,8 +441,8 @@ class Stage(QtCore.QObject):
 class Motor(Stage):
     """Motor stage"""
 
-    def __init__(self, checklock):
-        super().__init__(1000, checklock)
+    def __init__(self, checklock, error_signal):
+        super().__init__(1000, checklock, error_signal)
         self.XY_c = Linear_controller()
         self.Z_c = z_controller()
 
@@ -516,13 +517,13 @@ class Piezo(Stage):
     """Piezo stage"""
     
     def mutex(f):
-        def ret(cls, *args):
+        def ret(cls, *args, **kargs):
             QtCore.QMutexLocker(cls.mutex)
-            return f(cls, *args)
+            return f(cls, *args, **kargs)
         return ret
 
-    def __init__(self, checklock):
-        super().__init__(1000, checklock)
+    def __init__(self, checklock, error_signal):
+        super().__init__(1000, checklock, error_signal)
         self.XYZ_c = Cube_controller()
         self.XYZ_c.stageConnected.connect(self.reset)
 
@@ -543,8 +544,8 @@ class Piezo(Stage):
             self.XYZ_c.MOVVEL(Xs, V)
             if self.recording_macro:
                 self.XYZ_c.macro_wait()
-        except self.XYZ_c.error:
-            print("Error at ", Xs)
+        except self.XYZ_c.error as e:
+            self.error_signal.emit("Error at " + str(Xs) + str(e))
             raise
 
     @mutex

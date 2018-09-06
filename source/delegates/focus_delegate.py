@@ -281,7 +281,7 @@ class Zcorrector():
 
         # Failed focus
         if 2*np.min(data[:, 1]) > np.max(data[:, 1]):
-            raise RuntimeError("Can't focus")
+            raise RuntimeError("Can't focus: not enough difference between min and max")
 
         return data
 

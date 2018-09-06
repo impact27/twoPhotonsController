@@ -13,6 +13,7 @@ import sys
 cmap = matplotlib.cm.get_cmap('plasma')
 
 from widgets.canvas import MyMplCanvas
+from controllers.pixelink import PxLerror
 
 
 class Canvas_delegate(QtCore.QObject):
@@ -85,6 +86,8 @@ class Canvas_delegate(QtCore.QObject):
 
             self.update_image(
                 frame, vmin=self._vmin, vmax=self._vmax, extent=extent)
+        except PxLerror:
+            pass
         except BaseException:
             print("Can't show frame", sys.exc_info())
 
