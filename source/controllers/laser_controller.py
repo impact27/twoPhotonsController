@@ -21,11 +21,24 @@ import numpy as np
 from .stage_controller import HW_E727
 
 class Laser_controller():
+    
+    def no_macro(f):
+        def ret(cls, *args):
+            if cls.isRecordingMacro:
+                raise RuntimeError("Can't use that function while recording a macro")
+            else:
+                return f(cls, *args)
+        return ret
+            
 
     def __init__(self):
         self._HW = HW_E727(self.onConnect)
         self._V = 0
         
+    @property
+    def isRecordingMacro(self):
+        return self._HW.IsRecordingMacro
+    
     def connect(self):
         self._HW._connect()
     
@@ -43,6 +56,7 @@ class Laser_controller():
         return np.array([0, 10])
     
     @property
+    @no_macro
     def intensity(self):
         if not self._HW.IsConnected():
             return 0

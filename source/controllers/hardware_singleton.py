@@ -11,56 +11,52 @@ import time
 class Hardware_Singleton(QtCore.QObject):
     """Singleton to connect stage"""
     
-    _mutex = QtCore.QMutex()
+    __mutex = QtCore.QMutex()
     
     def __init__(self, name, connect_callback=None):
         super().__init__()
-        QtCore.QMutexLocker(Hardware_Singleton._mutex)
+        QtCore.QMutexLocker(Hardware_Singleton.__mutex)
         if "_number_instances" not in dir(type(self)):
             type(self)._hardware = None
             type(self)._isConnecting = False
             type(self)._mutex = QtCore.QMutex()
             type(self)._number_instances = 1
             type(self)._name = name
-            type(self)._thread = Hardware_Thread(self._set_hardware, self._open_connection)
+            type(self)._thread = Hardware_Thread(
+                    self._set_hardware, self._open_connection)
         else:
             type(self)._number_instances += 1
         
-        self._connect_callback = connect_callback
+        self._set_attribute("_connect_callback", connect_callback)
         self._connect()
 
+    def _set_attribute(self, name, value):
+        super().__setattr__(name, value)
+        
     def __getattr__(self, name):
-        if type(self)._isConnecting and not self._isConnected():
-            type(self)._mutex.lock()
-            print(f"Waiting because of a call to {type(self)._name}")
-            type(self)._mutex.unlock()
-            type(self)._thread.wait(60000)
-            time.sleep(1)
-        if not self._isConnected():
-            raise RuntimeError(f"{type(self)._name} not connected")
-        else:
-            return getattr(type(self)._hardware, name)
+        self._wait_connected()
+        QtCore.QMutexLocker(type(self)._mutex)
+        return getattr(type(self)._hardware, name)
         
     def __setattr__(self, name, value):
-        if name == '_connect_callback':
-            super().__setattr__(name, value)
-            return
-        if type(self)._isConnecting and not self._isConnected():
-            type(self)._mutex.lock()
-            print(f"Waiting because of a call to {type(self)._name}")
-            type(self)._mutex.unlock()
-            type(self)._thread.wait(60000)
-            time.sleep(1)
-        if not self._isConnected():
-            raise RuntimeError(f"{type(self)._name} not connected")
-        else:
-            setattr(type(self)._hardware, name, value)
-        
+        self._wait_connected()
+        QtCore.QMutexLocker(type(self)._mutex)
+        setattr(type(self)._hardware, name, value)
         
     def __del__(self):
         type(self)._number_instances -= 1
         if type(self)._number_instances == 0:
             self._disconnect()
+            
+    def _wait_connected(self):
+        if type(self)._isConnecting and not self._isConnected():
+            type(self)._mutex.lock()
+            print(f"Waiting because of a call to {type(self)._name}")
+            type(self)._mutex.unlock()
+            type(self)._thread.wait(60000)
+            time.sleep(1)
+        if not self._isConnected():
+            raise RuntimeError(f"{type(self)._name} not connected")
 
     def _isConnected(self):
         QtCore.QMutexLocker(type(self)._mutex)

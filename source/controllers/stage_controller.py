@@ -156,6 +156,7 @@ class HW_E727(Hardware_Singleton):
         while not stage.IsControllerReady():
             time.sleep(0.1)
         stage.MOV([1, 2, 3], [50, 50, 50])
+        stage.IsRecordingMacro = False
         return stage
 
     def _close_connection(self):
@@ -287,32 +288,33 @@ class Linear_controller(Stage_controller):
 class Cube_controller(Stage_controller):
     # Reverse y and z
     stageConnected = QtCore.pyqtSignal()
-    
-#    class no_macro():
-#        def __init__(self, f):
-#            self.f = f
-#        def __call__(self, *args):
-##            if args[0].isRecordingMacro:
-##                raise RuntimeError("Can't use that function while recording a macro")
-##            else:
-#                self.f(*args)
+
     def no_macro(f):
-        def ret(*args):
-            if args[0].isRecordingMacro:
+        def ret(cls, *args):
+            if cls.isRecordingMacro:
                 raise RuntimeError("Can't use that function while recording a macro")
             else:
-                return f(*args)
+                return f(cls, *args)
         return ret
             
-
+    def mutex(f):
+        def ret(cls, *args):
+            QtCore.QMutexLocker(cls.mutex)
+            return f(cls, *args)
+        return ret
+    
     def __init__(self):
         super().__init__()
+        self.mutex = QtCore.QMutex(QtCore.QMutex.Recursive)
         self.__cube = HW_E727(self.stageConnected.emit)
         self.error = pipython.gcserror.GCSError
         self.internal_offset = np.asarray([50, 50, 50])
         self.Servo_Update_Time = 50e-6  # s 0x0E000200
         self.max_points = 250000  # 0x13000004
-        self.isRecordingMacro = False
+        
+    @property
+    def isRecordingMacro(self):
+        return self.__cube.IsRecordingMacro
         
     def disconnect(self):
         self.__cube._disconnect()
@@ -326,6 +328,7 @@ class Cube_controller(Stage_controller):
     def controller(self):
         return self.__cube
     
+    @mutex
     def MOVVEL(self, X, V):
         X = X + self.internal_offset
         # Reverse y and z
@@ -333,6 +336,7 @@ class Cube_controller(Stage_controller):
         self.__cube.VEL([1, 2, 3], list(np.abs(V)))
         self.__cube.MOV([1, 2, 3], list(X))
 
+    @mutex
     @no_macro
     def get_position(self):
         X = np.asarray(list(self.__cube.qPOS([1, 2, 3]).values()), dtype=float)
@@ -342,6 +346,7 @@ class Cube_controller(Stage_controller):
         X -= self.internal_offset
         return X
 
+    @mutex
     @no_macro
     def stop(self):
         try:
@@ -356,6 +361,7 @@ class Cube_controller(Stage_controller):
         except BaseException:
             pass
 
+    @mutex
     @no_macro
     def is_onTarget(self):
         return np.all(list(self.__cube.qONT([1, 2, 3]).values()))
@@ -366,38 +372,48 @@ class Cube_controller(Stage_controller):
     def get_vel_range(self, axis):
         return np.array([0., 4000.])
 
+    @mutex
     @no_macro
     def is_ready(self):
         if not self.__cube.IsConnected():
             return False
         return self.__cube.IsControllerReady()
     
+    @mutex
     @no_macro
     def is_moving(self):
         return np.any(list(self.__cube.IsMoving().values()))
 
+    @mutex
     def MAC_BEG(self, name):
+        self.__cube.IsRecordingMacro = True
         self.__cube.MAC_BEG(name)
-        self.isRecordingMacro = True
+        
 
+    @mutex
     def MAC_END(self):
+        self.__cube.IsRecordingMacro = False
         self.__cube.MAC_END()
-        self.isRecordingMacro = False
-
+        
+    @mutex
     def MAC_START(self, name):
         self.__cube.MAC_START(name)
 
+    @mutex
     def MAC_DEL(self, name):
         self.__cube.MAC_DEL(name)
 
+    @mutex
     def is_macro_running(self):
         return self.__cube.qRMC() != '\n'
 
+    @mutex
     def macro_wait(self):
         self.__cube.send("WAC ONT? 1 = 1")
         self.__cube.send("WAC ONT? 2 = 1")
         self.__cube.send("WAC ONT? 3 = 1")
 
+    @mutex
     def run_waveform(self, time_step, X):
         assert X.size < self.max_points
         assert np.shape(X)[1] == 3 or np.shape(X)[1] == 4

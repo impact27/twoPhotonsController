@@ -174,7 +174,7 @@ class Stage(QtCore.QObject):
 
     def __init__(self, speed, checklock):
         super().__init__()
-        self.mutex = QtCore.QMutex()
+        self.mutex = QtCore.QMutex(QtCore.QMutex.Recursive)
         self._speed = speed
         self._checklock = checklock
         self._lastXs = None
@@ -442,7 +442,6 @@ class Motor(Stage):
 
     def __init__(self, checklock):
         super().__init__(1000, checklock)
-        self.mutex = QtCore.QMutex()
         self.XY_c = Linear_controller()
         self.Z_c = z_controller()
 
@@ -515,31 +514,31 @@ class Motor(Stage):
 
 class Piezo(Stage):
     """Piezo stage"""
+    
+    def mutex(f):
+        def ret(cls, *args):
+            QtCore.QMutexLocker(cls.mutex)
+            return f(cls, *args)
+        return ret
 
     def __init__(self, checklock):
         super().__init__(1000, checklock)
-        self.mutex = QtCore.QMutex()
         self.XYZ_c = Cube_controller()
         self.XYZ_c.stageConnected.connect(self.reset)
 
         self.recording_macro = False
 
+    @mutex
     def reset(self, checkid=None, wait=False):
-
-        QtCore.QMutexLocker(self.mutex)
-
         self.reset_corrections()
         self.goto_position([0, 0, 0], checkid=checkid, wait=wait)
 
+    @mutex
     def _XSPOS(self):
-
-        QtCore.QMutexLocker(self.mutex)
-
         return np.asarray(self.XYZ_c.get_position())
 
+    @mutex
     def _MOVVEL(self, Xs, V):
-
-        QtCore.QMutexLocker(self.mutex)
         try:
             self.XYZ_c.MOVVEL(Xs, V)
             if self.recording_macro:
@@ -548,54 +547,41 @@ class Piezo(Stage):
             print("Error at ", Xs)
             raise
 
+    @mutex
     def is_onTarget(self):
-
-        QtCore.QMutexLocker(self.mutex)
-
         return np.all(self.XYZ_c.is_onTarget())
 
+    @mutex
     def _XSRANGE(self, axis):
-
-        QtCore.QMutexLocker(self.mutex)
-
         ret = self.XYZ_c.get_pos_range(axis)
         return ret
 
+    @mutex
     def _VRANGE(self, axis):
-
-        QtCore.QMutexLocker(self.mutex)
-
         return self.XYZ_c.get_vel_range(axis)
 
+    @mutex
     def stop(self):
-
-        QtCore.QMutexLocker(self.mutex)
-
         self.XYZ_c.stop()
 
     def ESTOP(self):
         self.XYZ_c.ESTOP()
 
+    @mutex
     def is_ready(self):
-
-        QtCore.QMutexLocker(self.mutex)
-
         return self.XYZ_c.is_ready()
 
-    def reconnect(self):
-
-        QtCore.QMutexLocker(self.mutex)
-
-        self.XYZ_c.reconnect()
-
+    @mutex
     def macro_begin(self, name):
         self.recording_macro = True
         self.XYZ_c.MAC_BEG(name)
 
+    @mutex
     def macro_end(self):
         self.recording_macro = False
         self.XYZ_c.MAC_END()
 
+    @mutex
     def macro_start(self, name, wait=True):
         self.XYZ_c.MAC_START(name)
         if wait:
@@ -603,22 +589,29 @@ class Piezo(Stage):
             while self.is_macro_running():
                 time.sleep(1)
 
+    @mutex
     def macro_delete(self, name):
         self.XYZ_c.MAC_DEL(name)
 
+    @mutex
     def is_macro_running(self):
         return self.XYZ_c.is_macro_running()
     
     @property
+    @mutex
     def isRecordingMacro(self):
         return self.XYZ_c.isRecordingMacro
 
+    @mutex
     def run_waveform(self, time_step, X):
 
         # Get stage coordinates
         X[:, :3] = self.XmtoXs(X[:, :3])
 
         self.XYZ_c.run_waveform(time_step, X)
+        
+    def controller_mutex(self):
+        return self.mutex
 
 
 class Motor_z_switcher():
