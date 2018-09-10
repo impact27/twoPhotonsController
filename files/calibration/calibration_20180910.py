@@ -2,7 +2,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import sys
-from scipy.signal import sawtooth
+import scipy.signal
+def sawtooth(*args, **kargs):
+    return 0.5 * (scipy.signal.sawtooth(*args, **kargs) + 1)
 
 sys.path.append('../package')
 
@@ -30,7 +32,7 @@ motor_line = 0
 safety_z = 20
 off_speed = 1000
 
-fraction = 0.05
+fraction = 0.95
 dt = 0.5e-3 #s
 
 wavelength = 2 #um
@@ -84,7 +86,7 @@ def tree_z_line(Xfrom, Xto, Zrange, wavelength, power, velocity):
     X[:3, 1:-1] = Xfrom[:, np.newaxis] + dXn[:, np.newaxis] * velocity * times[np.newaxis]
     
     X[2, 1:-1] += Zrange[0] + (Zrange[1] - Zrange[0]) * sawtooth(
-            velocity * times/wavelength*np.pi, fraction)
+            velocity * times/wavelength* 2 * np.pi, fraction)
     
     X[:3, 0] = X[:3, 1]
     X[:3, -1] = X[:3, -2]
@@ -112,7 +114,7 @@ def tree_p_line(Xfrom, Xto, Prange, wavelength, velocity):
     X[:3, -1] = X[:3, -2]
     
     P = Prange[0] + (Prange[1] - Prange[0]) * sawtooth(
-            velocity * times/wavelength*np.pi, fraction)
+            velocity * times/wavelength * 2 * np.pi, fraction)
     
     X[3, 1:-1] = pc.PtoV(P)
 
