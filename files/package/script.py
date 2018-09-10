@@ -4,7 +4,7 @@ Created on Fri Mar  9 12:18:02 2018
 
 @author: quentinpeter
 """
-
+import numpy as np
 class Script():
     
     def __init__(self, *, off_speed, safety_z):
@@ -19,6 +19,8 @@ class Script():
         self.write_line(Xfrom, Xto, 'motor')
         
     def write_line_piezo(self, Xfrom, Xto):
+        assert np.all(np.abs(Xfrom) < 49)
+        assert np.all(np.abs(Xto) < 49)
         self.write_line(Xfrom, Xto, 'piezo')
         
     def write_line(self, Xfrom, Xto, stage):
@@ -32,8 +34,8 @@ class Script():
             z=Xfrom[2],
             f=self.off_speed))
     
-        self._lines.append("laser power {:f}".format(
-                self.write_voltage))
+        self._lines.append("laser power {:.3f}".format(
+                float(self.write_voltage)))
         self._lines.append("{stage} X{x:.3f} Y{y:.3f} Z{z:.3f} F{f:.3f}".format(
             stage=stage,
             x=Xto[0],
@@ -43,6 +45,7 @@ class Script():
         self._lines.append("laser power 0")
         
     def move_piezo(self, X):
+        assert np.all(np.abs(X) < 49)
         self._lines.append("laser power 0")
         self._lines.append("{stage} X{x:.3f} Y{y:.3f} Z{z:.3f} F{f:.3f}".format(
             stage='piezo',
@@ -68,6 +71,7 @@ class Script():
              f.write('\n'.join(self._lines))
              
     def waveform(self, X, time_step):
+        assert np.all(np.abs(X) < 49)
         assert X.shape[0] == 3 or X.shape[0] == 4
         if not self._write_ready:
             self.prepare_piezo_write()

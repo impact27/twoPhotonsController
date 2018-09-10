@@ -129,6 +129,7 @@ class Camera_controller():
         try:
             self.cam.roi = tuple(roi)
         except BaseException as e:
+            print("Can't set camera ROI")
             print(roi[0] + roi[2], roi[1]+roi[3])
             print(e)
         self.cam.streaming = streaming

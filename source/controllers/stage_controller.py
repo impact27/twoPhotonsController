@@ -159,7 +159,8 @@ class HW_E727(Hardware_Singleton):
             raise RuntimeError("Incorrect stage connected")
         
         stage.SVO([1, 2, 3, 4], [True, True, True, False])
-        stage.ATZ([1, 2, 3], [0, 0, 0])
+        if np.any(np.logical_not(list(stage.qATZ([1, 2, 3]).values()))):
+            stage.ATZ([1, 2, 3], [0, 0, 0])
         while not stage.IsControllerReady():
             time.sleep(0.1)
         stage.IsRecordingMacro = False
@@ -341,6 +342,9 @@ class Cube_controller(Stage_controller):
         X = X + self.internal_offset
         # Reverse y and z
         X[1:] = 100 - X[1:]
+        
+        assert np.all(X > 0) and np.all(X < 100)
+        
         self.__cube.VEL([1, 2, 3], list(np.abs(V)))
         self.__cube.MOV([1, 2, 3], list(X))
 
@@ -410,6 +414,11 @@ class Cube_controller(Stage_controller):
     @mutex
     def MAC_DEL(self, name):
         self.__cube.MAC_DEL(name)
+        
+    @mutex
+    def macro_exists(self, name):
+        rep = self.__cube.qMAC()
+        return name.lower() in [s.strip().lower() for s in rep.split('\n')]
 
     @mutex
     def is_macro_running(self):
@@ -426,16 +435,18 @@ class Cube_controller(Stage_controller):
         assert X.size < self.max_points
         assert np.shape(X)[1] == 3 or np.shape(X)[1] == 4
         
+        
         # Go to first pos
         self.MOVVEL(X[0, :3], np.ones(3) * 1000)
 
         rate = int(np.round(time_step / self.Servo_Update_Time))
         
-        X = X + self.internal_offset
+        X[..., :3] = X[..., :3] + self.internal_offset
         # Reverse y and z
         X[:, 1:3] = 100 - X[:, 1:3]
         
-        assert np.all(X > 0) and np.all(X < 100)
+        assert np.all(X[..., :3] > 0) and np.all(X[..., :3] < 100)
+        
         
         
         

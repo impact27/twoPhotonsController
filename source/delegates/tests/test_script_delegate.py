@@ -28,7 +28,7 @@ class Test_script(unittest.TestCase):
         parser.parse(self.fn)
         self.assertTrue(
             np.max(np.abs(
-                parser.piezo_position - [40, 0, 0])) < 1)
+                parser.piezo_position - [40, 0, 0])) < 2)
 
     def test_execute(self):
         parser = Execute_Parser(ad)
