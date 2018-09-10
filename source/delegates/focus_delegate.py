@@ -178,6 +178,9 @@ class Focus_delegate(QtCore.QObject):
         self.thread.terminate()
         self.init_thread()
 
+    def set_intensity(self, intensity):
+        self._settings["Intensity"] = intensity
+        
 
 class zThread(QtCore.QThread):
 

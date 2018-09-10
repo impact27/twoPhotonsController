@@ -162,7 +162,6 @@ class HW_E727(Hardware_Singleton):
         stage.ATZ([1, 2, 3], [0, 0, 0])
         while not stage.IsControllerReady():
             time.sleep(0.1)
-        stage.MOV([1, 2, 3], [50, 50, 50])
         stage.IsRecordingMacro = False
         return stage
 

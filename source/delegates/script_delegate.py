@@ -11,7 +11,6 @@ import matplotlib
 cmap = matplotlib.cm.get_cmap('viridis')
 from PyQt5 import QtCore
 from matplotlib import collections as mc
-import sys
 
 
 class Script_delegate():
@@ -185,12 +184,12 @@ class Parser():
         Npos = args_dic['N']
         line = self.file.readline()
         data = {}
-        while line != 'END\n' and line != '':
+        while line != 'END\n' and line != 'END' and line != '':
             line = line.split(' ')
             data[line[0]] = np.asarray(line[1:], float)
             line = self.file.readline()
-        if line != 'END\n':
-            raise RuntimeError('Can\'t find end')
+        if line != 'END\n' and line != 'END':
+            raise RuntimeError("Can't find end + {line}")
         if 'E' in data:
             indices = ['X', 'Y', 'Z', 'E']
         else:
@@ -305,8 +304,6 @@ class Execute_Parser(Parser):
             self.md.unlock()
             raise RuntimeError(f"Don't know {stage}")
 
-        self.focus_intensity = self.laser_delegate.get_intensity()
-
     @macro(False)
     def piezoslope(self):
         self.coordinates_delegate.piezo_plane(checkid=self.lockid, wait=True)
@@ -314,10 +311,6 @@ class Execute_Parser(Parser):
     @macro(False)
     def piezoreset(self):
         self.piezo_delegate.reset(checkid=self.lockid, wait=True)
-
-    @macro(False)
-    def focusint(self, args):
-        self.focus_intensity = float(args[0])
 
     @macro(False)
     def motor(self, pos, speed, intensity):
@@ -406,7 +399,9 @@ class Draw_Parser(Parser):
         self.piezo_position = np.zeros(3)
 
     def run_waveform(self, time_step, X):
-        for pos in X.T:
+        step = int(0.1 /time_step)
+        for idx in range(X.shape[1] // step):
+            pos = X[:, idx * step]
             I = np.nan
             if len(pos) > 3:
                 I = pos[3]

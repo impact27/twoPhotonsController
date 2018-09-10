@@ -25,6 +25,7 @@ class Camera_controller():
         self.exposure_time = .01
         self.roi_reset()
         self.__connected = True
+        self.error = None
 
     def connect(self):
         print('Connected Camera')

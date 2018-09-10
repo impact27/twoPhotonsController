@@ -17,7 +17,8 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-from .pixelink import PixeLINK
+from .pixelink import PixeLINK, PxLerror
+
 import serial
 from .HW_conf import camera_shutter_COM, pixeLINK_SN, pixeLINK_MaxROI
 import numpy as np
@@ -56,6 +57,7 @@ class Camera_controller():
         self.callback = callback
         
         self.flip_image = True
+        self.error = PxLerror
         
     def connect(self):
         self.cam._connect()

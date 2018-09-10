@@ -36,6 +36,7 @@ class Camera_delegate(QtCore.QObject):
         
     def _onConnect(self):
         self.roi0 = self.controller.roi
+        self.error = self.controller.error
 
     @property
     def roi(self):
