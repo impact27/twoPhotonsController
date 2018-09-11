@@ -191,91 +191,91 @@ def write_margin(y_lines_spacing):
          [-cube_width/2 + y_lines_spacing/2, cube_width/2 - y_lines_spacing/2, 0],
          power=pc.range_P[1],
          velocity=50)
-# =============================================================================
-# 1st type - Calibration
-# =============================================================================
-
-y_positions = np.arange(-cube_width/2, cube_width/2,
-                        y_lines_spacing) + y_lines_spacing/2
-x_range = [-cube_width/2 + y_lines_spacing/2, 
-           cube_width/2 - y_lines_spacing/2]
-
-energy_density = np.linspace(energy_density_range[1], 
-                              energy_density_range[0], 
-                              len(y_positions),
-                              endpoint=False)
-
-#1st block - vary P
-move_motor(motor_line, 0, motor_step)
-velocity = pc.range_P[1]/np.max(energy_density)
-intensity = energy_density * velocity
-write_margin(y_lines_spacing)
-for idx in range(len(y_positions)):
-    line([x_range[0], y_positions[idx], offset_range[0]],
-          [x_range[1], y_positions[idx], offset_range[1]],
-          power=intensity[idx],
-          velocity=velocity)
-    
-#2nd block - vary V
-move_motor(motor_line, 1, motor_step)
-intensity = pc.range_P[1]
-velocity = intensity/energy_density
-write_margin(y_lines_spacing)
-for idx in range(len(y_positions)):
-    line([x_range[0], y_positions[idx], offset_range[0]],
-          [x_range[1], y_positions[idx], offset_range[1]],
-          power=intensity,
-          velocity=velocity[idx])
-
-motor_line += 1
-# =============================================================================
-# 2nd type: dots
-# =============================================================================
-
-y_positions = np.arange(-cube_width/2, cube_width/2,
-                        y_lines_spacing_dots) + y_lines_spacing_dots/2
-x_range = [-cube_width/2 + y_lines_spacing_dots/2, 
-           cube_width/2 - y_lines_spacing_dots/2]
-
-# 1st line: Vary times for max power
-time = np.exp(np.linspace(
-        np.log(times_range_dots[0]), 
-        np.log(times_range_dots[1]), 
-        len(y_positions))) #ms
-intensity = pc.range_P[1]
-
-energy = time * intensity
-
-
-for idx_spacing, spacing in enumerate(list_spacings_dots):
-    move_motor(motor_line, idx_spacing, motor_step)
-    write_margin(y_lines_spacing)
-    for idx in range(len(y_positions)):
-        dots_line([x_range[0], y_positions[idx], offset_range[0]],
-                  [x_range[1], y_positions[idx], offset_range[1]],
-                  spacing=spacing,
-                  exposure_time=time[idx],
-                  power=intensity)
-    
-motor_line += 1
-
-# 2nd line: vary power
-
-time = times_range_dots[1]
-intensity = energy / time
-intensity[intensity > pc.range_P[1]] = pc.range_P[1]
-
-for idx_spacing, spacing in enumerate(list_spacings_dots):
-    move_motor(motor_line, idx_spacing, motor_step)
-    write_margin(y_lines_spacing)
-    for idx in range(len(y_positions)):
-        dots_line([x_range[0], y_positions[idx], offset_range[0]],
-                  [x_range[1], y_positions[idx], offset_range[1]],
-                  spacing=spacing,
-                  exposure_time=time,
-                  power=intensity[idx])
-        
-motor_line += 1
+## =============================================================================
+## 1st type - Calibration
+## =============================================================================
+#
+#y_positions = np.arange(-cube_width/2, cube_width/2,
+#                        y_lines_spacing) + y_lines_spacing/2
+#x_range = [-cube_width/2 + y_lines_spacing/2, 
+#           cube_width/2 - y_lines_spacing/2]
+#
+#energy_density = np.linspace(energy_density_range[1], 
+#                              energy_density_range[0], 
+#                              len(y_positions),
+#                              endpoint=False)
+#
+##1st block - vary P
+#move_motor(motor_line, 0, motor_step)
+#velocity = pc.range_P[1]/np.max(energy_density)
+#intensity = energy_density * velocity
+#write_margin(y_lines_spacing)
+#for idx in range(len(y_positions)):
+#    line([x_range[0], y_positions[idx], offset_range[0]],
+#          [x_range[1], y_positions[idx], offset_range[1]],
+#          power=intensity[idx],
+#          velocity=velocity)
+#    
+##2nd block - vary V
+#move_motor(motor_line, 1, motor_step)
+#intensity = pc.range_P[1]
+#velocity = intensity/energy_density
+#write_margin(y_lines_spacing)
+#for idx in range(len(y_positions)):
+#    line([x_range[0], y_positions[idx], offset_range[0]],
+#          [x_range[1], y_positions[idx], offset_range[1]],
+#          power=intensity,
+#          velocity=velocity[idx])
+#
+#motor_line += 1
+## =============================================================================
+## 2nd type: dots
+## =============================================================================
+#
+#y_positions = np.arange(-cube_width/2, cube_width/2,
+#                        y_lines_spacing_dots) + y_lines_spacing_dots/2
+#x_range = [-cube_width/2 + y_lines_spacing_dots/2, 
+#           cube_width/2 - y_lines_spacing_dots/2]
+#
+## 1st line: Vary times for max power
+#time = np.exp(np.linspace(
+#        np.log(times_range_dots[0]), 
+#        np.log(times_range_dots[1]), 
+#        len(y_positions))) #ms
+#intensity = pc.range_P[1]
+#
+#energy = time * intensity
+#
+#
+#for idx_spacing, spacing in enumerate(list_spacings_dots):
+#    move_motor(motor_line, idx_spacing, motor_step)
+#    write_margin(y_lines_spacing)
+#    for idx in range(len(y_positions)):
+#        dots_line([x_range[0], y_positions[idx], offset_range[0]],
+#                  [x_range[1], y_positions[idx], offset_range[1]],
+#                  spacing=spacing,
+#                  exposure_time=time[idx],
+#                  power=intensity)
+#    
+#motor_line += 1
+#
+## 2nd line: vary power
+#
+#time = times_range_dots[1]
+#intensity = energy / time
+#intensity[intensity > pc.range_P[1]] = pc.range_P[1]
+#
+#for idx_spacing, spacing in enumerate(list_spacings_dots):
+#    move_motor(motor_line, idx_spacing, motor_step)
+#    write_margin(y_lines_spacing)
+#    for idx in range(len(y_positions)):
+#        dots_line([x_range[0], y_positions[idx], offset_range[0]],
+#                  [x_range[1], y_positions[idx], offset_range[1]],
+#                  spacing=spacing,
+#                  exposure_time=time,
+#                  power=intensity[idx])
+#        
+#motor_line += 1
 
 # =============================================================================
 # 3rd type: Christmas trees!
@@ -309,37 +309,37 @@ for idx in range(len(y_positions)):
             velocity=fix_velocity)
     
     
-#2nd block - vary P
-move_motor(motor_line, 1, motor_step)
-
-zpos = np.linspace(
-        offset_range[0],
-        offset_range[1],
-        len(y_positions),
-        endpoint=False
-        )
-
-write_margin(y_lines_spacing)
-for idx in range(len(y_positions)):
-    tree_p_line(
-            [x_range[0], y_positions[idx], zpos[idx]],
-            [x_range[1], y_positions[idx], zpos[idx]],
-            Prange=[pc.range_P[1]/2, pc.range_P[1]],
-            wavelength=wavelength,
-            velocity=fix_velocity)
-
-#1st block - vary v
-move_motor(motor_line, 2, motor_step)
-
-write_margin(y_lines_spacing)
-for idx in range(len(y_positions)):
-    tree_v_line(
-            [x_range[0], y_positions[idx], zpos[idx]],
-            [x_range[1], y_positions[idx], zpos[idx]],
-            v_range=[fix_velocity/2, fix_velocity*2],
-            wavelength=wavelength,
-            power=pc.range_P[1])
-    
-get_gtext(script._lines, 'piezo', [-50, -250], 100, pc.PtoV(pc.range_P[1]), 50) 
+##2nd block - vary P
+#move_motor(motor_line, 1, motor_step)
+#
+#zpos = np.linspace(
+#        offset_range[0],
+#        offset_range[1],
+#        len(y_positions),
+#        endpoint=False
+#        )
+#
+#write_margin(y_lines_spacing)
+#for idx in range(len(y_positions)):
+#    tree_p_line(
+#            [x_range[0], y_positions[idx], zpos[idx]],
+#            [x_range[1], y_positions[idx], zpos[idx]],
+#            Prange=[pc.range_P[1]/2, pc.range_P[1]],
+#            wavelength=wavelength,
+#            velocity=fix_velocity)
+#
+##1st block - vary v
+#move_motor(motor_line, 2, motor_step)
+#
+#write_margin(y_lines_spacing)
+#for idx in range(len(y_positions)):
+#    tree_v_line(
+#            [x_range[0], y_positions[idx], zpos[idx]],
+#            [x_range[1], y_positions[idx], zpos[idx]],
+#            v_range=[fix_velocity/2, fix_velocity*2],
+#            wavelength=wavelength,
+#            power=pc.range_P[1])
+#    
+#get_gtext(script._lines, 'piezo', [-50, -250], 100, pc.PtoV(pc.range_P[1]), 50) 
     
 script.save(script_fn)

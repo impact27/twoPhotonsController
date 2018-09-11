@@ -51,6 +51,12 @@ else:
 # Stage controller
 # ==============================================================================
 
+def lockmutex(f):
+    def ret(cls, *args, **kargs):
+        mlock = QtCore.QMutexLocker(cls._mutex)
+        return f(cls, *args, **kargs)
+    return ret
+
 
 class Stage_controller(QtCore.QObject):
 
@@ -161,7 +167,14 @@ class HW_E727(Hardware_Singleton):
         stage.SVO([1, 2, 3, 4], [True, True, True, False])
         if np.any(np.logical_not(list(stage.qATZ([1, 2, 3]).values()))):
             stage.ATZ([1, 2, 3], [0, 0, 0])
-        while not stage.IsControllerReady():
+            while not stage.IsControllerReady() or np.any(list(
+                    stage.IsMoving([1, 2, 3]).values())):
+                time.sleep(0.1)
+            stage.VEL([1, 2, 3], [500, 500, 500])
+            stage.MOV([1, 2, 3], [50, 50, 50])
+            time.sleep(0.1)
+        while not stage.IsControllerReady() or np.any(list(
+                    stage.IsMoving([1, 2, 3]).values())):
             time.sleep(0.1)
         stage.IsRecordingMacro = False
         return stage
@@ -305,16 +318,10 @@ class Cube_controller(Stage_controller):
             else:
                 return f(cls, *args, **kargs)
         return ret
-            
-    def mutex(f):
-        def ret(cls, *args, **kargs):
-            QtCore.QMutexLocker(cls.mutex)
-            return f(cls, *args, **kargs)
-        return ret
     
     def __init__(self):
         super().__init__()
-        self.mutex = QtCore.QMutex(QtCore.QMutex.Recursive)
+        self._mutex = QtCore.QMutex(QtCore.QMutex.Recursive)
         self.__cube = HW_E727(self.stageConnected.emit)
         self.error = pipython.gcserror.GCSError
         self.internal_offset = np.asarray([50, 50, 50])
@@ -337,7 +344,7 @@ class Cube_controller(Stage_controller):
     def controller(self):
         return self.__cube
     
-    @mutex
+    @lockmutex
     def MOVVEL(self, X, V):
         X = X + self.internal_offset
         # Reverse y and z
@@ -348,7 +355,7 @@ class Cube_controller(Stage_controller):
         self.__cube.VEL([1, 2, 3], list(np.abs(V)))
         self.__cube.MOV([1, 2, 3], list(X))
 
-    @mutex
+    @lockmutex
     @no_macro
     def get_position(self):
         X = np.asarray(list(self.__cube.qPOS([1, 2, 3]).values()), dtype=float)
@@ -358,7 +365,7 @@ class Cube_controller(Stage_controller):
         X -= self.internal_offset
         return X
 
-    @mutex
+    @lockmutex
     @no_macro
     def stop(self):
         try:
@@ -373,7 +380,7 @@ class Cube_controller(Stage_controller):
         except BaseException:
             pass
 
-    @mutex
+    @lockmutex
     @no_macro
     def is_onTarget(self):
         return np.all(list(self.__cube.qONT([1, 2, 3]).values()))
@@ -384,53 +391,57 @@ class Cube_controller(Stage_controller):
     def get_vel_range(self, axis):
         return np.array([0., 4000.])
 
-    @mutex
+    @lockmutex
     @no_macro
     def is_ready(self):
         if not self.__cube.IsConnected():
             return False
         return self.__cube.IsControllerReady()
     
-    @mutex
+    @lockmutex
     @no_macro
     def is_moving(self):
         return np.any(list(self.__cube.IsMoving().values()))
 
-    @mutex
+    @lockmutex
     def MAC_BEG(self, name):
         self.__cube.IsRecordingMacro = True
         self.__cube.MAC_BEG(name)
+        self.__cube.send('ERR?')
         
 
-    @mutex
+    @lockmutex
     def MAC_END(self):
         self.__cube.IsRecordingMacro = False
         self.__cube.MAC_END()
         
-    @mutex
+    @lockmutex
     def MAC_START(self, name):
         self.__cube.MAC_START(name)
+        time.sleep(1)
 
-    @mutex
+    @lockmutex
     def MAC_DEL(self, name):
         self.__cube.MAC_DEL(name)
         
-    @mutex
+    @lockmutex
     def macro_exists(self, name):
         rep = self.__cube.qMAC()
         return name.lower() in [s.strip().lower() for s in rep.split('\n')]
 
-    @mutex
+    @lockmutex
+    @no_macro
     def is_macro_running(self):
         return self.__cube.qRMC() != '\n'
 
-    @mutex
+    @lockmutex
     def macro_wait(self):
         self.__cube.send("WAC ONT? 1 = 1")
         self.__cube.send("WAC ONT? 2 = 1")
         self.__cube.send("WAC ONT? 3 = 1")
 
-    @mutex
+    @lockmutex
+    @no_macro
     def run_waveform(self, time_step, X):
         assert X.size < self.max_points
         assert np.shape(X)[1] == 3 or np.shape(X)[1] == 4
@@ -447,9 +458,6 @@ class Cube_controller(Stage_controller):
         
         assert np.all(X[..., :3] > 0) and np.all(X[..., :3] < 100)
         
-        
-        
-        
         # Set rate
         self.__cube.send(f"WTR 0 {rate} 1")
         
@@ -463,8 +471,9 @@ class Cube_controller(Stage_controller):
         for i in range(np.shape(X)[1]):
             append = 'X'
             for point_idx in np.arange(0, np.shape(X)[0], slice_size):
-                self.__cube.send(f"WAV {i+1} {append} PNT 1 {slice_size} " +
-                             " ".join(str(e) for e in X[point_idx:point_idx + slice_size, i]))
+                data = X[point_idx:point_idx + slice_size, i]
+                self.__cube.send(f"WAV {i+1} {append} PNT 1 {len(data)} " +
+                             " ".join(str(e) for e in data))
                 append = '&'
 
         # Connect to wave generator

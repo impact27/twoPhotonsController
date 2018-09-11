@@ -77,6 +77,7 @@ class Hardware_Singleton(QtCore.QObject):
         QtCore.QMutexLocker(type(self)._mutex)
         if not self._isConnected() and not type(self)._isConnecting:
             type(self)._isConnecting = True
+            print(f'{self._name} connecting')
             type(self)._thread.start()
 
     def _disconnect(self):

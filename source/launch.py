@@ -23,4 +23,5 @@ from PyQt5 import QtWidgets
 
 qApp = QtWidgets.QApplication(sys.argv)
 ad = Application_delegate()
+print("READY!")
 sys.exit(qApp.exec_())

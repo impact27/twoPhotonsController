@@ -267,12 +267,18 @@ class Controls_tab(QtWidgets.QWidget):
         def updateStatus():
             motor_status.setOn(md.motor.is_ready())
             motor_target_status.setOn(md.motor.is_onTarget())
-            QtCore.QMutexLocker(md.piezo.controller_mutex())
-            if not md.piezo.isRecordingMacro:
+            cmutex = md.piezo.controller_mutex()
+            mlock = QtCore.QMutexLocker(cmutex)
+            try:
+                if md.piezo.isRecordingMacro:
+                    return
                 cube_status.setOn(md.piezo.is_ready())
                 cube_target_status.setOn(md.piezo.is_onTarget())
                 if md.piezo.is_macro_running():
                     self.updatePos()
+            except:
+                print('Update mutex = ', cmutex)
+                raise
 
         self.status_timer = QtCore.QTimer()
         self.status_timer.timeout.connect(updateStatus)
@@ -316,14 +322,15 @@ class Controls_tab(QtWidgets.QWidget):
 
     def update_cube(self):
         md = self.application_delegate.movement_delegate
-        QtCore.QMutexLocker(md.piezo.controller_mutex())
-        if not md.piezo.isRecordingMacro:
-            V = md.piezo.velocity
-            Pos = md.piezo.position
-            self.vel_cube_selector.setValue(V)
-            [s.setValue(x) for s, x in zip(self.cube_selectors, Pos)]
-            I = self.application_delegate.laser_delegate.get_intensity()
-            self.laser_selector.setValue(I)
+        mlock = QtCore.QMutexLocker(md.piezo.controller_mutex())
+        if md.piezo.isRecordingMacro:
+            return
+        V = md.piezo.velocity
+        Pos = md.piezo.position
+        self.vel_cube_selector.setValue(V)
+        [s.setValue(x) for s, x in zip(self.cube_selectors, Pos)]
+        I = self.application_delegate.laser_delegate.get_intensity()
+        self.laser_selector.setValue(I)
             
 
     def updatePos(self):

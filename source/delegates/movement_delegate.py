@@ -49,7 +49,7 @@ else:
 
 def lockmutex(f):
     def ret(cls, *args, **kargs):
-        QtCore.QMutexLocker(cls._mutex)
+        mlock = QtCore.QMutexLocker(cls._mutex)
         return f(cls, *args, **kargs)
     return ret
 
@@ -135,7 +135,7 @@ class Movement_delegate(QtCore.QObject):
     @property
     def is_ready(self):
         """Checks if the stages are ready"""
-        QtCore.QMutexLocker(self._mutex)
+        mlock = QtCore.QMutexLocker(self._mutex)
 
         return self.motor.is_ready() and self.piezo.is_ready()
 
@@ -348,14 +348,14 @@ class Stage(QtCore.QObject):
 
     @property
     def corrections(self):
-        QtCore.QMutexLocker(self._mutex)
+        mlock =  QtCore.QMutexLocker(self._mutex)
 
         return self._corrections
 
     @corrections.setter
     def corrections(self, corrections):
 
-        QtCore.QMutexLocker(self._mutex)
+        mlock = QtCore.QMutexLocker(self._mutex)
         self._corrections["offset"] = np.asarray(corrections["offset"])
         self._corrections["rotation angles"] = np.asarray(
             corrections["rotation angles"])
@@ -494,10 +494,7 @@ class Piezo(Stage):
         super().__init__(1000, checklock, error_signal)
         self.XYZ_c = Cube_controller()
         self.XYZ_c.stageConnected.connect(self.reset)
-
         self.recording_macro = False
-        self.__getattribute__('isRecordingMacro')
-        print(self.isRecordingMacro)
 
     @lockmutex
     def reset(self, checkid=None, wait=False):
@@ -544,6 +541,7 @@ class Piezo(Stage):
 
     @lockmutex
     def macro_begin(self, name):
+        print('Begin macro mutex = ', self._mutex)
         self.recording_macro = True
         self.XYZ_c.MAC_BEG(name)
 
@@ -574,7 +572,7 @@ class Piezo(Stage):
 
     @property
     def isRecordingMacro(self):
-        QtCore.QMutexLocker(self._mutex)
+        mlock = QtCore.QMutexLocker(self._mutex)
         return self.XYZ_c.isRecordingMacro
 
     @lockmutex
@@ -665,45 +663,3 @@ class Piezo_z(Stage_controller):
 
     def is_ready(self,):
         return self.piezo.XYZ_c.is_ready()
-
-#    def _get_angle_matrices(self):
-#
-#        QtCore.QMutexLocker(self.mutex)
-#
-#        theta = self._corrections["rotation angle"]
-#        phi = self._corrections["stage diff angle"]
-#
-#        c, s = np.cos(theta), np.sin(theta)
-#        R = np.array([[c, -s], [s, c]])
-#
-#        c, s = np.cos(phi), np.sin(phi)
-#        M = np.array([[1, s], [0, c]])
-#
-#        return R, M
-#    def _getZPlane(self, XYstage):
-#        return np.dot(self._corrections["slope"], XYstage)
-#
-#    def XstoXm(self, Xs):
-#
-#        QtCore.QMutexLocker(self.mutex)
-#        R, M = self._get_angle_matrices()
-#
-#        Xm = np.array(Xs, float)
-#        Xm[:2] = M@Xs[:2]
-#        Xm -= self._corrections['offset']
-#        Xm[:2] = np.linalg.inv(R)@Xm[:2]
-#        Xm[2] -= self._getZPlane(Xs[:2])
-#        return Xm
-#
-#    def XmtoXs(self, Xm):
-#
-#        QtCore.QMutexLocker(self.mutex)
-#
-#        R, M = self._get_angle_matrices()
-#
-#        Xs = np.array(Xm, float)
-#        Xs[:2] = R@Xm[:2]
-#        Xs += self._corrections['offset']
-#        Xs[:2] = np.linalg.inv(M)@Xs[:2]
-#        Xs[2] += self._getZPlane(Xs[:2])
-#        return Xs

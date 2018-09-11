@@ -12,6 +12,11 @@ if sys.platform == "darwin":
 else:
     from controllers.camera_controller import Camera_controller
 
+def lockmutex(f):
+    def ret(cls, *args, **kargs):
+        QtCore.QMutexLocker(cls._mutex)
+        return f(cls, *args, **kargs)
+    return ret
 
 class Camera_delegate(QtCore.QObject):
 
@@ -19,16 +24,10 @@ class Camera_delegate(QtCore.QObject):
     state_auto_exposure_time = QtCore.pyqtSignal(bool)
     ext_shutterState = QtCore.pyqtSignal(bool)
     new_roi = QtCore.pyqtSignal()
-
-    def mutex(f):
-        def ret(cls, *args, **kargs):
-            QtCore.QMutexLocker(cls.mutex)
-            return f(cls, *args, **kargs)
-        return ret
     
     def __init__(self):
         super().__init__()
-        self.mutex = QtCore.QMutex()
+        self._mutex = QtCore.QMutex()
         self.controller = Camera_controller(self._onConnect)
         self.isAuto = False
         self.reset_bg()
@@ -43,7 +42,7 @@ class Camera_delegate(QtCore.QObject):
         """Return """
         return np.asarray(self.controller.roi)
     
-    @mutex
+    @lockmutex
     def roi_zoom(self, roi):
         roi = np.array(roi)
         cur_roi = np.array(self.controller.roi)
@@ -51,12 +50,12 @@ class Camera_delegate(QtCore.QObject):
         self.controller.roi = roi
         self.new_roi.emit()
 
-    @mutex
+    @lockmutex
     def roi_reset(self):
         self.controller.roi = self.roi0
         self.new_roi.emit()
 
-    @mutex
+    @lockmutex
     def get_image(self, rmbg=True):
         im = self.controller.get_image()
         if self.isAuto:
@@ -65,32 +64,32 @@ class Camera_delegate(QtCore.QObject):
             im = im * 1. - self._bg
         return im
 
-    @mutex
+    @lockmutex
     def exposure_time_range(self):
         return self.controller.exposure_time_range()
 
-    @mutex
+    @lockmutex
     def set_exposure_time(self, time):
         self.new_exposure_time.emit(time)
         self.controller.exposure_time = time
 
-    @mutex
+    @lockmutex
     def get_exposure_time(self):
         return self.controller.get_exposure_time()
 
     exposure_time = property(get_exposure_time, set_exposure_time)
 
-    @mutex
+    @lockmutex
     def auto_exposure_time(self, on):
         self.state_auto_exposure_time.emit(on)
         self.isAuto = on
 
-    @mutex
+    @lockmutex
     def extShutter(self, on):
         self.ext_shutterState.emit(on)
         self.controller.ext_shutter(on)
 
-    @mutex
+    @lockmutex
     def correct_exposure_time(self, im):
         amax = np.max(im)
         time = self.controller.get_exposure_time()
@@ -102,14 +101,14 @@ class Camera_delegate(QtCore.QObject):
             if overprct > .1:  # 10% image overexposed
                 self.set_exposure_time(time / 2)
 
-    @mutex
+    @lockmutex
     def reset_bg(self):
         self._bg = 0
 
-    @mutex
+    @lockmutex
     def set_bg(self):
         self._bg = self.controller.get_image()
 
-    @mutex
+    @lockmutex
     def restart_streaming(self):
         self.controller.restart_streaming()

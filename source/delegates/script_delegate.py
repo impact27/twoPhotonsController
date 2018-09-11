@@ -261,6 +261,7 @@ class Execute_Parser(Parser):
         except:
             print("Parse failed, setting V to 0")
             self.laser_delegate.set_intensity(0)
+            self.md.unlock()
             raise
         self.md.unlock()
         self.lockid = None
@@ -277,6 +278,7 @@ class Execute_Parser(Parser):
 
     @macro(False)
     def focus(self, stage, start_offset, stop_offset, step):
+        return
         start_offset, stop_offset, step = float(
             start_offset), float(stop_offset), float(step)
         if stage.lower() == 'piezo':
@@ -312,6 +314,7 @@ class Execute_Parser(Parser):
 
     @macro(False)
     def piezoslope(self):
+        return
         self.coordinates_delegate.piezo_plane(checkid=self.lockid, wait=True)
 
     @macro(False)

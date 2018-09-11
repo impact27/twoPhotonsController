@@ -283,7 +283,7 @@ class Zcorrector():
                 return data[:i+1]
 
         # Failed focus
-        if (np.max(data[:, 1]) - np.min(data[:, 1])) / np.max(data[:, 1]) < 0.2:
+        if np.min(np.max(data[:, 1])) > 0.8 * np.max(data[:, 1]):
             raise RuntimeError("Can't focus: not enough difference between min and max")
 
         return data
