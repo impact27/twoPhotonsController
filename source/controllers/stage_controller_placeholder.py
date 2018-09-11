@@ -163,6 +163,7 @@ class Cube_controller(fake_controller):
         self.target = np.array([0, 0, 0])
         self.startTime = 0
         self.error = CubeError
+        self.isRecordingMacro = False
 
     def connect(self):
         self.stageConnected.emit()

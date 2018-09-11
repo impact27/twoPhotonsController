@@ -124,11 +124,9 @@ class Canvas_delegate(QtCore.QObject):
         self._canvas.draw()
 
     def draw_current_position(self):
-
         QtCore.QMutexLocker(self.mutex)
         
         md = self._parent.movement_delegate
-        
         QtCore.QMutexLocker(md.piezo.controller_mutex())
         if md.piezo.isRecordingMacro:
             return

@@ -528,6 +528,8 @@ class Piezo(Stage):
         self.XYZ_c.stageConnected.connect(self.reset)
 
         self.recording_macro = False
+        self.__getattribute__('isRecordingMacro')
+        print(self.isRecordingMacro)
 
     @mutex
     def reset(self, checkid=None, wait=False):
@@ -598,9 +600,9 @@ class Piezo(Stage):
     def is_macro_running(self):
         return self.XYZ_c.is_macro_running()
     
-    @mutex
     @property
     def isRecordingMacro(self):
+        QtCore.QMutexLocker(self.mutex)
         return self.XYZ_c.isRecordingMacro
 
     @mutex
