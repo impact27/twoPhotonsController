@@ -47,17 +47,22 @@ else:
                                               z_controller,
                                               Stage_controller)
 
+def lockmutex(f):
+    def ret(cls, *args, **kargs):
+        QtCore.QMutexLocker(cls._mutex)
+        return f(cls, *args, **kargs)
+    return ret
 
 class Movement_delegate(QtCore.QObject):
-    """Delegate for movement. 
+    """Delegate for movement.
     Pretty empty as the motion is done through motor and piezo
     """
     updatePosition = QtCore.pyqtSignal()
     error = QtCore.pyqtSignal(str)
-    
+
     def __init__(self):
         super().__init__()
-        self.mutex = QtCore.QMutex()
+        self._mutex = QtCore.QMutex()
         self.locked = False
         self.lockid = None
 
@@ -77,9 +82,9 @@ class Movement_delegate(QtCore.QObject):
     def motor(self):
         return self._motor
 
+    @lockmutex
     def _checklock(self, lockid=None):
         """Checks if the movement is locked"""
-        QtCore.QMutexLocker(self.mutex)
 
         if not self.locked:
             return True
@@ -88,9 +93,9 @@ class Movement_delegate(QtCore.QObject):
         else:
             raise RuntimeError('Mouvment is locked!')
 
+    @lockmutex
     def lock(self):
         """Locks the movement"""
-        QtCore.QMutexLocker(self.mutex)
 
         if not self._checklock(None):
             return None
@@ -99,30 +104,30 @@ class Movement_delegate(QtCore.QObject):
         self.lockid = random.randint(0, 100)
         return self.lockid
 
+    @lockmutex
     def unlock(self):
         """Unlocks the movement"""
-        QtCore.QMutexLocker(self.mutex)
 
         self.locked = False
         self.lockid = None
 
+    @lockmutex
     def stop(self):
         """stops the movement"""
-        QtCore.QMutexLocker(self.mutex)
 
         self.piezo.stop()
         self.motor.stop()
 
+    @lockmutex
     def ESTOP(self):
         """Emergency stop"""
-        QtCore.QMutexLocker(self.mutex)
 
         self.piezo.ESTOP()
         self.motor.ESTOP()
 
+    @lockmutex
     def is_onTarget(self):
         """Checks if the stages reached the target"""
-        QtCore.QMutexLocker(self.mutex)
 
         return (self.piezo.is_onTarget()
                 and self.motor.is_onTarget())
@@ -130,17 +135,16 @@ class Movement_delegate(QtCore.QObject):
     @property
     def is_ready(self):
         """Checks if the stages are ready"""
-        QtCore.QMutexLocker(self.mutex)
+        QtCore.QMutexLocker(self._mutex)
 
         return self.motor.is_ready() and self.piezo.is_ready()
 
     # ==========================================================================
     #     Corrections
     # ==========================================================================
-
+    @lockmutex
     def save_corrections(self, fn='corrections.txt'):
         """Saves the corrections"""
-        QtCore.QMutexLocker(self.mutex)
         mydict = {'motor': self.motor.corrections,
                   'piezo': self.piezo.corrections}
 
@@ -151,9 +155,9 @@ class Movement_delegate(QtCore.QObject):
         with open(fn, 'w') as f:
             json.dump(mydict, f, indent=4, default=ndtolist)
 
+    @lockmutex
     def load_corrections(self, fn='corrections.txt'):
         """Loads the corrections"""
-        QtCore.QMutexLocker(self.mutex)
 
         try:
             with open(fn, 'r') as f:
@@ -174,7 +178,7 @@ class Stage(QtCore.QObject):
 
     def __init__(self, speed, checklock, error_signal):
         super().__init__()
-        self.mutex = QtCore.QMutex(QtCore.QMutex.Recursive)
+        self._mutex = QtCore.QMutex(QtCore.QMutex.Recursive)
         self._speed = speed
         self._checklock = checklock
         self._lastXs = None
@@ -185,9 +189,9 @@ class Stage(QtCore.QObject):
 
     # Positions
 
+    @lockmutex
     def get_position(self, raw=False):
         """Returns the (raw?) position"""
-        QtCore.QMutexLocker(self.mutex)
 
         X = self._XSPOS()
         if not raw:
@@ -195,6 +199,7 @@ class Stage(QtCore.QObject):
 
         return X
 
+    @lockmutex
     def goto_position(self, XTo, speed=np.nan, *, wait=False, checkid=None,
                       useLastPos=False, isRaw=False):
         """Moves to the position
@@ -218,7 +223,6 @@ class Stage(QtCore.QObject):
         Note:
             Any value of Xm set to nan will not be moved
         """
-        QtCore.QMutexLocker(self.mutex)
 
         # Check lock
         if not self._checklock(checkid):
@@ -280,9 +284,9 @@ class Stage(QtCore.QObject):
 
     position = property(get_position, goto_position)
 
+    @lockmutex
     def wait_end_motion(self, travel_time, timeout=None):
         """Wait hte ned of motion"""
-        QtCore.QMutexLocker(self.mutex)
 
         time.sleep(travel_time)
         tstart = time.time()
@@ -291,17 +295,17 @@ class Stage(QtCore.QObject):
                 raise RuntimeError('The motion took too long to complete')
             time.sleep(.01)
 
+    @lockmutex
     def move_by(self, dX, wait=False, checkid=None):
         """Move by dX. Conveninence wrapper around goto_position"""
-        QtCore.QMutexLocker(self.mutex)
 
         Xm = dX + self.position
         self.goto_position(Xm, wait=wait, checkid=checkid)
 
+    @lockmutex
     def get_positionRange(self, axis=None):
         """Get position range. This is almost correct.
         (See corrections)"""
-        QtCore.QMutexLocker(self.mutex)
 
         ret = np.zeros((self._ndim, 2))
         for i in range(self._ndim):
@@ -317,26 +321,21 @@ class Stage(QtCore.QObject):
 
     positionRange = property(get_positionRange)
 
+    @lockmutex
     def get_velocity(self):
-
-        QtCore.QMutexLocker(self.mutex)
 
         return self._speed
 
+    @lockmutex
     def set_velocity(self, vel, checkid=None):
-
-        QtCore.QMutexLocker(self.mutex)
-
         if not self._checklock(checkid):
             return
         self._speed = vel
 
     velocity = property(get_velocity, set_velocity)
 
+    @lockmutex
     def get_velocityRange(self, axis=None):
-
-        QtCore.QMutexLocker(self.mutex)
-
         if axis is None:
             axis = np.arange(3)
         axis = np.ravel(axis)
@@ -349,15 +348,14 @@ class Stage(QtCore.QObject):
 
     @property
     def corrections(self):
-
-        QtCore.QMutexLocker(self.mutex)
+        QtCore.QMutexLocker(self._mutex)
 
         return self._corrections
 
     @corrections.setter
     def corrections(self, corrections):
 
-        QtCore.QMutexLocker(self.mutex)
+        QtCore.QMutexLocker(self._mutex)
         self._corrections["offset"] = np.asarray(corrections["offset"])
         self._corrections["rotation angles"] = np.asarray(
             corrections["rotation angles"])
@@ -373,30 +371,22 @@ class Stage(QtCore.QObject):
             "rotation angles": np.zeros(4, float)
         }
 
+    @lockmutex
     def reconnect(self):
-
-        QtCore.QMutexLocker(self.mutex)
-
         pass
 
+    @lockmutex
     def XstoXm(self, Xs):
-
-        QtCore.QMutexLocker(self.mutex)
-
         return XstoXm(Xs, self._corrections["offset"],
                       self._corrections["rotation angles"])
 
+    @lockmutex
     def XmtoXs(self, Xm):
-
-        QtCore.QMutexLocker(self.mutex)
-
         return XmtoXs(Xm, self._corrections["offset"],
                       self._corrections["rotation angles"])
 
+    @lockmutex
     def set_Z_zero(self):
-
-        QtCore.QMutexLocker(self.mutex)
-
         actualZ = self.position[2]
         offset = np.asarray(self.corrections["offset"], float)
 
@@ -446,52 +436,40 @@ class Motor(Stage):
         self.XY_c = Linear_controller()
         self.Z_c = z_controller()
 
+    @lockmutex
     def _XSPOS(self):
-
-        QtCore.QMutexLocker(self.mutex)
-
         XY = self.XY_c.get_position()
         Z = self.Z_c.get_position()
         X = np.asarray([*XY, Z])
         return X
 
+    @lockmutex
     def _MOVVEL(self, Xs, V):
-
-        QtCore.QMutexLocker(self.mutex)
-
         self.XY_c.MOVVEL(Xs[:2], V[:2])
         self.Z_c.MOVVEL(Xs[2:], V[2:])
 
+    @lockmutex
     def is_onTarget(self):
-
-        QtCore.QMutexLocker(self.mutex)
-
         return (self.XY_c.is_onTarget() and self.Z_c.is_onTarget())
 
+    @lockmutex
     def _XSRANGE(self, axis):
-
-        QtCore.QMutexLocker(self.mutex)
-
         if axis < 2:
             return self.XY_c.get_pos_range(axis)
         elif axis == 2:
             return self.Z_c.get_pos_range(0)
         return [np.nan, np.nan]
 
+    @lockmutex
     def _VRANGE(self, axis):
-
-        QtCore.QMutexLocker(self.mutex)
-
         if axis < 2:
             return self.XY_c.get_vel_range(axis)
         elif axis == 2:
             return self.Z_c.get_vel_range(0)
         return [np.nan, np.nan]
 
+    @lockmutex
     def stop(self, wait=False, checkid=None):
-
-        QtCore.QMutexLocker(self.mutex)
-
         self.XY_c.stop()
         self.Z_c.stop()
 
@@ -499,28 +477,18 @@ class Motor(Stage):
         self.XY_c.ESTOP()
         self.Z_c.ESTOP()
 
+    @lockmutex
     def is_ready(self):
-
-        QtCore.QMutexLocker(self.mutex)
-
         return self.XY_c.is_ready() and self.Z_c.is_ready()
 
+    @lockmutex
     def reconnect(self):
-
-        QtCore.QMutexLocker(self.mutex)
-
         self.XY_c.reconnect()
         self.Z_c.reconnect()
 
 
 class Piezo(Stage):
     """Piezo stage"""
-    
-    def mutex(f):
-        def ret(cls, *args, **kargs):
-            QtCore.QMutexLocker(cls.mutex)
-            return f(cls, *args, **kargs)
-        return ret
 
     def __init__(self, checklock, error_signal):
         super().__init__(1000, checklock, error_signal)
@@ -531,16 +499,16 @@ class Piezo(Stage):
         self.__getattribute__('isRecordingMacro')
         print(self.isRecordingMacro)
 
-    @mutex
+    @lockmutex
     def reset(self, checkid=None, wait=False):
         self.reset_corrections()
         self.goto_position([0, 0, 0], checkid=checkid, wait=wait)
 
-    @mutex
+    @lockmutex
     def _XSPOS(self):
         return np.asarray(self.XYZ_c.get_position())
 
-    @mutex
+    @lockmutex
     def _MOVVEL(self, Xs, V):
         try:
             self.XYZ_c.MOVVEL(Xs, V)
@@ -550,41 +518,41 @@ class Piezo(Stage):
             self.error_signal.emit("Error at " + str(Xs) + str(e))
             raise
 
-    @mutex
+    @lockmutex
     def is_onTarget(self):
         return np.all(self.XYZ_c.is_onTarget())
 
-    @mutex
+    @lockmutex
     def _XSRANGE(self, axis):
         ret = self.XYZ_c.get_pos_range(axis)
         return ret
 
-    @mutex
+    @lockmutex
     def _VRANGE(self, axis):
         return self.XYZ_c.get_vel_range(axis)
 
-    @mutex
+    @lockmutex
     def stop(self):
         self.XYZ_c.stop()
 
     def ESTOP(self):
         self.XYZ_c.ESTOP()
 
-    @mutex
+    @lockmutex
     def is_ready(self):
         return self.XYZ_c.is_ready()
 
-    @mutex
+    @lockmutex
     def macro_begin(self, name):
         self.recording_macro = True
         self.XYZ_c.MAC_BEG(name)
 
-    @mutex
+    @lockmutex
     def macro_end(self):
         self.recording_macro = False
         self.XYZ_c.MAC_END()
 
-    @mutex
+    @lockmutex
     def macro_start(self, name, wait=True):
         self.XYZ_c.MAC_START(name)
         if wait:
@@ -592,29 +560,33 @@ class Piezo(Stage):
             while self.is_macro_running():
                 time.sleep(1)
 
-    @mutex
+    @lockmutex
     def macro_delete(self, name):
         self.XYZ_c.MAC_DEL(name)
 
-    @mutex
+    @lockmutex
+    def macro_exists(self, name):
+        return self.XYZ_c.macro_exists(name)
+
+    @lockmutex
     def is_macro_running(self):
         return self.XYZ_c.is_macro_running()
-    
+
     @property
     def isRecordingMacro(self):
-        QtCore.QMutexLocker(self.mutex)
+        QtCore.QMutexLocker(self._mutex)
         return self.XYZ_c.isRecordingMacro
 
-    @mutex
+    @lockmutex
     def run_waveform(self, time_step, X):
 
         # Get stage coordinates
         X[:, :3] = self.XmtoXs(X[:, :3])
 
         self.XYZ_c.run_waveform(time_step, X)
-        
+
     def controller_mutex(self):
-        return self.mutex
+        return self._mutex
 
 
 class Motor_z_switcher():

@@ -11,7 +11,7 @@ import matplotlib
 cmap = matplotlib.cm.get_cmap('viridis')
 from PyQt5 import QtCore
 from matplotlib import collections as mc
-
+import sys
 
 class Script_delegate():
     def __init__(self, app_delegate):
@@ -52,7 +52,9 @@ class Parse_thread(QtCore.QThread):
         try:
             self._parser.parse(self._filename)
         except BaseException as e:
+            print("Parse failed")
             print(e)
+            raise
 
 
 class Parser():
@@ -65,21 +67,22 @@ class Parser():
         with open(filename) as f:
             self.file = f
             fun = 0
+            self.line_nbr = 0
             while fun is not None:
                 line = self.file.readline()
                 fun, args = self.readline(line)
+                self.line_nbr += 1
                 if fun is None:
                     break
-                fun(*args)
-                # try:
-                    # fun(*args)
-                # except BaseException:
-                #     print('')
-                #     print("Error while parsing line:")
-                #     print(line)
-                #     print(sys.exc_info())
-                #     print('')
-                #     raise
+                try:
+                    fun(*args)
+                except BaseException:
+                    print('')
+                    print("Error while parsing line:")
+                    print(line, self.line_nbr)
+                    print(sys.exc_info())
+                    print('')
+                    raise
             self.file = None
 
     def readline(self, line):
@@ -223,19 +226,21 @@ class Execute_Parser(Parser):
             
         def __call__(self, f):
             if self._compatible:
-                def ret(*args, **kargs):
-                    args[0].start_macro()
-                    f(*args, **kargs)
+                def ret(cls, *args, **kargs):
+                    cls.start_macro()
+                    f(cls, *args, **kargs)
             else:
-                def ret(*args, **kargs):
-                    args[0].end_macro()
-                    f(*args, **kargs)
+                def ret(cls, *args, **kargs):
+                    cls.end_macro()
+                    f(cls, *args, **kargs)
             return ret
 
 
     def start_macro(self):
         if not self.recording_macro:
             self.recording_macro = True
+            if self.piezo_delegate.macro_exists('nextsteps'):
+                self.piezo_delegate.macro_delete('nextsteps')
             self.piezo_delegate.macro_begin('nextsteps')
 
     def end_macro(self):
@@ -244,7 +249,7 @@ class Execute_Parser(Parser):
         self.recording_macro = False
         self.piezo_delegate.macro_end()
         self.piezo_delegate.macro_start('nextsteps', wait=True)
-        self.piezo_delegate.macro_delete('nextsteps')
+        
 
     def parse(self, filename):
         self.lockid = self.md.lock()
@@ -254,6 +259,7 @@ class Execute_Parser(Parser):
             super().parse(filename)
             self.end_macro()
         except:
+            print("Parse failed, setting V to 0")
             self.laser_delegate.set_intensity(0)
             raise
         self.md.unlock()
@@ -354,6 +360,7 @@ class Draw_Parser(Parser):
         try:
             super().parse(filename)
         except BaseException as e:
+            print("Parse failed, can't draw")
             print(e)
             raise
         lc = mc.LineCollection(self.lines, colors=self.colors, linewidths=2)
@@ -393,6 +400,10 @@ class Draw_Parser(Parser):
         self.writing = state
 
     def laser_power(self, power):
+        if power == 0:
+            self.writing = True
+        elif power > 0:
+            self.writing = True
         self.color = cmap(power / 4)
 
     def piezoreset(self):
@@ -400,8 +411,8 @@ class Draw_Parser(Parser):
 
     def run_waveform(self, time_step, X):
         step = int(0.1 /time_step)
-        for idx in range(X.shape[1] // step):
-            pos = X[:, idx * step]
+        for idx in [*np.arange(X.shape[1] // step)*step, X.shape[1] - 1]:
+            pos = X[:, idx]
             I = np.nan
             if len(pos) > 3:
                 I = pos[3]

@@ -223,5 +223,6 @@ class plane_thread(QtCore.QThread):
             corrections["rotation angles"] = rotation_angles
             self._stage.corrections = corrections
         except BaseException as e:
+            print("Plane thread failed")
             print(e)
             raise

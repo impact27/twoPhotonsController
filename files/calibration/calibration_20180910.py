@@ -187,16 +187,18 @@ def tree_v_line(Xfrom, Xto, v_range, wavelength, power):
     script.waveform(X, dt)
 
 def write_margin(y_lines_spacing):
-    line([y_lines_spacing/2, y_lines_spacing/2, 0],
-         [y_lines_spacing/2, cube_width - y_lines_spacing/2, 0],
+    line([-cube_width/2 + y_lines_spacing/2, -cube_width/2 + y_lines_spacing/2, 0],
+         [-cube_width/2 + y_lines_spacing/2, cube_width/2 - y_lines_spacing/2, 0],
          power=pc.range_P[1],
          velocity=50)
 # =============================================================================
 # 1st type - Calibration
 # =============================================================================
 
-y_positions = np.arange(0, cube_width, y_lines_spacing) + y_lines_spacing/2
-x_range = [y_lines_spacing/2, cube_width - y_lines_spacing/2]
+y_positions = np.arange(-cube_width/2, cube_width/2,
+                        y_lines_spacing) + y_lines_spacing/2
+x_range = [-cube_width/2 + y_lines_spacing/2, 
+           cube_width/2 - y_lines_spacing/2]
 
 energy_density = np.linspace(energy_density_range[1], 
                               energy_density_range[0], 
@@ -230,8 +232,10 @@ motor_line += 1
 # 2nd type: dots
 # =============================================================================
 
-y_positions = np.arange(0, cube_width, y_lines_spacing_dots) + y_lines_spacing_dots/2
-x_range = [y_lines_spacing_dots/2, cube_width - y_lines_spacing_dots/2]
+y_positions = np.arange(-cube_width/2, cube_width/2,
+                        y_lines_spacing_dots) + y_lines_spacing_dots/2
+x_range = [-cube_width/2 + y_lines_spacing_dots/2, 
+           cube_width/2 - y_lines_spacing_dots/2]
 
 # 1st line: Vary times for max power
 time = np.exp(np.linspace(
@@ -279,9 +283,10 @@ motor_line += 1
 
 
 # 1st block: move z
-
-y_positions = np.arange(0, cube_width, y_lines_spacing) + y_lines_spacing/2
-x_range = [y_lines_spacing/2, cube_width - y_lines_spacing/2]
+y_positions = np.arange(-cube_width/2, cube_width/2,
+                        y_lines_spacing) + y_lines_spacing/2
+x_range = [-cube_width/2 + y_lines_spacing/2, 
+           cube_width/2 - y_lines_spacing/2]
 
 energy_density = np.linspace(energy_density_range[1], 
                               energy_density_range[0], 
