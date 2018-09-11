@@ -79,7 +79,7 @@ class Parser():
                 except BaseException:
                     print('')
                     print("Error while parsing line:")
-                    print(line, self.line_nbr)
+                    print(self.line_nbr, ':', line)
                     print(sys.exc_info())
                     print('')
                     raise
@@ -249,6 +249,8 @@ class Execute_Parser(Parser):
         self.recording_macro = False
         self.piezo_delegate.macro_end()
         self.piezo_delegate.macro_start('nextsteps', wait=True)
+#        import time
+#        time.sleep(10)
         
 
     def parse(self, filename):

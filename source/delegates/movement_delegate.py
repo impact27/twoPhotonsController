@@ -195,7 +195,6 @@ class Stage(QtCore.QObject):
 
         return X
 
-    @lockmutex
     def goto_position(self, XTo, speed=np.nan, *, wait=False, checkid=None,
                       useLastPos=False, isRaw=False):
         """Moves to the position
@@ -223,7 +222,7 @@ class Stage(QtCore.QObject):
         # Check lock
         if not self._checklock(checkid):
             return
-
+        self._mutex.lock()
         # get starting point
         XsFrom = None
         if useLastPos:
@@ -234,16 +233,15 @@ class Stage(QtCore.QObject):
         XsTo, XmTo, Vs, travel_time = self.move_parameters(
             XTo, XsFrom, speed, isRaw)
 
-        self._lastXs = XsTo
-
         # Don't move if final = now
         if np.linalg.norm(XsTo - XsFrom) < 1e-3:
+            self._mutex.unlock()
             return
 
         # Move
         self.move_signal.emit(list(XmTo), speed)
         self._MOVVEL(XsTo, Vs)
-
+        self._mutex.unlock()
         # Wait for movment to end
         if wait:
             self.wait_end_motion(travel_time, 10)
@@ -275,7 +273,6 @@ class Stage(QtCore.QObject):
             Vs = np.abs(Xdist / travel_time)
         else:
             Vs = np.abs(Xdist)
-
         return XsTo, XmTo, Vs, travel_time
 
     position = property(get_position, goto_position)
@@ -291,7 +288,6 @@ class Stage(QtCore.QObject):
                 raise RuntimeError('The motion took too long to complete')
             time.sleep(.01)
 
-    @lockmutex
     def move_by(self, dX, wait=False, checkid=None):
         """Move by dX. Conveninence wrapper around goto_position"""
 
@@ -428,6 +424,7 @@ class Motor(Stage):
         super().__init__(1000, checklock, error_signal)
         self.XY_c = Linear_controller()
         self.Z_c = z_controller()
+        self._lastXs = self._XSPOS()
 
     @lockmutex
     def _XSPOS(self):
@@ -438,6 +435,7 @@ class Motor(Stage):
 
     @lockmutex
     def _MOVVEL(self, Xs, V):
+        self._lastXs = Xs
         self.XY_c.MOVVEL(Xs[:2], V[:2])
         self.Z_c.MOVVEL(Xs[2:], V[2:])
 
@@ -488,8 +486,8 @@ class Piezo(Stage):
         self.XYZ_c = Cube_controller()
         self.XYZ_c.stageConnected.connect(self.reset)
         self.recording_macro = False
+        self._lastXs = self._XSPOS()
 
-    @lockmutex
     def reset(self, checkid=None, wait=False):
         self.reset_corrections()
         self.goto_position([0, 0, 0], checkid=checkid, wait=wait)
@@ -501,6 +499,7 @@ class Piezo(Stage):
     @lockmutex
     def _MOVVEL(self, Xs, V):
         try:
+            self._lastXs = Xs.copy()
             self.XYZ_c.MOVVEL(Xs, V)
             if self.recording_macro:
                 self.XYZ_c.macro_wait()
@@ -542,9 +541,11 @@ class Piezo(Stage):
         self.recording_macro = False
         self.XYZ_c.MAC_END()
 
-    @lockmutex
+   
     def macro_start(self, name, wait=True):
+        self._mutex.lock()
         self.XYZ_c.MAC_START(name)
+        self._mutex.unlock()
         if wait:
             time.sleep(1)
             while self.is_macro_running():
@@ -567,13 +568,16 @@ class Piezo(Stage):
     def isRecordingMacro(self):
         return self.XYZ_c.isRecordingMacro
 
-    @lockmutex
-    def run_waveform(self, time_step, X):
-
+    
+    def run_waveform(self, time_step, X, wait=True):
+        self._mutex.lock()
         # Get stage coordinates
         X[:, :3] = self.XmtoXs(X[:, :3])
-
-        self.XYZ_c.run_waveform(time_step, X)
+        self._lastXs = X[-1, :3].copy()
+        wait_time = self.XYZ_c.run_waveform(time_step, X)
+        self._mutex.unlock()
+        if wait:
+            self.XYZ_c.wait_end_wave(wait_time)
 
     def controller_mutex(self):
         return self._mutex

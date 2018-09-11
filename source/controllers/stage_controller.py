@@ -345,7 +345,9 @@ class Cube_controller(Stage_controller):
         
         assert np.all(X > 0) and np.all(X < 100)
         
-        self.__cube.VEL([1, 2, 3], list(np.abs(V)))
+        V = np.abs(V)
+        V[V < 1e-3] = 1e-3
+        self.__cube.VEL([1, 2, 3], list(V))
         self.__cube.MOV([1, 2, 3], list(X))
 
     @lockmutex
@@ -452,7 +454,10 @@ class Cube_controller(Stage_controller):
         assert np.all(X[..., :3] > 0) and np.all(X[..., :3] < 100)
         
         # Set rate
-        self.__cube.send(f"WTR 0 {rate} 1")
+        old_rate = self.__cube.qWTR()
+        if old_rate[0] != [rate, 1]:
+            print('Change rate', old_rate[0])
+            self.__cube.send(f"WTR 0 {rate} 1")
         
         idx = np.arange(np.shape(X)[1]) + 1
         
@@ -460,13 +465,14 @@ class Cube_controller(Stage_controller):
         self.__cube.send("WCL " + " ".join(str(e) for e in idx))
         
         # Send data
-        slice_size = 10
+        slice_size = 50
         for i in range(np.shape(X)[1]):
             append = 'X'
             for point_idx in np.arange(0, np.shape(X)[0], slice_size):
                 data = X[point_idx:point_idx + slice_size, i]
-                self.__cube.send(f"WAV {i+1} {append} PNT 1 {len(data)} " +
-                             " ".join(str(e) for e in data))
+                cmd = (f"WAV {i+1} {append} PNT 1 {len(data)} " +
+                             " ".join(f'{e:.3f}' for e in data))
+                self.__cube.send(cmd)
                 append = '&'
 
         # Connect to wave generator
@@ -480,9 +486,13 @@ class Cube_controller(Stage_controller):
 
         # GO
         self.__cube.send('WGO ' + " ".join(str(e) + ' 0x101' for e in idx))
+        
+        return self.Servo_Update_Time * rate * X.shape[0]
 
+    @no_macro
+    def wait_end_wave(self, wait_time):
         # wait
-        time.sleep(50e-6 * rate * X.shape[0])
+        time.sleep(wait_time)
         while(self.__cube.IsGeneratorRunning()[1]):
             time.sleep(0.1)
 
