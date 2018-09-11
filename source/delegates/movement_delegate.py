@@ -30,6 +30,7 @@ import time
 import json
 
 from delegates.coordinates_solver import XmtoXs, XstoXm
+from delegates.thread import lockmutex
 
 # If I am on my mac, the stages are not connected
 _TEST_ = False
@@ -47,11 +48,7 @@ else:
                                               z_controller,
                                               Stage_controller)
 
-def lockmutex(f):
-    def ret(cls, *args, **kargs):
-        mlock = QtCore.QMutexLocker(cls._mutex)
-        return f(cls, *args, **kargs)
-    return ret
+
 
 class Movement_delegate(QtCore.QObject):
     """Delegate for movement.
@@ -62,7 +59,7 @@ class Movement_delegate(QtCore.QObject):
 
     def __init__(self):
         super().__init__()
-        self._mutex = QtCore.QMutex()
+        self._mutex = QtCore.QMutex(QtCore.QMutex.Recursive)
         self.locked = False
         self.lockid = None
 
@@ -133,10 +130,9 @@ class Movement_delegate(QtCore.QObject):
                 and self.motor.is_onTarget())
 
     @property
+    @lockmutex
     def is_ready(self):
         """Checks if the stages are ready"""
-        mlock = QtCore.QMutexLocker(self._mutex)
-
         return self.motor.is_ready() and self.piezo.is_ready()
 
     # ==========================================================================
@@ -348,14 +344,11 @@ class Stage(QtCore.QObject):
 
     @property
     def corrections(self):
-        mlock =  QtCore.QMutexLocker(self._mutex)
-
         return self._corrections
 
     @corrections.setter
+    @lockmutex
     def corrections(self, corrections):
-
-        mlock = QtCore.QMutexLocker(self._mutex)
         self._corrections["offset"] = np.asarray(corrections["offset"])
         self._corrections["rotation angles"] = np.asarray(
             corrections["rotation angles"])
@@ -541,7 +534,6 @@ class Piezo(Stage):
 
     @lockmutex
     def macro_begin(self, name):
-        print('Begin macro mutex = ', self._mutex)
         self.recording_macro = True
         self.XYZ_c.MAC_BEG(name)
 
@@ -571,8 +563,8 @@ class Piezo(Stage):
         return self.XYZ_c.is_macro_running()
 
     @property
+    @lockmutex
     def isRecordingMacro(self):
-        mlock = QtCore.QMutexLocker(self._mutex)
         return self.XYZ_c.isRecordingMacro
 
     @lockmutex

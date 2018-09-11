@@ -25,7 +25,7 @@ from PyQt5 import QtCore
 import clr
 
 
-
+from delegates.thread import lockmutex
 import sys
 from System import Decimal
 # constants
@@ -50,13 +50,6 @@ else:
 # ==============================================================================
 # Stage controller
 # ==============================================================================
-
-def lockmutex(f):
-    def ret(cls, *args, **kargs):
-        mlock = QtCore.QMutexLocker(cls._mutex)
-        return f(cls, *args, **kargs)
-    return ret
-
 
 class Stage_controller(QtCore.QObject):
 

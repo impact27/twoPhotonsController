@@ -51,13 +51,13 @@ class HW_shutter(Hardware_Singleton):
 class Camera_controller():
     def __init__(self, callback=None):
         self.shape = np.asarray(pixeLINK_MaxROI)
-        self.cam = HW_camera(self.onCamConnect)
         self._ext_shutter = HW_shutter()
         
         self.callback = callback
         
         self.flip_image = True
         self.error = PxLerror
+        self.cam = HW_camera(self.onCamConnect)
         
     def connect(self):
         self.cam._connect()

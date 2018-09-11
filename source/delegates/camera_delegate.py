@@ -11,12 +11,8 @@ if sys.platform == "darwin":
     from controllers.camera_controller_placeholder import Camera_controller
 else:
     from controllers.camera_controller import Camera_controller
-
-def lockmutex(f):
-    def ret(cls, *args, **kargs):
-        QtCore.QMutexLocker(cls._mutex)
-        return f(cls, *args, **kargs)
-    return ret
+    
+from delegates.thread import lockmutex
 
 class Camera_delegate(QtCore.QObject):
 
@@ -27,7 +23,7 @@ class Camera_delegate(QtCore.QObject):
     
     def __init__(self):
         super().__init__()
-        self._mutex = QtCore.QMutex()
+        self._mutex = QtCore.QMutex(QtCore.QMutex.Recursive)
         self.controller = Camera_controller(self._onConnect)
         self.isAuto = False
         self.reset_bg()

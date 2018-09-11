@@ -31,6 +31,7 @@ from .script_delegate import Script_delegate
 
 from widgets.application_interface import ApplicationWindow
 
+#from controllers.stage_controller import HW_E727; import sys; sys.getrefcount(HW_E727._mutex)
 
 class Application_delegate(QtCore.QObject):
     error = QtCore.pyqtSignal(str)

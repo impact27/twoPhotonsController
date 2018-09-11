@@ -13,7 +13,7 @@ import sys
 cmap = matplotlib.cm.get_cmap('plasma')
 
 from widgets.canvas import MyMplCanvas
-
+from delegates.thread import lockmutex
 
 class Canvas_delegate(QtCore.QObject):
     newrange = QtCore.pyqtSignal(float, float)
@@ -23,7 +23,7 @@ class Canvas_delegate(QtCore.QObject):
 
     def __init__(self, parent):
         super().__init__()
-        self.mutex = QtCore.QMutex()
+        self._mutex = QtCore.QMutex(QtCore.QMutex.Recursive)
         self._parent = parent
         self._canvas = MyMplCanvas()
 
@@ -72,10 +72,8 @@ class Canvas_delegate(QtCore.QObject):
                            interpolation=cv2.INTER_AREA)
         return frame
 
+    @lockmutex
     def show_frame(self, frame=None):
-
-        QtCore.QMutexLocker(self.mutex)
-
         try:
             if frame is None:
                 frame = self.get_frame()
@@ -90,10 +88,8 @@ class Canvas_delegate(QtCore.QObject):
         except BaseException:
             print("Can't show frame", sys.exc_info())
 
+    @lockmutex
     def update_image(self, im, *args, **kwargs):
-
-        QtCore.QMutexLocker(self.mutex)
-
         self._lastim = im
         if self._imhandle is not None:
 
@@ -111,10 +107,8 @@ class Canvas_delegate(QtCore.QObject):
             self.clear()
             self.imshow(im, *args, **kwargs)
 
+    @lockmutex
     def clear(self):
-
-        QtCore.QMutexLocker(self.mutex)
-
         self._imhandle = None
         self._crosshandle = None
         self._recthandle = None
@@ -123,44 +117,39 @@ class Canvas_delegate(QtCore.QObject):
         self._axes = self._canvas.figure.add_subplot(111)
         self._canvas.draw()
 
+    @lockmutex
     def draw_current_position(self):
-        mlock = QtCore.QMutexLocker(self.mutex)
-        
         md = self._parent.movement_delegate
         cmutex = md.piezo.controller_mutex()
-        cmlock = QtCore.QMutexLocker(cmutex)
-        try:
-            if md.piezo.isRecordingMacro:
-                return
-            newpos = (md.motor.position + md.piezo.position)
-            laserI = self._parent.laser_delegate.get_intensity()
-            lRange = self._parent.laser_delegate.get_range()
-            f = (laserI - lRange[0]) / (lRange[1] - lRange[0])
-            color = cmap(np.min((f, self.lastFracIntensity)))
-    
-            self.plot([self.lastpos[0], newpos[0]],
-                      [self.lastpos[1], newpos[1]],
-                      axis='equal', c=color)
-            self.lastpos = newpos
-            self.lastFracIntensity = f
-        except:
-            print('drawing_mutex = ', cmutex)
-            raise
+        if not cmutex.tryLock():
+            return
+        if md.piezo.isRecordingMacro:
+            cmutex.unlock()
+            return
+        newpos = (md.motor.position + md.piezo.position)
+        laserI = self._parent.laser_delegate.get_intensity()
+        lRange = self._parent.laser_delegate.get_range()
+        f = (laserI - lRange[0]) / (lRange[1] - lRange[0])
+        color = cmap(np.min((f, self.lastFracIntensity)))
 
+        self.plot([self.lastpos[0], newpos[0]],
+                  [self.lastpos[1], newpos[1]],
+                  axis='equal', c=color)
+        self.lastpos = newpos
+        self.lastFracIntensity = f
+        cmutex.unlock()
+
+
+    @lockmutex
     def save_im(self):
-
-        QtCore.QMutexLocker(self.mutex)
-
         fn = QtWidgets.QFileDialog.getSaveFileName(
             self._canvas, 'TIFF file', QtCore.QDir.homePath(),
             "Images (*.tif)")
         im = self.get_last_im()
         tifffile.imsave(fn[0], np.asarray(im, dtype='float32'))
 
+    @lockmutex
     def switch_live(self, on):
-
-        QtCore.QMutexLocker(self.mutex)
-
         if on:
             self.switch_draw(False)
             self.clear()
@@ -169,10 +158,8 @@ class Canvas_delegate(QtCore.QObject):
             self.live_timer.stop()
         self.liveSwitched.emit(on)
 
+    @lockmutex
     def switch_draw(self, on):
-
-        QtCore.QMutexLocker(self.mutex)
-
         if on:
             self.switch_live(False)
             self.draw_timer.start(100)
@@ -182,51 +169,38 @@ class Canvas_delegate(QtCore.QObject):
             self.lastFracIntensity = np.nan
         self.drawSwitched.emit(on)
 
+    @lockmutex
     def set_pixel_size(self, pxsize):
-
-        QtCore.QMutexLocker(self.mutex)
-
         factor = pxsize / self._pixelSize
         self.set_click_pos(self.click_pos * factor)
         self._pixelSize = pxsize
         self.redraw_image()
 
+    @lockmutex
     def set_range(self, vmin=0, vmax=255):
-
-        QtCore.QMutexLocker(self.mutex)
-
         self.newrange.emit(vmin, vmax)
         self._vmin = vmin
         self._vmax = vmax
         self.redraw_image()
 
+    @lockmutex
     def auto_range(self):
-
-        QtCore.QMutexLocker(self.mutex)
-
         im = self.get_last_im()
         vmin = np.percentile(im, 1)
         vmax = np.percentile(im, 99)
         self.set_range(vmin=vmin, vmax=vmax)
 
+    @lockmutex
     def redraw_image(self):
-
-        QtCore.QMutexLocker(self.mutex)
-
         if self.is_showing_image():
             self.clear()
             self.show_frame(self.get_last_im())
 
     def get_last_im(self):
-
-        QtCore.QMutexLocker(self.mutex)
-
         return self._lastim
 
+    @lockmutex
     def imshow(self, im, *args, **kwargs):
-
-        QtCore.QMutexLocker(self.mutex)
-
         self._lastim = im
         self.clear()
 
@@ -241,11 +215,9 @@ class Canvas_delegate(QtCore.QObject):
 
         self._canvas.draw()
 
+    @lockmutex
     def plot(self, X, Y, fmt='-', axis='normal',
              twinx=False, draw=True, **kwargs):
-
-        QtCore.QMutexLocker(self.mutex)
-
         if self._imhandle is not None:
             self.clear()
 
@@ -261,22 +233,16 @@ class Canvas_delegate(QtCore.QObject):
         if draw:
             self._canvas.draw()
 
+    @lockmutex
     def draw(self):
-
-        QtCore.QMutexLocker(self.mutex)
-
         self._canvas.draw()
 
+    @lockmutex
     def get_ylim(self):
-
-        QtCore.QMutexLocker(self.mutex)
-
         return self._axes.get_ylim()
 
+    @lockmutex
     def onImageClick(self, event):
-
-        QtCore.QMutexLocker(self.mutex)
-
         """A CLICK!!!!!!!!"""
         # Are we displaying an image?
         if self._imhandle is None or event.ydata is None or event.xdata is None:
@@ -346,10 +312,8 @@ class Canvas_delegate(QtCore.QObject):
             roi = np.array(roi, int)
             self.cd.roi_zoom((*roi,))
 
+    @lockmutex
     def clear_click(self):
-
-        QtCore.QMutexLocker(self.mutex)
-
         self.set_click_pos(np.array([[np.nan, np.nan], [np.nan, np.nan]]))
         if self._crosshandle is not None:
             self._crosshandle[0].set_data(np.nan, np.nan)
@@ -357,21 +321,15 @@ class Canvas_delegate(QtCore.QObject):
             self.show_frame()
 
     @property
+    @lockmutex
     def click_pos(self):
-
-        QtCore.QMutexLocker(self.mutex)
-
         return self._click_pos
 
+    @lockmutex
     def set_click_pos(self, pos):
-
-        QtCore.QMutexLocker(self.mutex)
-
         self._click_pos = pos
         self.newclick.emit(self._click_pos)
 
+    @lockmutex
     def is_showing_image(self):
-
-        QtCore.QMutexLocker(self.mutex)
-
         return self._imhandle is not None

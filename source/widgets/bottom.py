@@ -46,7 +46,7 @@ class Bottom_widget(QtWidgets.QWidget):
 
         ESTOP_button.clicked.connect(application_delegate.ESTOP)
         clear_button.clicked.connect(
-            application_delegate.canvas_delegate.clear)
+            lambda: application_delegate.canvas_delegate.clear())
         save_im_button.clicked.connect(
             application_delegate.canvas_delegate.save_im)
 

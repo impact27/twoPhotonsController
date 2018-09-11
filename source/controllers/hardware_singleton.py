@@ -7,19 +7,20 @@ Created on Tue Sep  4 19:34:53 2018
 """
 from PyQt5 import QtCore
 import time
+import sys
 
 class Hardware_Singleton(QtCore.QObject):
     """Singleton to connect stage"""
     
-    __mutex = QtCore.QMutex()
+    __mutex = QtCore.QMutex(QtCore.QMutex.Recursive)
     
     def __init__(self, name, connect_callback=None):
         super().__init__()
-        QtCore.QMutexLocker(Hardware_Singleton.__mutex)
+        mlock = QtCore.QMutexLocker(Hardware_Singleton.__mutex)
         if "_number_instances" not in dir(type(self)):
             type(self)._hardware = None
             type(self)._isConnecting = False
-            type(self)._mutex = QtCore.QMutex()
+            type(self)._mutex = QtCore.QMutex(QtCore.QMutex.Recursive)
             type(self)._number_instances = 1
             type(self)._name = name
             type(self)._thread = Hardware_Thread(
@@ -35,12 +36,12 @@ class Hardware_Singleton(QtCore.QObject):
         
     def __getattr__(self, name):
         self._wait_connected()
-        QtCore.QMutexLocker(type(self)._mutex)
+        mlock = QtCore.QMutexLocker(type(self)._mutex)
         return getattr(type(self)._hardware, name)
         
     def __setattr__(self, name, value):
         self._wait_connected()
-        QtCore.QMutexLocker(type(self)._mutex)
+        mlock = QtCore.QMutexLocker(type(self)._mutex)
         setattr(type(self)._hardware, name, value)
         
     def __del__(self):
@@ -49,21 +50,22 @@ class Hardware_Singleton(QtCore.QObject):
             self._disconnect()
             
     def _wait_connected(self):
+        if not self._isConnected() and not type(self)._isConnecting:
+            self._connect()
         if type(self)._isConnecting and not self._isConnected():
             type(self)._mutex.lock()
             print(f"Waiting because of a call to {type(self)._name}")
             type(self)._mutex.unlock()
-            type(self)._thread.wait(60000)
+            type(self)._thread.wait(10000)
             time.sleep(1)
         if not self._isConnected():
             raise RuntimeError(f"{type(self)._name} not connected")
 
     def _isConnected(self):
-        QtCore.QMutexLocker(type(self)._mutex)
         return type(self)._hardware is not None
 
     def _set_hardware(self, hardware):
-        QtCore.QMutexLocker(type(self)._mutex)
+        mlock = QtCore.QMutexLocker(type(self)._mutex)
         if hardware is None or hardware == type(self)._hardware:
             return
     
@@ -74,14 +76,14 @@ class Hardware_Singleton(QtCore.QObject):
             self._connect_callback()
 
     def _connect(self):
-        QtCore.QMutexLocker(type(self)._mutex)
+        mlock = QtCore.QMutexLocker(type(self)._mutex)
         if not self._isConnected() and not type(self)._isConnecting:
             type(self)._isConnecting = True
             print(f'{self._name} connecting')
             type(self)._thread.start()
 
     def _disconnect(self):
-        QtCore.QMutexLocker(type(self)._mutex)
+        mlock = QtCore.QMutexLocker(type(self)._mutex)
         if self._isConnected():
             self._close_connection()
             type(self)._hardware = None

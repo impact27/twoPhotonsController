@@ -8,7 +8,7 @@ from PyQt5 import QtCore, QtWidgets
 import numpy as np
 import sys
 import time
-
+from delegates.thread import lockmutex
 
 class Focus_delegate(QtCore.QObject):
 
@@ -17,7 +17,7 @@ class Focus_delegate(QtCore.QObject):
 
     def __init__(self, app_delegate):
         super().__init__()
-        self.mutex = QtCore.QMutex()
+        self._mutex = QtCore.QMutex(QtCore.QMutex.Recursive)
         self._positions = []
         self.app_delegate = app_delegate
         self.md = app_delegate.movement_delegate
@@ -41,25 +41,19 @@ class Focus_delegate(QtCore.QObject):
                               self.app_delegate.laser_delegate,
                               self.addGraph)
 
+    @lockmutex
     def delete_pos(self, idx):
-
-        QtCore.QMutexLocker(self.mutex)
-
         del self._positions[idx]
         self._update()
 
+    @lockmutex
     def display_pos(self, idx):
-
-        QtCore.QMutexLocker(self.mutex)
-
         self.app_delegate.canvas_delegate.switch_live(False)
         self.app_delegate.canvas_delegate.switch_draw(False)
         self.plotZCorr(*self._positions[idx]["graphs"])
 
+    @lockmutex
     def plotZCorr(self, data, zBest):
-
-        QtCore.QMutexLocker(self.mutex)
-
         try:
             list_Z, list_I = data
             self.canvas.clear()
@@ -71,12 +65,10 @@ class Focus_delegate(QtCore.QObject):
             print("Can't Plot!!!", sys.exc_info()[0])
             raise
 
+    @lockmutex
     def focus(self, stage, *, start_offset=None, stop_offset=None, step=None,
               intensity=None, Nloops=None,
               wait=False, checkid=None, change_coordinates=True):
-
-        QtCore.QMutexLocker(self.mutex)
-
         """
         start_offset:
             How far back from current position
@@ -113,13 +105,12 @@ class Focus_delegate(QtCore.QObject):
         if wait:
             self.thread.wait()
 
+    @lockmutex
     def addGraph(self, graphs):
 
         if graphs is None:
             self.app_delegate.error.emit("Focus Failed")
             return
-
-        QtCore.QMutexLocker(self.mutex)
         intensity = self.app_delegate.laser_delegate.get_intensity()
         if np.abs(intensity - self._settings["Intensity"]) > 1e-3:
             self._settings["Intensity"] = intensity
@@ -133,10 +124,8 @@ class Focus_delegate(QtCore.QObject):
         })
         self._update()
 
+    @lockmutex
     def save(self):
-
-        QtCore.QMutexLocker(self.mutex)
-
         fn = QtWidgets.QFileDialog.getSaveFileName(
             QtWidgets.QApplication.topLevelWidgets()[0], 'TXT file',
             QtCore.QDir.homePath(), "Text (*.txt)")[0]
@@ -155,26 +144,21 @@ class Focus_delegate(QtCore.QObject):
                         time=pos["time"], position_motor=pos["c"],
                         position_piezo=pos["piezo_Xs"]))
 
+    @lockmutex
     def clear(self):
-
-        QtCore.QMutexLocker(self.mutex)
-
         self._positions = []
         self._update()
 
+    @lockmutex
     def _update(self):
-        QtCore.QMutexLocker(self.mutex)
-
         ret = []
         for pos in self._positions:
             ret.append((self.md.motor.XstoXm(
                 pos["motor_Xs"]), self.md.piezo.XstoXm(pos["piezo_Xs"])))
         self.updatelist.emit(ret)
 
+    @lockmutex
     def ESTOP(self):
-
-        QtCore.QMutexLocker(self.mutex)
-
         self.thread.terminate()
         self.init_thread()
 
