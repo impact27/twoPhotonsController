@@ -368,7 +368,6 @@ class Cube_controller(Stage_controller):
         except BaseException:
             pass
 
-    @no_macro
     def ESTOP(self):
         try:
             self.__cube.HLT()

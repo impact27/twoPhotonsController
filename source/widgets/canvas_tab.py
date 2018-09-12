@@ -49,7 +49,7 @@ class Canvas_widget(QtWidgets.QWidget):
         max_input.editingFinished.connect(changeRange)
 
         auto_button.clicked.connect(
-            application_delegate.canvas_delegate.auto_range)
+            lambda: application_delegate.canvas_delegate.auto_range())
         application_delegate.canvas_delegate.newrange.connect(self.setrange)
         self.min_input = min_input
         self.max_input = max_input

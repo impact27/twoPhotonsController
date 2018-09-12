@@ -277,7 +277,6 @@ class Stage(QtCore.QObject):
 
     position = property(get_position, goto_position)
 
-    @lockmutex
     def wait_end_motion(self, travel_time, timeout=None):
         """Wait hte ned of motion"""
 

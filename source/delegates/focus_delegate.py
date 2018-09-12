@@ -25,11 +25,11 @@ class Focus_delegate(QtCore.QObject):
         self.app_delegate = app_delegate
         self.init_thread()
         self._settings = {
-            "From": 5,
-            "To": -5,
+            "From": 15,
+            "To": -15,
             "Step": -0.5,
             "NLoops": 1,
-            "Intensity": 0.5
+            "Intensity": 0.1
         }
 
         self.md.motor.coordinatesCorrected.connect(lambda x: self._update())
@@ -65,7 +65,6 @@ class Focus_delegate(QtCore.QObject):
             print("Can't Plot!!!", sys.exc_info()[0])
             raise
 
-    @lockmutex
     def focus(self, stage, *, start_offset=None, stop_offset=None, step=None,
               intensity=None, Nloops=None,
               wait=False, checkid=None, change_coordinates=True):
@@ -81,7 +80,7 @@ class Focus_delegate(QtCore.QObject):
         wait default False:
             Should the thread wait for completion
         """
-
+        self._mutex.lock()
         if intensity is not None:
             self._settings["Intensity"] = intensity
         if start_offset is not None:
@@ -101,7 +100,7 @@ class Focus_delegate(QtCore.QObject):
             checkid,
             change_coordinates)
         self.thread.start()
-
+        self._mutex.unlock()
         if wait:
             self.thread.wait()
 
@@ -268,7 +267,7 @@ class Zcorrector():
 
         # Failed focus
         if np.min(np.max(data[:, 1])) > 0.8 * np.max(data[:, 1]):
-            raise RuntimeError("Can't focus: not enough difference between min and max")
+            raise RuntimeError(f"Can't focus: not enough difference between min and max, {start}, {stop}, {step}")
 
         return data
 

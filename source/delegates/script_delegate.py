@@ -280,7 +280,6 @@ class Execute_Parser(Parser):
 
     @macro(False)
     def focus(self, stage, start_offset, stop_offset, step):
-        return
         start_offset, stop_offset, step = float(
             start_offset), float(stop_offset), float(step)
         if stage.lower() == 'piezo':
@@ -316,7 +315,6 @@ class Execute_Parser(Parser):
 
     @macro(False)
     def piezoslope(self):
-        return
         self.coordinates_delegate.piezo_plane(checkid=self.lockid, wait=True)
 
     @macro(False)

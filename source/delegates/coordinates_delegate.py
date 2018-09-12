@@ -44,7 +44,7 @@ class Coordinates_delegate(QtCore.QObject):
         stage = self._md.piezo
         XYs = ([-45, -45], [-45, 45],
                [45, 45], [45, -45])
-        self.plane_thread.settings(stage=stage, XYpos=XYs)
+        self.plane_thread.settings(stage=stage, XYpos=XYs, arange=(10, -10, -0.5))
         if checkid is not None:
             self.plane_thread.checkid = checkid
         self.plane_thread.start()
@@ -58,7 +58,7 @@ class Coordinates_delegate(QtCore.QObject):
         stage = self._md.motor
         Xms = np.asarray([p['Xm'] for p in self._positions])
         XYs = Xms[:, :2]
-        self.plane_thread.settings(stage=stage, XYpos=XYs)
+        self.plane_thread.settings(stage=stage, XYpos=XYs, arange=(20, -20, -1))
         if checkid is not None:
             self.plane_thread.checkid = checkid
         self.plane_thread.start()
@@ -187,19 +187,17 @@ class plane_thread(QtCore.QThread):
         self.laser_delegate = application_delegate.laser_delegate
         self.checkid = None
 
-    def settings(self, *, stage, XYpos):
+    def settings(self, *, stage, XYpos, arange):
 
         XYpos = np.asarray(XYpos)
         self._pos = np.zeros((len(XYpos), 3))
         self._pos[:, :2] = XYpos
-
+        self._range = arange
         self._stage = stage
 
     def run(self):
         try:
-            start = self._fd._settings["From"]
-            stop = self._fd._settings["To"]
-            step = self._fd._settings["Step"]
+            start, stop, step = self._range
 
             positions = np.zeros((len(self._pos), 3))
             for i, corner in enumerate(self._pos):
