@@ -161,8 +161,8 @@ class Coordinates_tab(QtWidgets.QWidget):
 
         pos_file_button.clicked.connect(self.open_position_file)
 
-        clear_list_button.clicked.connect(cd.clear_positions)
-        validate_button.clicked.connect(cd.processPos)
+        clear_list_button.clicked.connect(lambda: cd.clear_positions())
+        validate_button.clicked.connect(lambda: cd.processPos())
 
         self.deleterow.connect(cd.del_position)
         self.displayrow.connect(cd.displayrow)

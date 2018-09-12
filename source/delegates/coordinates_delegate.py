@@ -44,7 +44,7 @@ class Coordinates_delegate(QtCore.QObject):
         stage = self._md.piezo
         XYs = ([-45, -45], [-45, 45],
                [45, 45], [45, -45])
-        self.plane_thread.settings(stage=stage, XYpos=XYs, arange=(10, -10, -0.5))
+        self.plane_thread.settings(stage=stage, XYpos=XYs, arange=(5, -5, -0.5))
         if checkid is not None:
             self.plane_thread.checkid = checkid
         self.plane_thread.start()

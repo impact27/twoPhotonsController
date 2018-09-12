@@ -120,8 +120,8 @@ class Focus_tab(QtWidgets.QWidget):
         focus_piezo_button.clicked.connect(lambda: focus(True))
         focus_motor_button.clicked.connect(lambda: focus(False))
 
-        clear_list_button.clicked.connect(self.fd.clear)
-        save_button.clicked.connect(self.fd.save)
+        clear_list_button.clicked.connect(lambda: self.fd.clear())
+        save_button.clicked.connect(lambda: self.fd.save())
 
         self.fd.updatelist.connect(self.updateList)
         self.fd.update_settings.connect(update_settings)

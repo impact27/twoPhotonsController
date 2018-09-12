@@ -44,11 +44,11 @@ class Bottom_widget(QtWidgets.QWidget):
         buttons_layout.addWidget(reset_roi_button, 1, 2)
         buttons_layout.addWidget(ESTOP_button, 0, 3, 2, 3)
 
-        ESTOP_button.clicked.connect(application_delegate.ESTOP)
+        ESTOP_button.clicked.connect(lambda: application_delegate.ESTOP())
         clear_button.clicked.connect(
             lambda: application_delegate.canvas_delegate.clear())
         save_im_button.clicked.connect(
-            application_delegate.canvas_delegate.save_im)
+            lambda: application_delegate.canvas_delegate.save_im())
 
         def switchBGButton(on):
             if on:
