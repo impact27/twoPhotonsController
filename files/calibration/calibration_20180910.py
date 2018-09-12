@@ -37,6 +37,8 @@ dt = 0.5e-3 #s
 
 wavelength = 2 #um
 
+max_points = 262144
+
 script = Script(off_speed=off_speed, safety_z=safety_z)
 
 times_range_dots = np.asarray([1, 100]) * 1e-3 #ms
@@ -46,83 +48,102 @@ list_spacings_dots = np.arange(1, 6)
 def move_motor(line, column, step):
     script.move_motor([column*step, line*step, safety_z])
     
-def line(Xfrom, Xto, power, velocity):
-    script.write_speed = velocity
+def line(Xfrom, Xto, *, power, speed):
+    script.write_speed = speed
     script.write_voltage = pc.PtoV(power)
     script.write_line_piezo(Xfrom, Xto)
     
-def dots_line(Xfrom, Xto, spacing, exposure_time, power):
+def get_wave_line(Xfrom, Xto, *, speed, dt):
+    Xfrom = np.asarray(Xfrom)
+    Xto = np.asarray(Xto)
+    dX = Xto - Xfrom
+    distance = np.linalg.norm(dX)
+    dXn = dX / distance
+    times = np.arange(0, distance / speed, dt)
+    
+    wave = Xfrom[:, np.newaxis] + dXn[:, np.newaxis] * speed * times[np.newaxis]
+    return wave
+    
+    
+def dots_line(Xfrom, Xto, *, spacing, exposure_time, power, dt):
     Xfrom = np.asarray(Xfrom)
     Xto = np.asarray(Xto)
     XY_distance = np.linalg.norm(Xto[:2] - Xfrom[:2])
     ndots = int(np.floor(XY_distance / spacing)) + 1
     
     ndim = 3
-    X = np.zeros((ndim, ndots))
+    dot_pos = np.zeros((ndim, ndots))
     for idx_dim in range(ndim):
-        X[idx_dim] = np.linspace(Xfrom[idx_dim], Xto[idx_dim], ndots)
-        
+        dot_pos[idx_dim] = np.linspace(Xfrom[idx_dim], Xto[idx_dim], ndots)
+    
+    wave = np.append(Xfrom, 0)[:, np.newaxis]
+    
     for idx_pos in range(ndots):
-        script.move_piezo(X[:, idx_pos])
+        # Move to position
+        if idx_pos > 0:
+            wave_move = get_wave_line(
+                    [*dot_pos[:, idx_pos - 1], 0],
+                    [*dot_pos[:, idx_pos], 0],
+                    speed=off_speed,
+                    dt=dt)
+            wave = np.concatenate((wave, wave_move), axis=1)
         
         Nt = int(exposure_time / dt)
-        Xwave = np.zeros((4, Nt + 2))
+        wavedot = np.zeros((4, Nt + 2))
         for idx_dim in range(ndim):
-            Xwave[idx_dim] = X[idx_dim, idx_pos]
-        Xwave[3, 1:-1] = pc.PtoV(power)
-        assert Xwave.shape[1] > 2
-        script.waveform(Xwave, dt)
+            wavedot[idx_dim] = dot_pos[idx_dim, idx_pos]
+        wavedot[3, 1:-1] = pc.PtoV(power)
+        wave = np.concatenate((wave, wavedot), axis=1)
+    return wave
 
-def tree_z_line(Xfrom, Xto, Zrange, wavelength, power, velocity):
+def tree_z_line(Xfrom, Xto, *, Zrange, wavelength, power, speed, dt):
     Xfrom = np.asarray(Xfrom)
     Xto = np.asarray(Xto)
     
     dX = Xto - Xfrom
     distance = np.linalg.norm(dX)
     dXn = dX / distance
-    times = np.arange(0, distance / velocity, dt)
+    times = np.arange(0, distance / speed, dt)
     
-    X = np.zeros((4, len(times) + 2))
-    X[:3, 1:-1] = Xfrom[:, np.newaxis] + dXn[:, np.newaxis] * velocity * times[np.newaxis]
+    wave = np.zeros((4, len(times) + 2))
+    wave[:3, 1:-1] = Xfrom[:, np.newaxis] + dXn[:, np.newaxis] * speed * times[np.newaxis]
     
-    X[2, 1:-1] += Zrange[0] + (Zrange[1] - Zrange[0]) * sawtooth(
-            velocity * times/wavelength* 2 * np.pi, fraction)
+    wave[2, 1:-1] += Zrange[0] + (Zrange[1] - Zrange[0]) * sawtooth(
+            speed * times/wavelength* 2 * np.pi, fraction)
     
-    X[:3, 0] = X[:3, 1]
-    X[:3, -1] = X[:3, -2]
-    X[3, 1:-1] = pc.PtoV(power)
+    wave[:3, 0] = wave[:3, 1]
+    wave[:3, -1] = wave[:3, -2]
+    wave[3, 1:-1] = pc.PtoV(power)
     
-    assert X.shape[1] > 2
+    assert wave.shape[1] > 2
 
-    script.move_piezo(X[:3, 0])
-    script.waveform(X, dt)
+    return wave
     
     
-def tree_p_line(Xfrom, Xto, Prange, wavelength, velocity):
+def tree_p_line(Xfrom, Xto, *, Prange, wavelength, speed, dt):
     Xfrom = np.asarray(Xfrom)
     Xto = np.asarray(Xto)
     
     dX = Xto - Xfrom
     distance = np.linalg.norm(dX)
     dXn = dX / distance
-    times = np.arange(0, distance / velocity, dt)
+    times = np.arange(0, distance / speed, dt)
     
-    X = np.zeros((4, len(times) + 2))
-    X[:3, 1:-1] = Xfrom[:, np.newaxis] + dXn[:, np.newaxis] * velocity * times[np.newaxis]
+    wave = np.zeros((4, len(times) + 2))
+    wave[:3, 1:-1] = Xfrom[:, np.newaxis] + dXn[:, np.newaxis] * speed * times[np.newaxis]
     
-    X[:3, 0] = X[:3, 1]
-    X[:3, -1] = X[:3, -2]
+    wave[:3, 0] = wave[:3, 1]
+    wave[:3, -1] = wave[:3, -2]
     
     P = Prange[0] + (Prange[1] - Prange[0]) * sawtooth(
-            velocity * times/wavelength * 2 * np.pi, fraction)
+            speed * times/wavelength * 2 * np.pi, fraction)
     
-    X[3, 1:-1] = pc.PtoV(P)
+    wave[3, 1:-1] = pc.PtoV(P)
 
-    assert X.shape[1] > 2
-    script.move_piezo(X[:3, 0])
-    script.waveform(X, dt)
+    assert wave.shape[1] > 2
+    return wave
     
-def tree_v_line(Xfrom, Xto, v_range, wavelength, power):
+def tree_v_line(Xfrom, Xto, *, v_range, wavelength, power, dt):
     Xfrom = np.asarray(Xfrom)
     Xto = np.asarray(Xto)
     
@@ -174,23 +195,42 @@ def tree_v_line(Xfrom, Xto, v_range, wavelength, power):
                 np.exp(v_slope_fall * (time[mask] - Tm)) - 1) + Xm
         
         
-    X = np.zeros((4, len(time) + 2))
-    X[:3, 1:-1] = Xfrom[:, np.newaxis] + dXn[:, np.newaxis] * pos[np.newaxis]
+    wave = np.zeros((4, len(time) + 2))
+    wave[:3, 1:-1] = Xfrom[:, np.newaxis] + dXn[:, np.newaxis] * pos[np.newaxis]
     
-    X[:3, 0] = X[:3, 1]
-    X[:3, -1] = X[:3, -2]
+    wave[:3, 0] = wave[:3, 1]
+    wave[:3, -1] = wave[:3, -2]
     
-    X[3, 1:-1] = pc.PtoV(power)
-    assert X.shape[1] > 2
+    wave[3, 1:-1] = pc.PtoV(power)
+    assert wave.shape[1] > 2
 
-    script.move_piezo(X[:3, 0])
-    script.waveform(X, dt)
+    return wave
+
+def add_wave_line(wave, wave_line, *, off_speed, dt):
+    assert wave.shape[1] < max_points/4
+    
+    if wave.shape[1]==0:
+        return wave_line
+    
+    wave_move = get_wave_line(
+            [*wave[:3, -1], 0],
+            [*wave_line[:3, 0], 0], 
+            speed=off_speed,
+            dt=dt)
+    
+    if wave.shape[1] + wave_move.shape[1] + wave_line.shape[1] < max_points/4:
+        return np.concatenate((wave, wave_move, wave_line), axis=1)
+    
+    else:
+        script.waveform(wave, dt)
+        return wave_line
+    
 
 def write_margin(y_lines_spacing):
     line([-cube_width/2 + y_lines_spacing/2, -cube_width/2 + y_lines_spacing/2, 0],
          [-cube_width/2 + y_lines_spacing/2, cube_width/2 - y_lines_spacing/2, 0],
          power=pc.range_P[1],
-         velocity=50)
+         speed=50)
 # =============================================================================
 # 1st type - Calibration
 # =============================================================================
@@ -207,25 +247,25 @@ energy_density = np.linspace(energy_density_range[1],
 
 #1st block - vary P
 move_motor(motor_line, 0, motor_step)
-velocity = pc.range_P[1]/np.max(energy_density)
-intensity = energy_density * velocity
+speed = pc.range_P[1]/np.max(energy_density)
+intensity = energy_density * speed
 write_margin(y_lines_spacing)
 for idx in range(len(y_positions)):
     line([x_range[0], y_positions[idx], offset_range[0]],
           [x_range[1], y_positions[idx], offset_range[1]],
           power=intensity[idx],
-          velocity=velocity)
+          speed=speed)
     
 #2nd block - vary V
 move_motor(motor_line, 1, motor_step)
 intensity = pc.range_P[1]
-velocity = intensity/energy_density
+speed = intensity/energy_density
 write_margin(y_lines_spacing)
 for idx in range(len(y_positions)):
     line([x_range[0], y_positions[idx], offset_range[0]],
           [x_range[1], y_positions[idx], offset_range[1]],
           power=intensity,
-          velocity=velocity[idx])
+          speed=speed[idx])
 
 motor_line += 1
 # =============================================================================
@@ -250,12 +290,18 @@ energy = time * intensity
 for idx_spacing, spacing in enumerate(list_spacings_dots):
     move_motor(motor_line, idx_spacing, motor_step)
     write_margin(y_lines_spacing)
+    wave = np.zeros((4, 0))
     for idx in range(len(y_positions)):
-        dots_line([x_range[0], y_positions[idx], offset_range[0]],
+        wave_line = dots_line([x_range[0], y_positions[idx], offset_range[0]],
                   [x_range[1], y_positions[idx], offset_range[1]],
                   spacing=spacing,
                   exposure_time=time[idx],
-                  power=intensity)
+                  power=intensity,
+                  dt=dt)
+        wave = add_wave_line(wave, wave_line,
+                             off_speed=off_speed, dt=dt)
+    script.waveform(wave, dt)
+    
     
 motor_line += 1
 
@@ -268,12 +314,17 @@ intensity[intensity > pc.range_P[1]] = pc.range_P[1]
 for idx_spacing, spacing in enumerate(list_spacings_dots):
     move_motor(motor_line, idx_spacing, motor_step)
     write_margin(y_lines_spacing)
+    wave = np.zeros((4, 0))
     for idx in range(len(y_positions)):
-        dots_line([x_range[0], y_positions[idx], offset_range[0]],
+        wave_line = dots_line([x_range[0], y_positions[idx], offset_range[0]],
                   [x_range[1], y_positions[idx], offset_range[1]],
                   spacing=spacing,
                   exposure_time=time,
-                  power=intensity[idx])
+                  power=intensity[idx],
+                  dt=dt)
+        wave = add_wave_line(wave, wave_line,
+                             off_speed=off_speed, dt=dt)
+    script.waveform(wave, dt)
         
 motor_line += 1
 
@@ -293,21 +344,25 @@ energy_density = np.linspace(energy_density_range[1],
                               len(y_positions),
                               endpoint=False)
 
-fix_velocity = pc.range_P[1]/np.max(energy_density)
+fix_speed = pc.range_P[1]/np.max(energy_density)
 
 #1st block - vary z
 move_motor(motor_line, 0, motor_step)
-intensity = energy_density * fix_velocity
+intensity = energy_density * fix_speed
 write_margin(y_lines_spacing)
+wave = np.zeros((4, 0))
 for idx in range(len(y_positions)):
-    tree_z_line(
+    wave_line = tree_z_line(
             [x_range[0], y_positions[idx], 0],
             [x_range[1], y_positions[idx], 0],
             Zrange=offset_range,
             wavelength=wavelength,
             power=intensity[idx],
-            velocity=fix_velocity)
-    
+            speed=fix_speed,
+            dt=dt)
+    wave = add_wave_line(wave, wave_line,
+                             off_speed=off_speed, dt=dt)
+script.waveform(wave, dt)
     
 #2nd block - vary P
 move_motor(motor_line, 1, motor_step)
@@ -320,26 +375,36 @@ zpos = np.linspace(
         )
 
 write_margin(y_lines_spacing)
+wave = np.zeros((4, 0))
 for idx in range(len(y_positions)):
-    tree_p_line(
+    wave_line = tree_p_line(
             [x_range[0], y_positions[idx], zpos[idx]],
             [x_range[1], y_positions[idx], zpos[idx]],
             Prange=[pc.range_P[1]/2, pc.range_P[1]],
             wavelength=wavelength,
-            velocity=fix_velocity)
-
+            speed=fix_speed,
+            dt=dt)
+    wave = add_wave_line(wave, wave_line,
+                             off_speed=off_speed, dt=dt)
+script.waveform(wave, dt)
 #1st block - vary v
 move_motor(motor_line, 2, motor_step)
 
 write_margin(y_lines_spacing)
+wave = np.zeros((4, 0))
 for idx in range(len(y_positions)):
-    tree_v_line(
+    wave_line = tree_v_line(
             [x_range[0], y_positions[idx], zpos[idx]],
             [x_range[1], y_positions[idx], zpos[idx]],
-            v_range=[fix_velocity/2, fix_velocity*2],
+            v_range=[fix_speed/2, fix_speed*2],
             wavelength=wavelength,
-            power=pc.range_P[1])
-    
+            power=pc.range_P[1],
+            dt=dt)
+    wave = add_wave_line(wave, wave_line,
+                             off_speed=off_speed, dt=dt)
+script.waveform(wave, dt)
+
 get_gtext(script._lines, 'piezo', [-50, -250], 100, pc.PtoV(pc.range_P[1]), 50) 
     
 script.save(script_fn)
+print(script.min_time)

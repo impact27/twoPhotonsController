@@ -14,6 +14,19 @@ class Script():
         self._lines.append("laser power 0")
         self._lines.append("laser ON")
         self._write_ready = False
+        
+        self.min_time = 0
+        self.position = {'motor': None,
+                         'piezo': None}
+        
+    def add_time_to(self, stage, pos, speed):
+        pos = np.asarray(pos)
+        if self.position[stage] is None:
+            self.position[stage] = pos
+            return
+        length = np.linalg.norm(pos - self.position[stage])
+        self.min_time += length / speed
+        self.position[stage] = pos
 
     def write_line_motor(self, Xfrom, Xto):
         self.write_line(Xfrom, Xto, 'motor')
@@ -26,39 +39,38 @@ class Script():
     def write_line(self, Xfrom, Xto, stage):
         if not self._write_ready and stage =='piezo':
             self.prepare_piezo_write()
-        self._lines.append("laser power 0")
-        self._lines.append("{stage} X{x:.3f} Y{y:.3f} Z{z:.3f} F{f:.3f}".format(
-            stage=stage,
-            x=Xfrom[0],
-            y=Xfrom[1],
-            z=Xfrom[2],
-            f=self.off_speed))
-    
-        self._lines.append("laser power {:.3f}".format(
-                float(self.write_voltage)))
-        self._lines.append("{stage} X{x:.3f} Y{y:.3f} Z{z:.3f} F{f:.3f}".format(
-            stage=stage,
-            x=Xto[0],
-            y=Xto[1],
-            z=Xto[2],
-            f=self.write_speed))
-        self._lines.append("laser power 0")
+            
+        self.laser_voltage(0)
         
-    def move_piezo(self, X):
-        assert np.all(np.abs(X) < 49)
-        self._lines.append("laser power 0")
+        self.goto(stage, Xfrom, self.off_speed)
+        
+        self.laser_voltage(self.write_voltage)
+        
+        self.goto(stage, Xto, self.write_speed)
+        
+        self.laser_voltage(0)
+        
+    def goto(self, stage, X, speed):
         self._lines.append("{stage} X{x:.3f} Y{y:.3f} Z{z:.3f} F{f:.3f}".format(
-            stage='piezo',
+            stage=stage,
             x=X[0],
             y=X[1],
             z=X[2],
-            f=self.off_speed))
+            f=speed))
+        self.add_time_to(stage, X, speed)
+        
+    def laser_voltage(self, V):
+        self._lines.append("laser power {:.3f}".format(float(V)))
+        
+    def move_piezo(self, X):
+        assert np.all(np.abs(X) < 49)
+        self.laser_voltage(0)
+        self.goto('piezo', X, self.off_speed)
         
     def move_motor(self, X):
         self._write_ready = False
         self._lines.append('piezoreset')
-        self._lines.append("motor X{x:.3f} Y{y:.3f} Z{z:.3f} F{s:.3f}".format(
-                x=X[0], y=X[1], z=X[2], s=self.off_speed))
+        self.goto('motor', X, self.off_speed)
         
     def prepare_piezo_write(self):
         self._lines.append("focus motor 0 -{safety_z} -0.5".format(
@@ -84,3 +96,4 @@ class Script():
         for ax_idx, axis in enumerate(axes):
             self._lines.append(axis + " " + " ".join(f'{e:.3f}' for e in X[ax_idx]))
         self._lines.append("END")
+        self.min_time += X.shape[1] * time_step
