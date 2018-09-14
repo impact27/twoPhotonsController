@@ -48,7 +48,7 @@ class Camera_controller():
         return data
 
     def exposure_time_range(self):
-        return [1.9e-5, .1]
+        return [2.1e-5, .1]
 
     def set_exposure_time(self, time):
         self.exposure_time = time

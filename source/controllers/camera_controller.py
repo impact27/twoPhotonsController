@@ -74,7 +74,7 @@ class Camera_controller():
             self.callback()
 
     def exposure_time_range(self):
-        return [1.9e-5, .1]
+        return [2.1e-5, .1]
 
     def get_image(self):
         im = self.cam.grab()

@@ -319,7 +319,7 @@ class Cube_controller(Stage_controller):
         self.error = pipython.gcserror.GCSError
         self.internal_offset = np.asarray([50, 50, 50])
         self.Servo_Update_Time = 50e-6  # s 0x0E000200
-        self.max_points = 250000  # 0x13000004
+        self.max_points = 2**18  # 0x13000004
         
     @property
     def isRecordingMacro(self):
