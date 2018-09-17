@@ -79,7 +79,7 @@ wave_line = np.zeros((4, len(time)))
 wave_line[0] = X
 wave_line[1] = 0
 wave_line[2] = 0
-wave_line[3] = 0
+wave_line[3] = np.linspace(0, 5, len(X))
 script.waveform(wave_line, dt)
 
 
