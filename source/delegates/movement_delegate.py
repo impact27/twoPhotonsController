@@ -45,9 +45,9 @@ if _TEST_:
 else:
     from controllers.stage_controller import (Linear_controller,
                                               Cube_controller,
-#                                              z_controller,
+                                              z_controller,
                                               Stage_controller)
-from controllers.stage_controller_placeholder import z_controller
+#from controllers.stage_controller_placeholder import z_controller
 
 
 

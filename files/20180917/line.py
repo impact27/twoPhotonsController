@@ -85,3 +85,13 @@ script.waveform(wave_line, dt)
 
 script.save(script_fn)
 print(script.min_time)
+
+script = Script(off_speed=off_speed, safety_z=safety_z)
+time = np.arange(0, line_length / S_max, dt)
+wave_line = np.zeros((4, len(time)))
+wave_line[0] = np.linspace(*x_range, len(time))
+wave_line[1] = 0
+wave_line[2] = 0
+wave_line[3] = np.linspace(0, 5, len(time))
+script.waveform(wave_line, dt)
+script.save('cste_speed.txt')
