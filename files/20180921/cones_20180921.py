@@ -21,12 +21,12 @@ from power_converter import PowerConverter
 # Settings
 
 calibration_fn = 'calibration.csv'
-script_fn = "cones_20180921.txt"
+script_fn = "cones_20180921olli.txt"
 
 Y_motor_step = 7854.84
 X_motor_step = 6203.05  # , 'um')
 Y_N_motor = 3
-X_N_motor = 7
+X_N_motor = 6
 width_write = 1300
 
 Z_pos = 0  # , 'um')
@@ -128,8 +128,7 @@ x_range = [-cube_width / 2 + x_margin,
 
 N_lines = len(y_positions)
 
-Y_offsets = [0, 300]
-
+Y_offsets = [0,300, 600, 900]
 
 # %%
 
@@ -176,7 +175,7 @@ motor_Y_idx = 1
 
 positions = np.arange(x_range[0], x_range[1], short_spacing)
 
-for motor_X_idx in range(X_N_motor):
+for motor_X_idx in np.arange(X_N_motor)[::-1]:
     for Y_offset in Y_offsets:
         move_motor(motor_X_idx, motor_Y_idx, Y_offset=Y_offset)
         wave = np.zeros((4, 0))
