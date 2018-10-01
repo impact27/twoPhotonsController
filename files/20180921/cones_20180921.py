@@ -128,9 +128,10 @@ x_range = [-cube_width / 2 + x_margin,
 
 N_lines = len(y_positions)
 
-Y_offsets = [0,300, 600, 900]
+Y_offsets = [0, 300, 600, 900]
 
 # %%
+
 
 def get_lin_Psquare(speed, P_start, P_end, xstart, xend):
     line_length = np.abs(xend - xstart)
