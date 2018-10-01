@@ -12,19 +12,18 @@ from script import Script
 fn = '20180321_grid.txt'
 
 write_large = {
-        'power': 4,
-        'speed': 400,
-        'offset': -.8}
+    'power': 4,
+    'speed': 400,
+    'offset': -.8}
 write_small = {
-        'power': 2.6943,
-        'speed': 400,
-        'offset': -0.95}
+    'power': 2.6943,
+    'speed': 400,
+    'offset': -0.95}
 
 off_speed = 1500
 focus_int = 0.5
 
 length = 10000
-
 
 
 script = Script(focus_int=focus_int,
@@ -35,19 +34,16 @@ script = Script(focus_int=focus_int,
 z = write_small['offset']
 script.move_motor([0, 0, 0])
 for i, x in enumerate(np.arange(0, 10001, 100)):
-    p = i%2
-    script.write_line_motor([x, p*length, z], [x, (1-p)*length, z])
+    p = i % 2
+    script.write_line_motor([x, p * length, z], [x, (1 - p) * length, z])
 
-script.write_power =  write_large['power'] 
+script.write_power = write_large['power']
 script.write_speed = write_large['speed']
 z = write_large['offset']
 
 for i, y in enumerate(np.arange(0, 10001, 100)):
-    p = i%2
-    script.write_line_motor([p*length, y, z], [(1-p)*length, y, z])
+    p = i % 2
+    script.write_line_motor([p * length, y, z], [(1 - p) * length, y, z])
 
 
 script.save(fn)
-
-    
-    

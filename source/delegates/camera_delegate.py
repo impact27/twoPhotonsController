@@ -11,8 +11,9 @@ if sys.platform == "darwin":
     from controllers.camera_controller_placeholder import Camera_controller
 else:
     from controllers.camera_controller import Camera_controller
-    
+
 from delegates.thread import lockmutex
+
 
 class Camera_delegate(QtCore.QObject):
 
@@ -20,7 +21,7 @@ class Camera_delegate(QtCore.QObject):
     state_auto_exposure_time = QtCore.pyqtSignal(bool)
     ext_shutterState = QtCore.pyqtSignal(bool)
     new_roi = QtCore.pyqtSignal()
-    
+
     def __init__(self):
         super().__init__()
         self._mutex = QtCore.QMutex(QtCore.QMutex.Recursive)
@@ -28,7 +29,7 @@ class Camera_delegate(QtCore.QObject):
         self.isAuto = False
         self.reset_bg()
         self.roi0 = (0, 0, 100, 100)
-        
+
     def _onConnect(self):
         self.roi0 = self.controller.roi
         self.error = self.controller.error
@@ -37,7 +38,7 @@ class Camera_delegate(QtCore.QObject):
     def roi(self):
         """Return """
         return np.asarray(self.controller.roi)
-    
+
     @lockmutex
     def roi_zoom(self, roi):
         roi = np.array(roi)

@@ -21,7 +21,8 @@ motor_step = 125
 text_height = 100
 
 
-def write_lines_piezo(lines, yPos, z_from, z_to, off_speed, power, length, speed):
+def write_lines_piezo(lines, yPos, z_from, z_to,
+                      off_speed, power, length, speed):
     lines.append("piezo X{x:.3f} Y{y:.3f} Z{z:.3f} F{f:d}".format(
         x=-45,
         y=yPos - 50,
@@ -35,39 +36,36 @@ def write_lines_piezo(lines, yPos, z_from, z_to, off_speed, power, length, speed
         z=z_to,
         f=speed))
     return lines
-    
 
 
-def calibrate(lines, powers, speeds, z_offsets, off_speed, motor_step, motor_origin, piezo):
+def calibrate(lines, powers, speeds, z_offsets,
+              off_speed, motor_step, motor_origin, piezo):
     lines.append("laser ON")
-    
+
     for xpos, speed in enumerate(speeds):
         motor_X = xpos * motor_step + motor_origin[0]
         lines.append("motor X{:.2f} Y{:.2f} Z20".format(
-                motor_X, motor_origin[1]))
+            motor_X, motor_origin[1]))
         lines.append("focus motor 0 -41 -1")
         lines.append("piezoslope")
         # Write top line
         lines.append("piezo X-50 Y-50 Z0 F{:d}".format(off_speed))
-        
+
         lines.append("laser power {:f}".format(write_power))
         lines.append("piezo X-50 Y50 Z0 F{:d}".format(np.min(speeds)))
         lines.append("laser power 0")
-        
-        
-        
+
         for ypos, power in enumerate(powers):
             length = 90
             ypos = ypos * 90 / (len(powers) - 1)
-            
+
             write_lines_piezo(lines, ypos, 0, -3, off_speed, power,
-                                   length, speed)
-         
-            
+                              length, speed)
+
             lines.append("laser power 0")
-                
-    return lines   
-                
+
+    return lines
+
 
 motor_origin = [0, 0]
 piezo = True
@@ -75,11 +73,18 @@ text = 'piezo'
 
 
 lines = ['focusint 0.5']
-calibrate(lines, powers, speeds, z_offsets, off_speed, motor_step, motor_origin, piezo)     
-get_gtext(lines, text, [-50, -200], text_height, np.max(powers), np.min(speeds)) 
-         
+calibrate(
+    lines,
+    powers,
+    speeds,
+    z_offsets,
+    off_speed,
+    motor_step,
+    motor_origin,
+    piezo)
+get_gtext(lines, text, [-50, -200], text_height,
+          np.max(powers), np.min(speeds))
+
 
 with open(fn, 'w') as f:
     f.write('\n'.join(lines))
-    
-    

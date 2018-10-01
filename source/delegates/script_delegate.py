@@ -14,8 +14,10 @@ from matplotlib import collections as mc
 import sys
 import time
 
+
 class Script_delegate(QtCore.QObject):
     pause_status = QtCore.pyqtSignal(bool)
+
     def __init__(self, app_delegate):
         super().__init__()
         self.app_delegate = app_delegate
@@ -33,13 +35,12 @@ class Script_delegate(QtCore.QObject):
             return
         self._execute_thread.set_filename(filename)
         self._execute_thread.start()
-        
+
     def execute_pause_resume(self):
         return self._execute_thread._parser.pause_resume()
-    
+
     def execute_stop(self):
         self._execute_thread._parser.stop()
-    
 
     def draw(self, filename):
         self._draw_thread.set_filename(filename)
@@ -74,14 +75,14 @@ class Parser(QtCore.QObject):
     def __init__(self):
         super().__init__()
         self.file = None
-        #To add a next line
+        # To add a next line
         self._next_line = None
         self._prev_line = None
         self._running = False
 
     def isRunning(self):
         return self._running
-    
+
     def yield_line(self):
         fun = 0
         self.line_nbr = 0
@@ -92,7 +93,7 @@ class Parser(QtCore.QObject):
             else:
                 yield fun, args
                 self.line_nbr += 1
-                
+
     def parse(self, filename):
         with open(filename) as f:
             self.file = f
@@ -120,7 +121,8 @@ class Parser(QtCore.QObject):
         line = line.split(' ')
         command = line[0]
         args = line[1:]
-        if command.lower() in ['laser', 'focus', 'camera', 'focusint', 'begin']:
+        if command.lower() in ['laser', 'focus',
+                               'camera', 'focusint', 'begin']:
             pass
         elif command.lower() in ['piezoslope', 'piezoreset']:
             args = tuple()
@@ -237,7 +239,7 @@ class Parser(QtCore.QObject):
 
 class Execute_Parser(Parser):
     pause_status = QtCore.pyqtSignal(bool)
-    
+
     def __init__(self, app_delegate):
         super().__init__()
         self.camera_delegate = app_delegate.camera_delegate
@@ -251,11 +253,11 @@ class Execute_Parser(Parser):
         self._paused = False
 
         self.recording_macro = False
-        
+
     class macro():
         def __init__(self, compatible):
             self._compatible = compatible
-            
+
         def __call__(self, f):
             if self._compatible:
                 def ret(cls, *args, **kargs):
@@ -266,7 +268,6 @@ class Execute_Parser(Parser):
                     cls.end_macro()
                     f(cls, *args, **kargs)
             return ret
-
 
     def start_macro(self):
         if not self.recording_macro:
@@ -280,7 +281,7 @@ class Execute_Parser(Parser):
             return
         self.recording_macro = False
         self.piezo_delegate.macro_end()
-        self.piezo_delegate.macro_start('nextsteps', wait=True)        
+        self.piezo_delegate.macro_start('nextsteps', wait=True)
 
     def parse(self, filename):
         self._paused = False
@@ -291,7 +292,7 @@ class Execute_Parser(Parser):
         try:
             super().parse(filename)
             self.end_macro()
-        except:
+        except BaseException:
             print("Parse failed, setting V to 0")
             self.laser_delegate.set_intensity(0)
             raise
@@ -316,63 +317,62 @@ class Execute_Parser(Parser):
 
         if stage.lower() == 'piezo':
             kwargs_list = [{
-                    'start_offset': start_offset,
-                    'stop_offset': stop_offset,
-                    'step': step,
-                    'stage': self.md.piezo,
-                    'Nloops': 2,
-                    'wait': True,
-                    'checkid': self.lockid
-                    }]
+                'start_offset': start_offset,
+                'stop_offset': stop_offset,
+                'step': step,
+                'stage': self.md.piezo,
+                'Nloops': 2,
+                'wait': True,
+                'checkid': self.lockid
+            }]
         elif stage.lower() == 'motor':
             kwargs_list = [{
-                    'start_offset': start_offset,
-                    'stop_offset': stop_offset,
-                    'step': step,
-                    'stage': self.md.motor,
-                    'Nloops': 1,
-                    'wait': True,
-                    'checkid': self.lockid
-                    }]
+                'start_offset': start_offset,
+                'stop_offset': stop_offset,
+                'step': step,
+                'stage': self.md.motor,
+                'Nloops': 1,
+                'wait': True,
+                'checkid': self.lockid
+            }]
         elif stage.lower() == 'both':
             kwargs_list = [{
-                    'start_offset': start_offset,
-                    'stop_offset': stop_offset,
-                    'step': step,
-                    'stage': self.md.motor,
-                    'Nloops': 1,
-                    'wait': True,
-                    'checkid': self.lockid
-                    }, {
-                    'start_offset': -2,
-                    'stop_offset': 2,
-                    'step': 1,
-                    'stage': self.md.piezo,
-                    'Nloops': 2,
-                    'wait': True,
-                    'checkid': self.lockid
-                    }]
+                'start_offset': start_offset,
+                'stop_offset': stop_offset,
+                'step': step,
+                'stage': self.md.motor,
+                'Nloops': 1,
+                'wait': True,
+                'checkid': self.lockid
+            }, {
+                'start_offset': -2,
+                'stop_offset': 2,
+                'step': 1,
+                'stage': self.md.piezo,
+                'Nloops': 2,
+                'wait': True,
+                'checkid': self.lockid
+            }]
         else:
             self.md.unlock()
             self.lockid = None
             raise RuntimeError(f"Don't know {stage}")
-            
+
         for kwargs in kwargs_list:
             self.focus_delegate.focus(**kwargs)
             data, z_best, success = self.focus_delegate.get_result()
             if not success:
                 self.handle_focus_error()
                 return
-        
-        
 
     @macro(False)
     def piezoslope(self):
         try:
-            self.coordinates_delegate.piezo_plane(checkid=self.lockid, wait=True)
+            self.coordinates_delegate.piezo_plane(
+                checkid=self.lockid, wait=True)
         except self.focus_delegate.FocusError as e:
             self.handle_focus_error()
-            
+
     @macro(False)
     def piezoreset(self):
         self.piezo_delegate.reset(checkid=self.lockid, wait=True)
@@ -406,41 +406,42 @@ class Execute_Parser(Parser):
         # Repeat previous line
         self._next_line = self._prev_line
         self.pause_resume(msg="Focus issue - Paused", pause=True)
-    
-    def pause_resume(self, msg = 'Pause', pause = None):
+
+    def pause_resume(self, msg='Pause', pause=None):
         if not self.isRunning():
             return False
-        
+
         if pause is None:
             pause = not self._paused
-        
-        if not pause and self._paused: 
-            #Resume
+
+        if not pause and self._paused:
+            # Resume
             self.lockid = self.md.lock()
             if self.lockid is None:
                 raise RuntimeError("Can't lock motion")
             self._paused = False
         elif pause and not self._paused:
-            #Pause
+            # Pause
             self._paused = True
             self.md.unlock()
             self.lockid = None
         self.pause_status.emit(self._paused)
         return self._paused
-        
+
     def stop(self):
         self._next_line = None, None
-        self._paused = False  
+        self._paused = False
         self.pause_status.emit(self._paused)
-    
+
     def isPaused(self):
         return self._paused
-    
+
     def readline(self):
         while self._paused:
             time.sleep(1)
         return super().readline()
-    
+
+
 class Draw_Parser(Parser):
     def __init__(self, canvas):
         super().__init__()
@@ -507,8 +508,8 @@ class Draw_Parser(Parser):
         self.piezo_position = np.zeros(3)
 
     def run_waveform(self, time_step, X):
-        step = int(0.1 /time_step)
-        for idx in [*np.arange(X.shape[1] // step)*step, X.shape[1] - 1]:
+        step = int(0.1 / time_step)
+        for idx in [*np.arange(X.shape[1] // step) * step, X.shape[1] - 1]:
             pos = X[:, idx]
             I = np.nan
             if len(pos) > 3:

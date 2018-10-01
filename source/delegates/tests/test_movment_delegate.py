@@ -11,6 +11,7 @@ import sys
 sys.path.append('../..')
 from delegates.movement_delegate import Movement_delegate
 
+
 class Test_script(unittest.TestCase):
     def setUp(self):
         pass

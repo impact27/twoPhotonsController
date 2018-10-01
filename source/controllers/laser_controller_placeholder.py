@@ -31,11 +31,11 @@ class Laser_controller():
     def connect(self):
         print('Connected Laser')
         self.__connected = True
-    
+
     def disconnect(self):
         print('Disconnected Laser')
         self.__connected = False
-        
+
     def isConnected(self):
         return self.__connected
 
@@ -50,6 +50,6 @@ class Laser_controller():
 
     def get_intensity(self):
         return self.intensity
-    
+
     def get_state(self):
         return self.state

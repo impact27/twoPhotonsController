@@ -15,6 +15,7 @@ cmap = matplotlib.cm.get_cmap('plasma')
 from widgets.canvas import MyMplCanvas
 from delegates.thread import lockmutex
 
+
 class Canvas_delegate(QtCore.QObject):
     newrange = QtCore.pyqtSignal(float, float)
     liveSwitched = QtCore.pyqtSignal(bool)
@@ -138,7 +139,6 @@ class Canvas_delegate(QtCore.QObject):
         self.lastpos = newpos
         self.lastFracIntensity = f
         cmutex.unlock()
-
 
     @lockmutex
     def save_im(self):
@@ -270,7 +270,8 @@ class Canvas_delegate(QtCore.QObject):
         self.newclick.emit(self._click_pos)
 
     def set_roi(self, event):
-        if (self._canvas.toolbar._active == "ZOOM" or self._canvas.toolbar._active == "PAN"):
+        if (self._canvas.toolbar._active ==
+                "ZOOM" or self._canvas.toolbar._active == "PAN"):
             return
 
         # Are we displaying an image?

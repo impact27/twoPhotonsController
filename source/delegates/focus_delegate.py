@@ -11,12 +11,11 @@ import time
 from delegates.thread import lockmutex
 
 
-
 class Focus_delegate(QtCore.QObject):
 
     updatelist = QtCore.pyqtSignal(list)
     update_settings = QtCore.pyqtSignal(dict)
-    
+
     class FocusError(RuntimeError):
         pass
 
@@ -93,7 +92,7 @@ class Focus_delegate(QtCore.QObject):
         self._last_result = None
         if self.thread.isRunning():
             raise self.FocusError('Already Focusing')
-        
+
         if intensity is not None:
             self._settings["Intensity"] = intensity
         if start_offset is not None:
@@ -123,7 +122,7 @@ class Focus_delegate(QtCore.QObject):
         if self._last_result is None:
             raise RuntimeError("No result to show, check focus is not running")
         return self._last_result
-    
+
     @lockmutex
     def addGraph(self, data, z_best, success):
         self._last_result = data, z_best, success
@@ -183,7 +182,7 @@ class Focus_delegate(QtCore.QObject):
 
     def set_intensity(self, intensity):
         self._settings["Intensity"] = intensity
-        
+
 
 class ZThread(QtCore.QThread):
 
@@ -219,6 +218,7 @@ class ZThread(QtCore.QThread):
         self._md.unlock()
         self._settings = None
         self.callback(data, z_best, success)
+
 
 class Zcorrector():
 
@@ -277,18 +277,17 @@ class Zcorrector():
 
             if intensity < np.max(data[:, 1]) / 3:
 
-                return data[:i+1]
+                return data[:i + 1]
 
         return data
 
     def focus_range(self, z_start, z_stop, current_step):
         data = self.get_intensity_range(
             z_start, z_stop, current_step)
-        
+
         # Failed focus
         if np.min(data[:, 1]) > 0.8 * np.max(data[:, 1]):
             return data, False
-        
 
         argbest = np.argmax(data[..., 1])
         zBest = data[..., 0][argbest]
@@ -296,8 +295,8 @@ class Zcorrector():
         # If on side
         if argbest == 0 or argbest == len(data) - 1:
             return self.focus_range(
-                zBest - 2*current_step,
-                zBest + 2.1*current_step,
+                zBest - 2 * current_step,
+                zBest + 2.1 * current_step,
                 current_step)
 
         # Check intensity is high enough
@@ -308,15 +307,15 @@ class Zcorrector():
 
             intensity = self.get_intensity()
             intensity_old = 0
-            while intensity < 150 and intensity > 1.05*intensity_old:
+            while intensity < 150 and intensity > 1.05 * intensity_old:
                 intensity_old = intensity
                 self.change_power(1.2)
                 intensity = self.get_intensity()
 
             if intensity_old > 0:
                 return self.focus_range(
-                    zBest - 2*current_step,
-                    zBest + 2.1*current_step,
+                    zBest - 2 * current_step,
+                    zBest + 2.1 * current_step,
                     current_step)
 
         return data, True
@@ -344,20 +343,18 @@ class Zcorrector():
 
         for i in range(N_loops):
             data, success = self.focus_range(z_start, z_stop, current_step)
-            
+
             zPos, intensities = data.T
             list_zpos.append(zPos)
             list_int.append(intensities)
-            
-            if not success: 
+
+            if not success:
                 return np.asarray([list_zpos, list_int]), np.nan, False
 
             argbest = np.argmax(intensities)
             current_step /= 10
             z_start = zPos[argbest - 1]
             z_stop = zPos[argbest + 1]
-
-            
 
         self.endlaser()
 

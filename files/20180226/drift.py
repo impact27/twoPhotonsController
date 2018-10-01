@@ -10,12 +10,12 @@ import numpy as np
 
 fn = "motor_2times.txt"
 #fn = "piezo_without_plate_times.txt"
-#fn = "piezo_times.txt" 
-#fn = "mixed_times.txt" 
+#fn = "piezo_times.txt"
+#fn = "mixed_times.txt"
 
 with open(fn, 'r') as f:
     lines = f.readlines()
-#%%
+# %%
 times = np.zeros(len(lines))
 heights = np.zeros(len(lines))
 xs = np.zeros(len(lines))
@@ -27,8 +27,8 @@ for i, l in enumerate(lines):
     heights[i] = X[-1]
     xs[i] = X[0]
 
-times -= times[0]   
-heights -= heights[0] 
+times -= times[0]
+heights -= heights[0]
 xs -= xs[0]
 plt.figure()
 plt.plot(heights, 'x')

@@ -29,45 +29,47 @@ from .hardware_singleton import Hardware_Singleton
 class HW_camera(Hardware_Singleton):
     def __init__(self, callback):
         super().__init__("Camera", callback)
-        
+
     def _open_connection(self):
         return PixeLINK(serialNumber=pixeLINK_SN)
-    
+
     def _close_connection(self):
         self.close()
-    
+
+
 class HW_shutter(Hardware_Singleton):
     def __init__(self):
         super().__init__("Shutter")
-        
+
     def _open_connection(self):
         shutter = serial.Serial(camera_shutter_COM)
         shutter.write('OFF\n'.encode())
         return shutter
-    
+
     def _close_connection(self):
         self.close()
+
 
 class Camera_controller():
     def __init__(self, callback=None):
         self.shape = np.asarray(pixeLINK_MaxROI)
         self._ext_shutter = HW_shutter()
-        
+
         self.callback = callback
-        
+
         self.flip_image = True
         self.error = PxLerror
         self.cam = HW_camera(self.onCamConnect)
-        
+
     def connect(self):
         self.cam._connect()
-    
+
     def disconnect(self):
         self.cam._disconnect()
-        
+
     def isConnected(self):
         return self.cam._isConnected()
-    
+
     def onCamConnect(self):
         self.roi_reset()
         if self.callback is not None:
@@ -85,7 +87,7 @@ class Camera_controller():
     @property
     def exposure_time(self):
         return self.cam.shutter
-    
+
     @exposure_time.setter
     def exposure_time(self, time):
         amin, amax = self.exposure_time_range()
@@ -116,14 +118,14 @@ class Camera_controller():
     def roi(self):
         roi = np.asarray(self.cam.roi)
         if self.flip_image:
-            roi[:2] = self.shape - (roi[:2]+roi[2:])
+            roi[:2] = self.shape - (roi[:2] + roi[2:])
         return roi
 
     @roi.setter
     def roi(self, roi):
         roi = np.asarray(roi)
         if self.flip_image:
-            roi[:2] = self.shape - (roi[:2]+roi[2:])
+            roi[:2] = self.shape - (roi[:2] + roi[2:])
 
         streaming = self.cam.streaming
         self.cam.streaming = False
@@ -131,11 +133,11 @@ class Camera_controller():
             self.cam.roi = tuple(roi)
         except BaseException as e:
             print("Can't set camera ROI")
-            print(roi[0] + roi[2], roi[1]+roi[3])
+            print(roi[0] + roi[2], roi[1] + roi[3])
             print(e)
             raise
         self.cam.streaming = streaming
-        
+
     def roi_reset(self):
         self.roi = (0, 0, *self.shape)
 

@@ -24,6 +24,8 @@ from PyQt5 import QtCore
 # ==============================================================================
 # Stage controller
 # ==============================================================================
+
+
 class Stage_controller(QtCore.QObject):
 
     def __init__(self):
@@ -52,7 +54,7 @@ class Stage_controller(QtCore.QObject):
 
     def is_ready(self):
         pass
-    
+
     def wait_end_motion(self, timeout=10):
         """Wait end of motion"""
         time.sleep(0.1)
@@ -61,9 +63,10 @@ class Stage_controller(QtCore.QObject):
             if timeout is not None and time.time() - tstart > timeout:
                 raise RuntimeError('The motion took too long to complete')
             time.sleep(.01)
-    
+
     def is_moving(self):
         raise RuntimeError("is_moving not implemented")
+
 
 class fake_controller(Stage_controller):
     def __init__(self):
@@ -74,11 +77,11 @@ class fake_controller(Stage_controller):
     def connect(self):
         print('Connected Stage')
         self.__connected = True
-    
+
     def disconnect(self):
         print('Disconnected Stage')
         self.__connected = False
-        
+
     def isConnected(self):
         return self.__connected
 
@@ -117,7 +120,7 @@ class fake_controller(Stage_controller):
 
     def is_ready(self):
         return self.is_onTarget()
-        
+
     def is_moving(self):
         return not self.is_onTarget()
 
@@ -173,7 +176,7 @@ class Cube_controller(fake_controller):
 
     def get_vel_range(self, axis):
         return np.array([0, 4000])
-    
+
     def MAC_BEG(self, name):
         pass
 
@@ -191,14 +194,14 @@ class Cube_controller(fake_controller):
 
     def macro_wait(self):
         pass
-    
+
     def macro_exists(self, name):
         return False
-    
+
     def run_waveform(self, time_step, X):
         self.position = X[-1, :3]
         self.target = X[-1, :3]
-        
+
     def wait_end_wave(self, wait_time):
         pass
 # ==============================================================================

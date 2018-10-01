@@ -20,31 +20,32 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import numpy as np
 from .stage_controller import HW_E727
 
+
 class Laser_controller():
-    
+
     def no_macro(f):
         def ret(cls, *args, **kargs):
             if cls.isRecordingMacro:
-                raise RuntimeError("Can't use that function while recording a macro")
+                raise RuntimeError(
+                    "Can't use that function while recording a macro")
             else:
                 return f(cls, *args, **kargs)
         return ret
-            
 
     def __init__(self):
         self._HW = HW_E727(self.onConnect)
         self._V = 0
-        
+
     @property
     def isRecordingMacro(self):
         return self._HW.IsRecordingMacro
-    
+
     def connect(self):
         self._HW._connect()
-    
+
     def disconnect(self):
         self._HW._disconnect()
-        
+
     def isConnected(self):
         return self._HW._isConnected()
 
@@ -54,13 +55,13 @@ class Laser_controller():
 
     def get_range(self):
         return np.array([0, 10])
-    
+
     @property
     @no_macro
     def intensity(self):
         if not self._HW.IsConnected():
             return 0
-        return float(self._HW.qVOL(4)[4]) 
+        return float(self._HW.qVOL(4)[4])
 
     @intensity.setter
     def intensity(self, V):

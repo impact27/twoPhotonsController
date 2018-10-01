@@ -41,7 +41,7 @@ from Thorlabs.MotionControl.KCube.DCServoCLI import KCubeDCServo
 if __name__ == "__main__":
     import HW_conf
     from hardware_singleton import Hardware_Singleton
-    
+
 else:
     from . import HW_conf
     from .hardware_singleton import Hardware_Singleton
@@ -79,7 +79,7 @@ class Stage_controller(QtCore.QObject):
 
     def is_ready(self):
         pass
-    
+
     def wait_end_motion(self, timeout=10):
         """Wait end of motion"""
         time.sleep(0.1)
@@ -88,13 +88,15 @@ class Stage_controller(QtCore.QObject):
             if timeout is not None and time.time() - tstart > timeout:
                 raise RuntimeError('The motion took too long to complete')
             time.sleep(.01)
-    
+
     def is_moving(self):
         raise RuntimeError("is_moving not implemented")
 
 # ==============================================================================
 # Linear stages controller
 # ==============================================================================
+
+
 def try_connect(fconnect, Error, max_tests=20):
     connected = False
     Ntests = 0
@@ -104,10 +106,11 @@ def try_connect(fconnect, Error, max_tests=20):
             connected = True
         except Error:
             time.sleep(1)
-            Ntests +=1
+            Ntests += 1
             if Ntests == max_tests:
                 raise
-                
+
+
 class HW_line(Hardware_Singleton):
     def __init__(self, name, ID):
         super().__init__(name)
@@ -115,10 +118,10 @@ class HW_line(Hardware_Singleton):
 
     def _open_connection(self):
         stage = GCSDevice(HW_conf.GCS_lin_controller_name)
-        
+
         try_connect(lambda: stage.ConnectUSB(type(self)._ID),
                     GCSError)
-        
+
         time.sleep(1)
         if stage.qCST()['1'] != HW_conf.GCS_lin_stage_name:
             print(stage.qCST()['1'])
@@ -133,30 +136,33 @@ class HW_line(Hardware_Singleton):
     def _close_connection(self):
         self.CloseConnection()
 
+
 class Xline(HW_line):
     def __init__(self):
         super().__init__('X Line', HW_conf.XStageName)
 
+
 class Yline(HW_line):
     def __init__(self):
         super().__init__('Y Line', HW_conf.YStageName)
-        
+
+
 class HW_E727(Hardware_Singleton):
 
     def __init__(self, callback=None):
         super().__init__('E727', callback)
 
     def _open_connection(self):
-        stage = GCSDevice(HW_conf.GCS_cube_controller_name)        
+        stage = GCSDevice(HW_conf.GCS_cube_controller_name)
         try_connect(lambda: stage.ConnectUSB(HW_conf.cubeName),
-                    GCSError)            
+                    GCSError)
 #        time.sleep(2)
         stage.WGO([1, 2, 3, 4], [0, 0, 0, 0])
         print('Connected', stage.qIDN())
         if stage.qCST()['1'] != HW_conf.GCS_cube_stage_name:
             print(stage.qCST()['1'])
             raise RuntimeError("Incorrect stage connected")
-        
+
         stage.SVO([1, 2, 3, 4], [True, True, True, False])
         if np.any(np.logical_not(list(stage.qATZ([1, 2, 3]).values()))):
             stage.ATZ([1, 2, 3], [0, 0, 0])
@@ -167,7 +173,7 @@ class HW_E727(Hardware_Singleton):
             stage.MOV([1, 2, 3], [50, 50, 50])
             time.sleep(0.1)
         while not stage.IsControllerReady() or np.any(list(
-                    stage.IsMoving([1, 2, 3]).values())):
+                stage.IsMoving([1, 2, 3]).values())):
             time.sleep(0.1)
         stage.IsRecordingMacro = False
         return stage
@@ -175,13 +181,14 @@ class HW_E727(Hardware_Singleton):
     def _close_connection(self):
         self.CloseConnection()
 
+
 class HW_zline(Hardware_Singleton):
     def __init__(self, callback):
         super().__init__('Z Line', callback)
 
     def _open_connection(self):
         _SN = HW_conf.kinesis_cube_serial
-        
+
         # Instructs the DeviceManager to build and maintain the list of
         # devices connected.
         DeviceManagerCLI.BuildDeviceList()
@@ -191,7 +198,6 @@ class HW_zline(Hardware_Singleton):
         # Establish a connection with the device.
         try_connect(lambda: kCubeDCServoMotor.Connect(_SN),
                     DeviceNotReadyException)
-        
 
         # Wait for the device settings to initialize. We ask the device to
         # throw an exception if this takes more than 5000ms (5s) to complete.
@@ -224,7 +230,6 @@ class HW_zline(Hardware_Singleton):
         self.ShutDown()
 
 
-      
 # =============================================================================
 # Linear stage
 # =============================================================================
@@ -237,11 +242,11 @@ class Linear_controller(Stage_controller):
     @property
     def isConnected(self):
         return np.all([l._isConnected for l in self.lines])
-    
+
     def connect(self):
         for l in self.lines:
             l._connect()
-            
+
     def disconnect(self):
         for l in self.lines:
             l._disconnect()
@@ -293,12 +298,13 @@ class Linear_controller(Stage_controller):
         if np.any([l is None for l in self.lines]):
             return False
         return np.all([l.IsControllerReady() for l in self.lines])
-    
+
     def is_moving(self):
         return np.any([l.IsMoving()['1'] for l in self.lines])
 # ==============================================================================
 # Cube Controller
 # ==============================================================================
+
 
 class Cube_controller(Stage_controller):
     # Reverse y and z
@@ -307,11 +313,12 @@ class Cube_controller(Stage_controller):
     def no_macro(f):
         def ret(cls, *args, **kargs):
             if cls.isRecordingMacro:
-                raise RuntimeError("Can't use that function while recording a macro")
+                raise RuntimeError(
+                    "Can't use that function while recording a macro")
             else:
                 return f(cls, *args, **kargs)
         return ret
-    
+
     def __init__(self):
         super().__init__()
         self._mutex = QtCore.QMutex(QtCore.QMutex.Recursive)
@@ -320,31 +327,31 @@ class Cube_controller(Stage_controller):
         self.internal_offset = np.asarray([50, 50, 50])
         self.Servo_Update_Time = 50e-6  # s 0x0E000200
         self.max_points = 2**18  # 0x13000004
-        
+
     @property
     def isRecordingMacro(self):
         return self.__cube.IsRecordingMacro
-        
+
     def disconnect(self):
         self.__cube._disconnect()
-        
+
     def connect(self):
         self.__cube._connect()
-    
+
     def isConnected(self):
         return self.__cube._isConnected()
 
     def controller(self):
         return self.__cube
-    
+
     @lockmutex
     def MOVVEL(self, X, V):
         X = X + self.internal_offset
         # Reverse y and z
         X[1:] = 100 - X[1:]
-        
+
         assert np.all(X > 0) and np.all(X < 100)
-        
+
         V = np.abs(V)
         V[V < 1e-3] = 1e-3
         self.__cube.VEL([1, 2, 3], list(V))
@@ -391,7 +398,7 @@ class Cube_controller(Stage_controller):
         if not self.__cube.IsConnected():
             return False
         return self.__cube.IsControllerReady()
-    
+
     @lockmutex
     @no_macro
     def is_moving(self):
@@ -402,13 +409,12 @@ class Cube_controller(Stage_controller):
         self.__cube.IsRecordingMacro = True
         self.__cube.MAC_BEG(name)
         self.__cube.send('ERR?')
-        
 
     @lockmutex
     def MAC_END(self):
         self.__cube.IsRecordingMacro = False
         self.__cube.MAC_END()
-        
+
     @lockmutex
     def MAC_START(self, name):
         self.__cube.MAC_START(name)
@@ -417,7 +423,7 @@ class Cube_controller(Stage_controller):
     @lockmutex
     def MAC_DEL(self, name):
         self.__cube.MAC_DEL(name)
-        
+
     @lockmutex
     def macro_exists(self, name):
         rep = self.__cube.qMAC()
@@ -439,30 +445,29 @@ class Cube_controller(Stage_controller):
     def run_waveform(self, time_step, X):
         assert X.size < self.max_points
         assert np.shape(X)[1] == 3 or np.shape(X)[1] == 4
-        
-        
+
         # Go to first pos
         self.MOVVEL(X[0, :3], np.ones(3) * 1000)
 
         rate = int(np.round(time_step / self.Servo_Update_Time))
-        
+
         X[..., :3] = X[..., :3] + self.internal_offset
         # Reverse y and z
         X[:, 1:3] = 100 - X[:, 1:3]
-        
+
         assert np.all(X[..., :3] > 0) and np.all(X[..., :3] < 100)
-        
+
         # Set rate
         old_rate = self.__cube.qWTR()
         if old_rate[0] != [rate, 1]:
             print('Change rate', old_rate[0])
             self.__cube.send(f"WTR 0 {rate} 1")
-        
+
         idx = np.arange(np.shape(X)[1]) + 1
-        
+
         # Clear tables
         self.__cube.send("WCL " + " ".join(str(e) for e in idx))
-        
+
         # Send data
         slice_size = 50
         for i in range(np.shape(X)[1]):
@@ -470,7 +475,7 @@ class Cube_controller(Stage_controller):
             for point_idx in np.arange(0, np.shape(X)[0], slice_size):
                 data = X[point_idx:point_idx + slice_size, i]
                 cmd = (f"WAV {i+1} {append} PNT 1 {len(data)} " +
-                             " ".join(f'{e:.3f}' for e in data))
+                       " ".join(f'{e:.3f}' for e in data))
                 self.__cube.send(cmd)
                 append = '&'
 
@@ -479,13 +484,13 @@ class Cube_controller(Stage_controller):
 
         # limit to 1 scan
         self.__cube.send('WGC ' + " ".join(str(e) + ' 1' for e in idx))
-        
+
         # Offset to 0
         self.__cube.send('WOS ' + " ".join(str(e) + ' 0' for e in idx))
 
         # GO
         self.__cube.send('WGO ' + " ".join(str(e) + ' 0x101' for e in idx))
-        
+
         return self.Servo_Update_Time * rate * X.shape[0]
 
     @no_macro
@@ -514,13 +519,13 @@ class z_controller(Stage_controller):
 
     def connect(self):
         self._kCubeDCServoMotor._connect()
-        
+
     def disconnect(self):
         self._kCubeDCServoMotor._disconnect()
-        
+
     def isConnected(self):
         return self._kCubeDCServoMotor._isConnected()
-        
+
     def get_position(self):
         Z = float(str(self._kCubeDCServoMotor.Position)) * 1e3
         # Reverse z
@@ -611,10 +616,10 @@ class z_controller(Stage_controller):
                                  .LengthMinimum)) * 1e3
         self._posmax = float(str(self._kCubeDCServoMotor.AdvancedMotorLimits
                                  .LengthMaximum)) * 1e3
-                                 
+
     def is_moving(self):
         return self._kCubeDCServoMotor.Status.IsMoving
-        
+
 
 # ==============================================================================
 # Helper functions

@@ -9,11 +9,12 @@ from PyQt5 import QtCore
 import time
 import sys
 
+
 class Hardware_Singleton(QtCore.QObject):
     """Singleton to connect stage"""
-    
+
     __mutex = QtCore.QMutex(QtCore.QMutex.Recursive)
-    
+
     def __init__(self, name, connect_callback=None):
         super().__init__()
         mlock = QtCore.QMutexLocker(Hardware_Singleton.__mutex)
@@ -24,31 +25,31 @@ class Hardware_Singleton(QtCore.QObject):
             type(self)._number_instances = 1
             type(self)._name = name
             type(self)._thread = Hardware_Thread(
-                    self._set_hardware, self._open_connection)
+                self._set_hardware, self._open_connection)
         else:
             type(self)._number_instances += 1
-        
+
         self._set_attribute("_connect_callback", connect_callback)
         self._connect()
 
     def _set_attribute(self, name, value):
         super().__setattr__(name, value)
-        
+
     def __getattr__(self, name):
         self._wait_connected()
         mlock = QtCore.QMutexLocker(type(self)._mutex)
         return getattr(type(self)._hardware, name)
-        
+
     def __setattr__(self, name, value):
         self._wait_connected()
         mlock = QtCore.QMutexLocker(type(self)._mutex)
         setattr(type(self)._hardware, name, value)
-        
+
     def __del__(self):
         type(self)._number_instances -= 1
         if type(self)._number_instances == 0:
             self._disconnect()
-            
+
     def _wait_connected(self):
         if not self._isConnected() and not type(self)._isConnecting:
             self._connect()
@@ -68,7 +69,7 @@ class Hardware_Singleton(QtCore.QObject):
         mlock = QtCore.QMutexLocker(type(self)._mutex)
         if hardware is None or hardware == type(self)._hardware:
             return
-    
+
         type(self)._hardware = hardware
         print(f'{self._name} set')
         type(self)._isConnecting = False
@@ -87,13 +88,14 @@ class Hardware_Singleton(QtCore.QObject):
         if self._isConnected():
             self._close_connection()
             type(self)._hardware = None
-            
+
     def _open_connection(self):
         pass
-    
+
     def _close_connection(self):
         pass
-            
+
+
 class Hardware_Thread(QtCore.QThread):
     def __init__(self, callback, newConnection):
         super().__init__()

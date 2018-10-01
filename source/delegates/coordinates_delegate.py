@@ -44,7 +44,9 @@ class Coordinates_delegate(QtCore.QObject):
         stage = self._md.piezo
         XYs = ([-45, -45], [-45, 45],
                [45, 45], [45, -45])
-        self.plane_thread.settings(stage=stage, XYpos=XYs, arange=(5, -5, -0.5))
+        self.plane_thread.settings(
+            stage=stage, XYpos=XYs, arange=(
+                5, -5, -0.5))
         if checkid is not None:
             self.plane_thread.checkid = checkid
         self.plane_thread.start()
@@ -58,7 +60,9 @@ class Coordinates_delegate(QtCore.QObject):
         stage = self._md.motor
         Xms = np.asarray([p['Xm'] for p in self._positions])
         XYs = Xms[:, :2]
-        self.plane_thread.settings(stage=stage, XYpos=XYs, arange=(20, -20, -1))
+        self.plane_thread.settings(
+            stage=stage, XYpos=XYs, arange=(
+                20, -20, -1))
         if checkid is not None:
             self.plane_thread.checkid = checkid
         self.plane_thread.start()
@@ -222,4 +226,3 @@ class Plane_thread(QtCore.QThread):
         corrections["offset"] = offset
         corrections["rotation angles"] = rotation_angles
         self._stage.corrections = corrections
-

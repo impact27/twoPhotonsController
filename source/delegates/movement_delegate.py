@@ -50,7 +50,6 @@ else:
 #from controllers.stage_controller_placeholder import z_controller
 
 
-
 class Movement_delegate(QtCore.QObject):
     """Delegate for movement.
     Pretty empty as the motion is done through motor and piezo
@@ -541,7 +540,6 @@ class Piezo(Stage):
         self.recording_macro = False
         self.XYZ_c.MAC_END()
 
-   
     def macro_start(self, name, wait=True):
         self._mutex.lock()
         self.XYZ_c.MAC_START(name)
@@ -568,7 +566,6 @@ class Piezo(Stage):
     def isRecordingMacro(self):
         return self.XYZ_c.isRecordingMacro
 
-    
     def run_waveform(self, time_step, X, wait=True):
         self._mutex.lock()
         # Get stage coordinates

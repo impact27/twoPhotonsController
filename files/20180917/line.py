@@ -4,8 +4,11 @@ import matplotlib.pyplot as plt
 from matplotlib.pyplot import plot, figure, imshow, show
 import sys
 import scipy.signal
+
+
 def sawtooth(*args, **kargs):
     return 0.5 * (scipy.signal.sawtooth(*args, **kargs) + 1)
+
 
 sys.path.append('../package')
 
@@ -15,14 +18,14 @@ from GText import get_gtext
 
 # Settings
 
-offset_range = [0, -3] # um
+offset_range = [0, -3]  # um
 calibration_fn = 'calibration.csv'
 motor_step = 125
 cube_width = 100
 script_fn = "line.txt"
 
-energy_density_range = [0, 3] #mJ/um
-y_lines_spacing = 5 #um
+energy_density_range = [0, 3]  # mJ/um
+y_lines_spacing = 5  # um
 
 # Calibrate voltage V vs laser power P
 motor_line = 0
@@ -31,16 +34,16 @@ safety_z = 20
 off_speed = 1000
 
 fraction = 0.95
-dt = 0.5e-3 #s
+dt = 0.5e-3  # s
 
-wavelength = 2 #um
+wavelength = 2  # um
 
 max_points = 262144
 
 script = Script(off_speed=off_speed, safety_z=safety_z)
 
-times_range_dots = np.asarray([1, 100]) * 1e-3 #ms
-y_lines_spacing_dots = 10 #um
+times_range_dots = np.asarray([1, 100]) * 1e-3  # ms
+y_lines_spacing_dots = 10  # um
 x_margin = 2.5
 
 
@@ -49,17 +52,17 @@ x_margin = 2.5
 # =============================================================================
 
 
-x_range = [-cube_width/2 + x_margin, 
-           cube_width/2 - x_margin]
+x_range = [-cube_width / 2 + x_margin,
+           cube_width / 2 - x_margin]
 line_length = x_range[1] - x_range[0]
 
 P_max = 113.3
-P_min = 25 #mW
-S_min = 37.76 #um/s
+P_min = 25  # mW
+S_min = 37.76  # um/s
 S_max = S_min * P_max**2 / P_min**2
 
 
-#%%
+# %%
 
 def get_lin_inv_speed(S_start, S_end, xstart, xend):
     line_length = np.abs(xend - xstart)
@@ -71,7 +74,6 @@ def get_lin_inv_speed(S_start, S_end, xstart, xend):
     time = np.arange(0, t_max, dt)
     X = np.sign(B) * np.sqrt(2 * time / A + B**2) - B + xstart
     return time, X
-
 
 
 time, X = get_lin_inv_speed(S_min, S_max, *x_range)

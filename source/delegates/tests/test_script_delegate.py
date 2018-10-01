@@ -11,6 +11,8 @@ import numpy as np
 from delegates.script_delegate import Draw_Parser, Execute_Parser
 
 ad = Application_delegate()
+
+
 class Test_script(unittest.TestCase):
     def setUp(self):
         self.fn = '../../../files/calibration/calibration_20180910.txt'
@@ -36,6 +38,7 @@ class Test_script(unittest.TestCase):
         self.assertTrue(
             np.max(np.abs(
                 ad.movement_delegate.piezo.position - [40, 0, 0])) < 1)
+
 
 if __name__ == '__main__':
     unittest.main()

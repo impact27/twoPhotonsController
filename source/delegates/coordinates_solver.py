@@ -10,7 +10,7 @@ import warnings
 
 
 def get_matrices(ax, ay, az, am):
-    """Get the rotations matrix along the X, Y, and Z axis, 
+    """Get the rotations matrix along the X, Y, and Z axis,
     As well as the matrix for XY stage angle"""
     c, s = np.cos(ax), np.sin(ax)
     Rx = np.array([[1, 0, 0],

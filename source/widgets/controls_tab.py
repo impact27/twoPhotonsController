@@ -334,7 +334,6 @@ class Controls_tab(QtWidgets.QWidget):
         I = self.application_delegate.laser_delegate.get_intensity()
         self.laser_selector.setValue(I)
         cmutex.unlock()
-            
 
     def updatePos(self):
         self.update_motor()

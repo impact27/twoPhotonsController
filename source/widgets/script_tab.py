@@ -51,21 +51,21 @@ class Script_tab(QtWidgets.QWidget):
         browse_button.clicked.connect(self.browse_file)
         run_button.clicked.connect(lambda: self.sd.execute(path_field.text()))
         draw_button.clicked.connect(lambda: self.sd.draw(path_field.text()))
-        
+
         stop_button.clicked.connect(lambda: self.sd.execute_stop())
+
         def set_status(paused):
             if paused:
                 pause_resume_button.setText('Resume')
             else:
                 pause_resume_button.setText('Pause')
-                
+
         def pause_resume():
             paused = self.sd.execute_pause_resume()
             set_status(paused)
-                
+
         pause_resume_button.clicked.connect(pause_resume)
         self.sd.pause_status.connect(set_status)
-        
 
         # ======================================================================
         #         Save variables
