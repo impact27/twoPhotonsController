@@ -72,7 +72,7 @@ class ApplicationWindow(QtWidgets.QMainWindow):
                            'Focus')
         write_widget = QtWidgets.QWidget()
         write_layout = QtWidgets.QVBoxLayout()
-        write_layout.addWidget(Write_tab(self.application_delegate))
+        # write_layout.addWidget(Write_tab(self.application_delegate))
 
         line = QtWidgets.QFrame()
         line.setFrameShape(QtWidgets.QFrame.HLine)

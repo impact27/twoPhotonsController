@@ -38,7 +38,7 @@ class Coordinates_delegate(QtCore.QObject):
         self.init_thread()
 
     def init_thread(self):
-        self.plane_thread = plane_thread(self.parent)
+        self.plane_thread = Plane_thread(self.parent)
 
     def piezo_plane(self, checkid=None, wait=False):
         stage = self._md.piezo
@@ -178,7 +178,7 @@ class Coordinates_delegate(QtCore.QObject):
         self.updatelist.emit(self._positions)
 
 
-class plane_thread(QtCore.QThread):
+class Plane_thread(QtCore.QThread):
 
     def __init__(self, application_delegate):
         super().__init__()
@@ -196,31 +196,30 @@ class plane_thread(QtCore.QThread):
         self._stage = stage
 
     def run(self):
-        try:
-            start, stop, step = self._range
+        start, stop, step = self._range
 
-            positions = np.zeros((len(self._pos), 3))
-            for i, corner in enumerate(self._pos):
-                corner[2] = start
-                self._stage.goto_position(corner, speed=1000, wait=True,
-                                          checkid=self.checkid)
-                self._fd.focus(start_offset=0,
-                               stop_offset=(stop - start),
-                               step=step,
-                               stage=self._stage,
-                               wait=True, checkid=self.checkid,
-                               change_coordinates=False)
+        positions = []
+        for i, corner in enumerate(self._pos):
+            corner[2] = start
+            self._stage.goto_position(corner, speed=1000, wait=True,
+                                      checkid=self.checkid)
+            self._fd.focus(start_offset=0,
+                           stop_offset=(stop - start),
+                           step=step,
+                           stage=self._stage,
+                           wait=True, checkid=self.checkid,
+                           change_coordinates=False)
 
-                positions[i] = self._stage.get_position(raw=True)
+            data, z_best, success = self._fd.get_result()
+            if success:
+                positions.append(self._stage.get_position(raw=True))
+        if len(positions) < 3:
+            raise self._fd.FocusError('Need at least 3 successful focus.')
+        corrections = self._stage.corrections
+        offset, rotation_angles = solve_z(
+            positions, offset=corrections["offset"],
+            rotation_angles=corrections["rotation angles"])
+        corrections["offset"] = offset
+        corrections["rotation angles"] = rotation_angles
+        self._stage.corrections = corrections
 
-            corrections = self._stage.corrections
-            offset, rotation_angles = solve_z(
-                positions, offset=corrections["offset"],
-                rotation_angles=corrections["rotation angles"])
-            corrections["offset"] = offset
-            corrections["rotation angles"] = rotation_angles
-            self._stage.corrections = corrections
-        except BaseException as e:
-            print("Plane thread failed")
-            print(e)
-            raise

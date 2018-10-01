@@ -10,10 +10,15 @@ import sys
 import time
 from delegates.thread import lockmutex
 
+
+
 class Focus_delegate(QtCore.QObject):
 
     updatelist = QtCore.pyqtSignal(list)
     update_settings = QtCore.pyqtSignal(dict)
+    
+    class FocusError(RuntimeError):
+        pass
 
     def __init__(self, app_delegate):
         super().__init__()
@@ -31,12 +36,12 @@ class Focus_delegate(QtCore.QObject):
             "NLoops": 1,
             "Intensity": 0.1
         }
-
+        self._last_result = None
         self.md.motor.coordinatesCorrected.connect(lambda x: self._update())
         self.md.piezo.coordinatesCorrected.connect(lambda x: self._update())
 
     def init_thread(self):
-        self.thread = zThread(self.md,
+        self.thread = ZThread(self.md,
                               self.app_delegate.camera_delegate,
                               self.app_delegate.laser_delegate,
                               self.addGraph)
@@ -50,15 +55,19 @@ class Focus_delegate(QtCore.QObject):
     def display_pos(self, idx):
         self.app_delegate.canvas_delegate.switch_live(False)
         self.app_delegate.canvas_delegate.switch_draw(False)
-        self.plotZCorr(*self._positions[idx]["graphs"])
+        self.plotZCorr(*self._positions[idx]["focus_result"])
 
     @lockmutex
-    def plotZCorr(self, data, zBest):
+    def plotZCorr(self, data, zBest, success):
         try:
+            if success:
+                c = None
+            else:
+                c = 'red'
             list_Z, list_I = data
             self.canvas.clear()
             for Z, I in zip(list_Z, list_I):
-                self.canvas.plot(Z, I, 'x')
+                self.canvas.plot(Z, I, 'x', c=c)
             self.canvas.plot(zBest * np.ones(2), self.canvas.get_ylim(), 'k-')
             self.canvas.draw()
         except BaseException:
@@ -81,6 +90,10 @@ class Focus_delegate(QtCore.QObject):
             Should the thread wait for completion
         """
         self._mutex.lock()
+        self._last_result = None
+        if self.thread.isRunning():
+            raise self.FocusError('Already Focusing')
+        
         if intensity is not None:
             self._settings["Intensity"] = intensity
         if start_offset is not None:
@@ -104,21 +117,28 @@ class Focus_delegate(QtCore.QObject):
         if wait:
             self.thread.wait()
 
+    def get_result(self):
+        if self.thread.isRunning():
+            self.thread.wait()
+        if self._last_result is None:
+            raise RuntimeError("No result to show, check focus is not running")
+        return self._last_result
+    
     @lockmutex
-    def addGraph(self, graphs):
-
-        if graphs is None:
+    def addGraph(self, data, z_best, success):
+        self._last_result = data, z_best, success
+        if not success:
             self.app_delegate.error.emit("Focus Failed")
-            return
-        intensity = self.app_delegate.laser_delegate.get_intensity()
-        if np.abs(intensity - self._settings["Intensity"]) > 1e-3:
-            self._settings["Intensity"] = intensity
-            self.update_settings.emit(self._settings)
+        else:
+            intensity = self.app_delegate.laser_delegate.get_intensity()
+            if np.abs(intensity - self._settings["Intensity"]) > 1e-3:
+                self._settings["Intensity"] = intensity
+                self.update_settings.emit(self._settings)
 
         self._positions.append({
             "motor_Xs": self.md.motor.get_position(raw=True),
             "piezo_Xs": self.md.piezo.get_position(raw=True),
-            "graphs": graphs,
+            "focus_result": (data, z_best, success),
             "time": time.time()
         })
         self._update()
@@ -131,12 +151,12 @@ class Focus_delegate(QtCore.QObject):
         with open(fn, 'bw') as f:
             for pos in self._positions:
                 f.write((str(pos["motor_Xs"]) + '\n').encode())
-                data = pos["graphs"][0]
+                data = pos["focus_result"][0]
                 for scan_idx in range(data.shape[1]):
                     f.write(('{} pass:\n').format(scan_idx).encode())
                     for line in data[:, scan_idx]:
                         np.savetxt(f, line[np.newaxis])
-                f.write(('Best: {}\n').format(pos["graphs"][1]).encode())
+                f.write(('Best: {}\n').format(pos["focus_result"][1]).encode())
         with open(fn[:-4] + '_times.txt', 'w') as f:
             for pos in self._positions:
                 f.write("{time}, {position_motor}, {position_piezo}\n".format(
@@ -165,11 +185,11 @@ class Focus_delegate(QtCore.QObject):
         self._settings["Intensity"] = intensity
         
 
-class zThread(QtCore.QThread):
+class ZThread(QtCore.QThread):
 
-    def __init__(self, movement_delegate, camera, laser, addGraph):
+    def __init__(self, movement_delegate, camera, laser, callback):
         super().__init__()
-        self.addGraph = addGraph
+        self.callback = callback
         self._zcorrector = Zcorrector(None, camera, laser)
         self._settings = None
         self._checkid = None
@@ -182,29 +202,23 @@ class zThread(QtCore.QThread):
         self._change_coordinates = change_coordinates
 
     def run(self):
-        try:
-            if self._settings is None:
-                raise RuntimeError("Settings not initialised!")
+        if self._settings is None:
+            raise RuntimeError("Settings not initialised!")
 
-            if self._checkid is None:
-                lockid = self._md.lock()
-                if lockid is None:
-                    self.error = "Unable to lock the movement"
-                    return
-            else:
-                lockid = self._checkid
+        if self._checkid is None:
+            lockid = self._md.lock()
+            if lockid is None:
+                self.error = "Unable to lock the movement"
+                return
+        else:
+            lockid = self._checkid
 
-            graphs = self._zcorrector.focus(
-                self._settings, checkid=lockid,
-                change_coordinates=self._change_coordinates)
-            self._md.unlock()
-            self._settings = None
-            self.addGraph(graphs)
-        except BaseException as e:
-            print(e)
-            self._md.unlock()
-            self.addGraph(None)
-
+        data, z_best, success = self._zcorrector.focus(
+            self._settings, checkid=lockid,
+            change_coordinates=self._change_coordinates)
+        self._md.unlock()
+        self._settings = None
+        self.callback(data, z_best, success)
 
 class Zcorrector():
 
@@ -265,15 +279,16 @@ class Zcorrector():
 
                 return data[:i+1]
 
-        # Failed focus
-        if np.min(data[:, 1]) > 0.8 * np.max(data[:, 1]):
-            raise RuntimeError(f"Can't focus: not enough difference between min and max, {start}, {stop}, {step}")
-
         return data
 
     def focus_range(self, z_start, z_stop, current_step):
         data = self.get_intensity_range(
             z_start, z_stop, current_step)
+        
+        # Failed focus
+        if np.min(data[:, 1]) > 0.8 * np.max(data[:, 1]):
+            return data, False
+        
 
         argbest = np.argmax(data[..., 1])
         zBest = data[..., 0][argbest]
@@ -304,7 +319,7 @@ class Zcorrector():
                     zBest + 2.1*current_step,
                     current_step)
 
-        return data
+        return data, True
 
     def focus(self, settings, checkid=None, change_coordinates=True):
         """ Go to the best focal point for the laser
@@ -328,16 +343,21 @@ class Zcorrector():
         list_int = []
 
         for i in range(N_loops):
-            data = self.focus_range(z_start, z_stop, current_step)
+            data, success = self.focus_range(z_start, z_stop, current_step)
+            
             zPos, intensities = data.T
+            list_zpos.append(zPos)
+            list_int.append(intensities)
+            
+            if not success: 
+                return np.asarray([list_zpos, list_int]), np.nan, False
 
             argbest = np.argmax(intensities)
             current_step /= 10
             z_start = zPos[argbest - 1]
             z_stop = zPos[argbest + 1]
 
-            list_zpos.append(zPos)
-            list_int.append(intensities)
+            
 
         self.endlaser()
 
@@ -351,8 +371,6 @@ class Zcorrector():
         if np.abs(zBest - zPos[argbest]) > 2 * np.abs(step):
             zBest = zPos[argbest]
 
-        ret = np.asarray([list_zpos, list_int]), zBest
-
         self.stage.goto_position([np.nan, np.nan, zBest],
                                  wait=True, checkid=self.lockid, isRaw=True)
 
@@ -360,7 +378,7 @@ class Zcorrector():
             self.stage.set_Z_zero()
 
         # save result and position
-        return ret
+        return np.asarray([list_zpos, list_int]), zBest, True
 
 #    def get_image_range_quick(self, start, stop, step):
 #

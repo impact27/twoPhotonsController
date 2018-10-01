@@ -220,6 +220,7 @@ def solve_colinear(Xstage, Xmaster):
 def solve_z(Xstage, *, offset=None, rotation_angles=None):
     """Get correction such as all the given points are on a plane
     The Z rotation, XY Stage correction, and XY offset can be given."""
+    Xstage = np.asarray(Xstage)
     # Create output
     if offset is None:
         offset = np.zeros(3)

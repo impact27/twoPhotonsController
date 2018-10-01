@@ -22,7 +22,7 @@ from PyQt5 import QtCore
 
 from .coordinates_delegate import Coordinates_delegate
 from .movement_delegate import Movement_delegate
-from .write_delegate import Write_delegate
+# from .write_delegate import Write_delegate
 from .laser_delegate import Laser_delegate
 from .camera_delegate import Camera_delegate
 from .focus_delegate import Focus_delegate
@@ -49,14 +49,14 @@ class Application_delegate(QtCore.QObject):
 
         # Create delegates for actions
         self.coordinates_delegate = Coordinates_delegate(self)
-        self.write_delegate = Write_delegate(self)
+        # self.write_delegate = Write_delegate(self)
         self.script_delegate = Script_delegate(self)
 
         self.mainWindow = ApplicationWindow(self, self.canvas_delegate._canvas)
 
     def ESTOP(self):
         self.focus_delegate.ESTOP()
-        self.write_delegate.ESTOP()
+        # self.write_delegate.ESTOP()
         self.movement_delegate.ESTOP()
         self.script_delegate.ESTOP()
         self.coordinates_delegate.ESTOP()

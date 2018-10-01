@@ -97,6 +97,7 @@ class Camera_controller():
             self.cam.shutter = time
         except BaseException:
             print(f"Unable to set shutter time {time}")
+            raise
 
     def get_exposure_time(self):
         return self.cam.shutter
@@ -132,6 +133,7 @@ class Camera_controller():
             print("Can't set camera ROI")
             print(roi[0] + roi[2], roi[1]+roi[3])
             print(e)
+            raise
         self.cam.streaming = streaming
         
     def roi_reset(self):

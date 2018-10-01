@@ -181,8 +181,8 @@ class write_thread(QtCore.QThread):
             print("Unknown exception during write")
             print(sys.exc_info()[0])
             raise
-
-        self.md.unlock()
+        finally:
+            self.md.unlock()
 
     def writeGCode(self):
         self.parent.camera_delegate.extShutter(False)

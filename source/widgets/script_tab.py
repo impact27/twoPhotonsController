@@ -23,6 +23,8 @@ class Script_tab(QtWidgets.QWidget):
         browse_button = QtWidgets.QPushButton('Browse')
         run_button = QtWidgets.QPushButton('Run')
         draw_button = QtWidgets.QPushButton('Draw')
+        stop_button = QtWidgets.QPushButton('Stop')
+        pause_resume_button = QtWidgets.QPushButton('Pause')
 
         # ======================================================================
         #     Layout
@@ -34,9 +36,11 @@ class Script_tab(QtWidgets.QWidget):
         path_layout.addWidget(path_field)
         path_layout.addWidget(browse_button)
         main_layout.addLayout(path_layout)
-        buttons_layout = QtWidgets.QHBoxLayout()
-        buttons_layout.addWidget(draw_button)
-        buttons_layout.addWidget(run_button)
+        buttons_layout = QtWidgets.QGridLayout()
+        buttons_layout.addWidget(draw_button, 0, 0)
+        buttons_layout.addWidget(run_button, 0, 1)
+        buttons_layout.addWidget(stop_button, 1, 0)
+        buttons_layout.addWidget(pause_resume_button, 1, 1)
         main_layout.addLayout(buttons_layout)
 #        main_layout.addStretch()
         self.setLayout(main_layout)
@@ -47,6 +51,21 @@ class Script_tab(QtWidgets.QWidget):
         browse_button.clicked.connect(self.browse_file)
         run_button.clicked.connect(lambda: self.sd.execute(path_field.text()))
         draw_button.clicked.connect(lambda: self.sd.draw(path_field.text()))
+        
+        stop_button.clicked.connect(lambda: self.sd.execute_stop())
+        def set_status(paused):
+            if paused:
+                pause_resume_button.setText('Resume')
+            else:
+                pause_resume_button.setText('Pause')
+                
+        def pause_resume():
+            paused = self.sd.execute_pause_resume()
+            set_status(paused)
+                
+        pause_resume_button.clicked.connect(pause_resume)
+        self.sd.pause_status.connect(set_status)
+        
 
         # ======================================================================
         #         Save variables

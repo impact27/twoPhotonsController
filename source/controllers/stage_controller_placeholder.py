@@ -192,9 +192,15 @@ class Cube_controller(fake_controller):
     def macro_wait(self):
         pass
     
+    def macro_exists(self, name):
+        return False
+    
     def run_waveform(self, time_step, X):
-        self.position = X[-1]
-        self.target = X[-1]
+        self.position = X[-1, :3]
+        self.target = X[-1, :3]
+        
+    def wait_end_wave(self, wait_time):
+        pass
 # ==============================================================================
 # Z Controller
 # ==============================================================================
