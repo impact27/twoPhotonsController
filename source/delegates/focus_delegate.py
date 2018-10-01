@@ -105,7 +105,6 @@ class Focus_delegate(QtCore.QObject):
             self._settings["NLoops"] = Nloops
 
         self.update_settings.emit(self._settings)
-
         self.thread.set_args(
             self._settings,
             stage,
@@ -232,6 +231,8 @@ class Zcorrector():
     def change_power(self, factor=0.8):
         """Change intensity of laser to get best focus"""
         V = self.laser.get_intensity() * factor
+        if factor > 1 and V < 1e-3:
+            V = 0.01
         self.laser.set_intensity(V)
 
     def startlaser(self, intensity):

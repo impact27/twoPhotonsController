@@ -21,12 +21,12 @@ from power_converter import PowerConverter
 # Settings
 
 calibration_fn = 'calibration.csv'
-script_fn = "cones_20180921olli.txt"
+script_fn = "cones_20181001olli.txt"
 
 Y_motor_step = 7854.84
 X_motor_step = 6203.05  # , 'um')
-Y_N_motor = 3
-X_N_motor = 6
+Y_N_motor = 1
+X_N_motor = 1
 width_write = 1300
 
 Z_pos = 0  # , 'um')

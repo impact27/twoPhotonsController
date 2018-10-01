@@ -64,6 +64,8 @@ class Parse_thread(QtCore.QThread):
     def run(self):
         try:
             self._parser.parse(self._filename)
+        except FileNotFoundError:
+            print("Can't open", self._filename)
         except BaseException as e:
             print("Parse failed")
             print(e)
@@ -400,6 +402,7 @@ class Execute_Parser(Parser):
 
     @macro(False)
     def run_waveform(self, time_step, X):
+        self.camera_delegate.extShutter(False)
         self.piezo_delegate.run_waveform(time_step, X.T)
 
     def handle_focus_error(self):
