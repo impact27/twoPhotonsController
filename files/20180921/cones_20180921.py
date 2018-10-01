@@ -53,6 +53,7 @@ short_length = 4.26
 # constants
 max_points = 2**18
 cube_width = 100  # , 'um')
+safety_slope = 1/30 # no units
 
 
 # Calibrate voltage V vs laser power P
@@ -60,12 +61,15 @@ pc = PowerConverter(calibration_fn)
 motor_position = np.array([0, 0])
 script = Script(off_speed=off_speed, safety_z=safety_z)
 
-
 def move_motor(idx_X, idx_Y, *, X_offset=0, Y_offset=0,
                X_step=X_motor_step, Y_step=Y_motor_step):
-    script.move_motor([idx_X * X_step + X_offset, idx_Y *
-                       Y_step + Y_offset, safety_z])
-
+    X = idx_X * X_step + X_offset
+    Y = idx_Y * Y_step + Y_offset
+    distance = np.linalg.norm(motor_position - np.asarray([X, Y]))
+    Z = safety_z + distance * safety_slope
+    script.safety_z = Z
+    script.move_motor([X, Y, Z])
+    motor_position[:] = [X, Y]
 
 def line(Xfrom, Xto, *, power, speed):
     script.write_speed = speed
