@@ -84,6 +84,7 @@ class Controls_tab(QtWidgets.QWidget):
 
         goto_cube_button = QtWidgets.QPushButton("GO")
         getcurr_cube_button = QtWidgets.QPushButton("Get Current")
+        reset_cube_button = QtWidgets.QPushButton("Reset")
 
         cam_label = QtWidgets.QLabel('Camera')
         cam_label.setStyleSheet("font: bold large")
@@ -148,6 +149,7 @@ class Controls_tab(QtWidgets.QWidget):
 
         cube_GO_layout = QtWidgets.QHBoxLayout()
         cube_GO_layout.addWidget(getcurr_cube_button)
+        cube_GO_layout.addWidget(reset_cube_button)
         cube_GO_layout.addWidget(goto_cube_button)
 
         cam_H_layout = QtWidgets.QHBoxLayout()
@@ -232,6 +234,7 @@ class Controls_tab(QtWidgets.QWidget):
 
         getcurr_cube_button.clicked.connect(self.update_cube)
         getcurr_motor_button.clicked.connect(self.update_motor)
+        reset_cube_button.clicked.connect(md.piezo.reset)
 
         md.updatePosition.connect(
             self.updatePos)

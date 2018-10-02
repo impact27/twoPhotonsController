@@ -10,6 +10,15 @@ import sys
 import time
 from delegates.thread import lockmutex
 
+V_MIN = 0.01
+V_VERY_SMALL = 1e-4
+INTENSITY_MAX = 255
+DECREASE_FACTOR = 0.8
+INCREASE_FACTOR = 1.2
+STOP_FRACTION = 1/3
+MIN_DIFF = 0.8
+MIN_RADIUS_REFINE = 3
+MIN_PEAK_INTENSITY = 150
 
 class Focus_delegate(QtCore.QObject):
 
@@ -137,6 +146,7 @@ class Focus_delegate(QtCore.QObject):
             "motor_Xs": self.md.motor.get_position(raw=True),
             "piezo_Xs": self.md.piezo.get_position(raw=True),
             "focus_result": (data, z_best, success),
+            "intensity": self.app_delegate.laser_delegate.get_intensity(),
             "time": time.time()
         })
         self._update()
@@ -154,11 +164,14 @@ class Focus_delegate(QtCore.QObject):
                     f.write(('{} pass:\n').format(scan_idx).encode())
                     for line in data[:, scan_idx]:
                         np.savetxt(f, line[np.newaxis])
-                f.write(('Best: {}\n').format(pos["focus_result"][1]).encode())
+                f.write(('Best: {}\nIntensity: {}\n').format(
+                            pos["focus_result"][1],
+                            pos["intensity"]
+                        ).encode())
         with open(fn[:-4] + '_times.txt', 'w') as f:
             for pos in self._positions:
                 f.write("{time}, {position_motor}, {position_piezo}\n".format(
-                        time=pos["time"], position_motor=pos["c"],
+                        time=pos["time"], position_motor=pos["motor_Xs"],
                         position_piezo=pos["piezo_Xs"]))
 
     @lockmutex
@@ -228,17 +241,17 @@ class Zcorrector():
         self.lockid = None
         self.laser = laser
 
-    def change_power(self, factor=0.8):
+    def change_power(self, factor=DECREASE_FACTOR):
         """Change intensity of laser to get best focus"""
         V = self.laser.get_intensity() * factor
-        if factor > 1 and V < 1e-3:
-            V = 0.01
+        if factor > 1 and V < V_VERY_SMALL:
+            V = V_MIN
         self.laser.set_intensity(V)
 
     def startlaser(self, intensity):
         """Start laser with intensity"""
-        if intensity is None or intensity < 1e-6:
-            intensity = 0.1
+        if intensity is None or intensity < V_VERY_SMALL:
+            intensity = V_MIN
         self.camera.auto_exposure_time(False)
         self.camera.set_exposure_time(self.camera.exposure_time_range()[0])
         self.laser.set_intensity(intensity)
@@ -270,13 +283,13 @@ class Zcorrector():
 
             data[i, 1] = intensity
 
-            if intensity == 255:
+            if intensity == INTENSITY_MAX:
                 if i > 1:
                     start = zPos[i - 2]
-                self.change_power(0.8)
+                self.change_power(DECREASE_FACTOR)
                 return self.get_intensity_range(start, stop, step)
 
-            if intensity < np.max(data[:, 1]) / 3:
+            if intensity < np.max(data[:, 1]) * STOP_FRACTION:
 
                 return data[:i + 1]
 
@@ -287,7 +300,7 @@ class Zcorrector():
             z_start, z_stop, current_step)
 
         # Failed focus
-        if np.min(data[:, 1]) > 0.8 * np.max(data[:, 1]):
+        if np.min(data[:, 1]) > MIN_DIFF * np.max(data[:, 1]):
             return data, False
 
         argbest = np.argmax(data[..., 1])
@@ -295,32 +308,35 @@ class Zcorrector():
 
         # If on side
         if argbest == 0 or argbest == len(data) - 1:
-            return self.focus_range(
-                zBest - 2 * current_step,
-                zBest + 2.1 * current_step,
-                current_step)
+            return self.redo_around_max(zBest, current_step)
 
         # Check intensity is high enough
-        if np.max(data[..., 1]) < 150:
+        if np.max(data[..., 1]) < MIN_PEAK_INTENSITY:
 
             self.stage.goto_position([np.nan, np.nan, zBest],
                                      wait=True, checkid=self.lockid, isRaw=True)
 
             intensity = self.get_intensity()
+            if intensity == 0:
+                raise RuntimeError("Intensity can not be 0 here!!!!!")
+            #Check intensity CAN be increased
             intensity_old = 0
-            while intensity < 150 and intensity > 1.05 * intensity_old:
+            while intensity < MIN_PEAK_INTENSITY and intensity > 1.05 * intensity_old:
                 intensity_old = intensity
-                self.change_power(1.2)
+                self.change_power(INCREASE_FACTOR)
                 intensity = self.get_intensity()
 
-            if intensity_old > 0:
-                return self.focus_range(
-                    zBest - 2 * current_step,
-                    zBest + 2.1 * current_step,
-                    current_step)
+            return self.redo_around_max(zBest, current_step)
 
         return data, True
 
+    def redo_around_max(self, zBest, current_step):
+        distance = np.max([3.1 * current_step, MIN_RADIUS_REFINE])
+        return self.focus_range(
+            zBest - distance,
+            zBest + distance,
+            current_step)
+        
     def focus(self, settings, checkid=None, change_coordinates=True):
         """ Go to the best focal point for the laser
         """

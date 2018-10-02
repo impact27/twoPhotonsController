@@ -17,7 +17,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-
+import numpy as np
 import sys
 from PyQt5 import QtCore
 
@@ -33,7 +33,6 @@ class Laser_delegate(QtCore.QObject):
     def __init__(self):
         super().__init__()
         self.controller = Laser_controller()
-        self.I = 0
 
     def get_range(self):
         return self.controller.get_range()
@@ -41,19 +40,17 @@ class Laser_delegate(QtCore.QObject):
     def set_intensity(self, V):
         if V is None:
             return
-        if V != self.I:
-            self.newIntensity.emit(V)
-            self.controller.intensity = V
-            self.I = V
+        self.newIntensity.emit(V)
+        self.controller.intensity = V
 
     def get_intensity(self):
         return self.controller.intensity
 
-    def VtoI(self, V):
-        pass
-
-    def ItoV(self, I):
-        pass
-
-    def set_calibration_curve(self, C):
-        pass
+#    def VtoI(self, V):
+#        pass
+#
+#    def ItoV(self, I):
+#        pass
+#
+#    def set_calibration_curve(self, C):
+#        pass

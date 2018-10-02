@@ -488,7 +488,12 @@ class Piezo(Stage):
         self._lastXs = self._XSPOS()
 
     def reset(self, checkid=None, wait=False):
+        #Keep rotation around Z - should correspond to motor stage
+        az = self._corrections["rotation angles"][2]
         self.reset_corrections()
+        self._corrections["rotation angles"][2] = az
+        self.coordinatesCorrected.emit(self._corrections)
+        # Go to 0
         self.goto_position([0, 0, 0], checkid=checkid, wait=wait)
 
     @lockmutex

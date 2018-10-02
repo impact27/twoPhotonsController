@@ -101,16 +101,19 @@ class Parser(QtCore.QObject):
             self.file = f
             self._running = True
             for (fun, args) in self.yield_line():
-                try:
-                    fun(*args)
-                except BaseException:
-                    print("/nError while parsing line:")
-                    print(self.line_nbr, ':', fun, *args)
-                    print(sys.exc_info(), '/n')
-                    raise
+                self.parse_line(fun, args)
             self.file = None
             self._running = False
 
+    def parse_line(self, fun, args):
+        try:
+            fun(*args)
+        except BaseException:
+            print("/nError while parsing line:")
+            print(self.line_nbr, ':', fun.__name__, *args)
+            print(sys.exc_info(), '/n')
+            raise
+            
     def readline(self):
         if self._next_line is not None:
             ret = self._next_line
@@ -405,7 +408,7 @@ class Execute_Parser(Parser):
         self.camera_delegate.extShutter(False)
         self.piezo_delegate.run_waveform(time_step, X.T)
 
-    def handle_focus_error(self):
+    def handle_error(self):
         # Repeat previous line
         self._next_line = self._prev_line
         self.pause_resume(msg="Focus issue - Paused", pause=True)
@@ -443,7 +446,15 @@ class Execute_Parser(Parser):
         while self._paused:
             time.sleep(1)
         return super().readline()
-
+    
+    def parse_line(self, fun, args):
+        try:
+            fun(*args)
+        except BaseException:
+            self.handle_error()
+            print("/nError while parsing line:")
+            print(self.line_nbr, ':', fun.__name__, *args)
+            print(sys.exc_info(), '/n')
 
 class Draw_Parser(Parser):
     def __init__(self, canvas):
