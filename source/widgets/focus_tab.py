@@ -101,14 +101,18 @@ class Focus_tab(QtWidgets.QWidget):
                 stage = application_delegate.movement_delegate.piezo
             else:
                 stage = application_delegate.movement_delegate.motor
-
-            self.fd.focus(
-                start_offset=float(back_input.text()),
-                stop_offset=float(forth_input.text()),
-                step=float(step_input.text()),
-                stage=stage,
-                intensity=float(intensity_input.text()),
-                Nloops=int(float(Nloops_input.text())))
+                
+            try:
+                self.fd.focus(
+                    start_offset=float(back_input.text()),
+                    stop_offset=float(forth_input.text()),
+                    step=float(step_input.text()),
+                    stage=stage,
+                    intensity=float(intensity_input.text()),
+                    Nloops=int(float(Nloops_input.text())))
+            except self.fd.FocusError as e:
+                print(e)
+                application_delegate.error.emit("Focus Error")
 
         def update_settings(settings):
             back_input.setText(str(settings["From"]))

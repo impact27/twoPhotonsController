@@ -6,6 +6,7 @@ Created on Wed Oct 25 16:51:32 2017
 """
 from PyQt5 import QtCore, QtWidgets
 import numpy as np
+from json import JSONDecodeError
 
 
 class Layout_wrapper(QtWidgets.QWidget):
@@ -21,7 +22,7 @@ class Coordinates_tab(QtWidgets.QWidget):
 
     def __init__(self, application_delegate, *args, **kwargs):
         QtWidgets.QWidget.__init__(self, *args, **kwargs)
-
+        self.application_delegate = application_delegate
         # ======================================================================
         #       Create Widgets
         # ======================================================================
@@ -195,7 +196,10 @@ class Coordinates_tab(QtWidgets.QWidget):
             self, 'Position File', QtCore.QDir.homePath() + '/correction.txt',
             'Text File (*.txt)')[0]
         if len(fn) > 0:
-            self.md.load_corrections(fn)
+            try:
+                self.md.load_corrections(fn)
+            except JSONDecodeError:
+                self.application_delegate.error.emit(f"Can't read file '{fn}'")
 
     def save_correction_file(self):
         fn = QtWidgets.QFileDialog.getSaveFileName(

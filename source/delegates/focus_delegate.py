@@ -97,10 +97,12 @@ class Focus_delegate(QtCore.QObject):
         wait default False:
             Should the thread wait for completion
         """
-        self._mutex.lock()
-        self._last_result = None
+       
         if self.thread.isRunning():
             raise self.FocusError('Already Focusing')
+        
+        self._mutex.lock()
+        self._last_result = None
 
         if intensity is not None:
             self._settings["Intensity"] = intensity
@@ -317,21 +319,24 @@ class Zcorrector():
                                      wait=True, checkid=self.lockid, isRaw=True)
 
             intensity = self.get_intensity()
-            if intensity == 0:
-                raise RuntimeError("Intensity can not be 0 here!!!!!")
             #Check intensity CAN be increased
-            intensity_old = 0
-            while intensity < MIN_PEAK_INTENSITY and intensity > 1.05 * intensity_old:
-                intensity_old = intensity
+            i = 0
+            N_max = 40
+            while intensity < MIN_PEAK_INTENSITY and i < N_max:
                 self.change_power(INCREASE_FACTOR)
                 intensity = self.get_intensity()
-
-            return self.redo_around_max(zBest, current_step)
+                
+            if i == N_max:
+                print("Couldn't raise intensity to acceptable level")
+                return data, False
+            else:
+                return self.redo_around_max(zBest, current_step)
 
         return data, True
 
     def redo_around_max(self, zBest, current_step):
-        distance = np.max([3.1 * current_step, MIN_RADIUS_REFINE])
+        distance = np.max(np.abs([3.1 * current_step, MIN_RADIUS_REFINE]))
+        distance *= np.sign(current_step)
         return self.focus_range(
             zBest - distance,
             zBest + distance,
