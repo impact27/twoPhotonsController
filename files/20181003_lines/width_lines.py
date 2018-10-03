@@ -35,11 +35,11 @@ x_margin = 2.5
 
 fix_speed = 37.76
 width_dictionnary ={ # width: power
-        300: 30.46257711,
-        400: 34.5735335,
-        500: 38.24525065,
-        700: 44.69242649,
-        1000: 52.91024225,
+        300: 42.87,
+        350: 43.84,
+        500: 44.81,
+        700: 50.64,
+        1000: 56.47,
         }
 
 # constants
@@ -132,7 +132,7 @@ x_range = [-cube_width / 2 + x_margin,
 N_lines = len(y_positions)
 
 Y_offsets = np.arange(5) * 300
-widths = [300, 400, 500, 700, 1000]
+widths = [300, 350, 500, 700, 1000]
 
 # 1st long
 for motor_Y_idx in range(Y_N_motor):
