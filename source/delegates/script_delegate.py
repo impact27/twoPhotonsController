@@ -24,10 +24,13 @@ class Script_delegate(QtCore.QObject):
         self.init_threads()
 
     def init_threads(self):
-        self._execute_thread = Parse_thread(Execute_Parser(self.app_delegate))
+        self._execute_thread = Parse_thread(
+                Execute_Parser(self.app_delegate),
+                self.app_delegate.error)
         self._execute_thread._parser.pause_status.connect(self.pause_status)
         self._draw_thread = Parse_thread(
-            Draw_Parser(self.app_delegate.canvas_delegate))
+            Draw_Parser(self.app_delegate.canvas_delegate),
+            self.app_delegate.error)
 
     def execute(self, filename):
         if self._execute_thread.isRunning():
@@ -53,10 +56,11 @@ class Script_delegate(QtCore.QObject):
 
 
 class Parse_thread(QtCore.QThread):
-    def __init__(self, parser):
+    def __init__(self, parser, error):
         super().__init__()
         self._filename = ''
         self._parser = parser
+        self.error = error
 
     def set_filename(self, filename):
         self._filename = filename
@@ -66,6 +70,7 @@ class Parse_thread(QtCore.QThread):
             self._parser.parse(self._filename)
         except FileNotFoundError:
             print("Can't open", self._filename)
+            self.error.emit(f"Can't find {self._filename}")
         except BaseException as e:
             print("Parse failed")
             print(e)
