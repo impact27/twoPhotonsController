@@ -46,7 +46,7 @@ else:
     from . import HW_conf
     from .hardware_singleton import Hardware_Singleton
 
-
+VMAX = 10000
 # ==============================================================================
 # Stage controller
 # ==============================================================================
@@ -487,7 +487,10 @@ class Cube_controller(Stage_controller):
 
         # Offset to 0
         self.__cube.send('WOS ' + " ".join(str(e) + ' 0' for e in idx))
-
+        
+        # Maximum speed to a lot
+        self.__cube.VEL([1, 2, 3], [VMAX, VMAX, VMAX])
+        
         # GO
         self.__cube.send('WGO ' + " ".join(str(e) + ' 0x101' for e in idx))
 
