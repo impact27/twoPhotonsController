@@ -123,7 +123,6 @@ class Canvas_delegate(QtCore.QObject):
     def draw_current_position(self):
         md = self._parent.movement_delegate
         cmutex = md.piezo.controller_mutex()
-        print(dir(cmutex))
         if not cmutex.tryLock():
             return
         try:

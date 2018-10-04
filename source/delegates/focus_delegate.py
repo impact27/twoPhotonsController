@@ -20,7 +20,7 @@ STOP_FRACTION = 1/3
 MIN_DIFF = 0.8
 MIN_RADIUS_REFINE = 3
 MIN_PEAK_INTENSITY = 150
-FOCUS_TIMEOUT = 60000
+FOCUS_TIMEOUT = 600000
 
 class Focus_delegate(QtCore.QObject):
 
@@ -65,9 +65,9 @@ class Focus_delegate(QtCore.QObject):
         self.plotZCorr(*self._positions[idx]["focus_result"])
 
     @lockmutex
-    def plotZCorr(self, data, zBest, success):
+    def plotZCorr(self, data, zBest, error):
         try:
-            if success:
+            if error is None:
                 c = None
             else:
                 c = 'red'
@@ -244,8 +244,6 @@ class ZThread(QtCore.QThread):
         finally:
             self._md.unlock()
             self._settings = None
-        
-
 
 class Zcorrector():
 

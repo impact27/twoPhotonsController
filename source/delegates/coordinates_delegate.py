@@ -57,6 +57,8 @@ class Coordinates_delegate(QtCore.QObject):
             success = self.plane_thread.wait(FOCUS_TIMEOUT_MS)
             if not success:
                 raise FocusError("Timeout on focus")
+            if self.plane_thread.error is not None:
+                raise self.plane_thread.error
 
     def motor_plane(self, checkid=None, wait=False):
         if len(self._positions) < 3:
@@ -194,6 +196,8 @@ class Plane_thread(QtCore.QThread):
         self._fd = application_delegate.focus_delegate
         self.laser_delegate = application_delegate.laser_delegate
         self.checkid = None
+        self.error_signal = application_delegate.error
+        self.error = None
 
     def settings(self, *, stage, XYpos, arange):
 
@@ -204,29 +208,33 @@ class Plane_thread(QtCore.QThread):
         self._stage = stage
 
     def run(self):
-        start, stop, step = self._range
-
-        positions = []
-        for i, corner in enumerate(self._pos):
-            corner[2] = start
-            self._stage.goto_position(corner, speed=1000, wait=True,
-                                      checkid=self.checkid)
-            self._fd.focus(start_offset=0,
-                           stop_offset=(stop - start),
-                           step=step,
-                           stage=self._stage,
-                           wait=True, checkid=self.checkid,
-                           change_coordinates=False)
-
-            data, z_best, error = self._fd.get_result()
-            if error is not None:
-                positions.append(self._stage.get_position(raw=True))
-        if len(positions) < 3:
-            raise FocusError('Need at least 3 successful focus.')
-        corrections = self._stage.corrections
-        offset, rotation_angles = solve_z(
-            positions, offset=corrections["offset"],
-            rotation_angles=corrections["rotation angles"])
-        corrections["offset"] = offset
-        corrections["rotation angles"] = rotation_angles
-        self._stage.corrections = corrections
+        try:
+            start, stop, step = self._range
+    
+            positions = []
+            for i, corner in enumerate(self._pos):
+                corner[2] = start
+                self._stage.goto_position(corner, speed=1000, wait=True,
+                                          checkid=self.checkid)
+                self._fd.focus(start_offset=0,
+                               stop_offset=(stop - start),
+                               step=step,
+                               stage=self._stage,
+                               wait=True, checkid=self.checkid,
+                               change_coordinates=False)
+    
+                data, z_best, error = self._fd.get_result()
+                if error is None:
+                    positions.append(self._stage.get_position(raw=True))
+            if len(positions) < 3:
+                raise FocusError('Need at least 3 successful focus.')
+            corrections = self._stage.corrections
+            offset, rotation_angles = solve_z(
+                positions, offset=corrections["offset"],
+                rotation_angles=corrections["rotation angles"])
+            corrections["offset"] = offset
+            corrections["rotation angles"] = rotation_angles
+            self._stage.corrections = corrections
+        except (FocusError, MotionError) as e:
+            self.error = e
+            self.error_signal.emit(f"Plane Error {e}")

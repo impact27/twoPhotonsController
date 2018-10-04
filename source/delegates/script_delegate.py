@@ -380,11 +380,8 @@ class Execute_Parser(Parser):
 
     @macro(False)
     def piezoslope(self):
-        try:
-            self.coordinates_delegate.piezo_plane(
+        self.coordinates_delegate.piezo_plane(
                 checkid=self.lockid, wait=True)
-        except FocusError as e:
-            self.handle_focus_error()
 
     @macro(False)
     def piezoreset(self):
