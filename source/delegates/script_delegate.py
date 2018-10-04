@@ -374,10 +374,9 @@ class Execute_Parser(Parser):
 
         for kwargs in kwargs_list:
             self.focus_delegate.focus(**kwargs)
-            data, z_best, success = self.focus_delegate.get_result()
-            if not success:
-                self.handle_focus_error()
-                return
+            data, z_best, error = self.focus_delegate.get_result()
+            if error is not None:
+                self.handle_error(error)
 
     @macro(False)
     def piezoslope(self):

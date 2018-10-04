@@ -5,7 +5,7 @@ Created on Wed Oct 25 16:51:32 2017
 @author: quentinpeter
 """
 from PyQt5 import QtCore, QtWidgets
-
+from errors import FocusError
 
 class Layout_wrapper(QtWidgets.QWidget):
     def __init__(self, layout, *args, **kwargs):
@@ -110,7 +110,7 @@ class Focus_tab(QtWidgets.QWidget):
                     stage=stage,
                     intensity=float(intensity_input.text()),
                     Nloops=int(float(Nloops_input.text())))
-            except self.fd.FocusError as e:
+            except FocusError as e:
                 print(e)
                 application_delegate.error.emit("Focus Error")
 

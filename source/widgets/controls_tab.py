@@ -10,7 +10,7 @@ import numpy as np
 
 from .myWidgets import LightWidget, doubleSelector
 from .switch import Switch
-
+from errors import MotionError
 
 class Controls_tab(QtWidgets.QWidget):
     def __init__(self, application_delegate, *args, **kwargs):
@@ -225,9 +225,13 @@ class Controls_tab(QtWidgets.QWidget):
 
         goto_motor_button.clicked.connect(self.goto_motor)
         motor_z_piezo_button.clicked.connect(md.motor_z_switcher.switch)
-
-        goto_cube_button.clicked.connect(lambda: md.piezo.goto_position(
-            [s.getValue() for s in cube_selectors]))
+        
+        def movepiezzo():
+            try:
+                md.piezo.goto_position([s.getValue() for s in cube_selectors])
+            except MotionError as e:
+                application_delegate.error.emit(f"Can't move {e}")
+        goto_cube_button.clicked.connect(movepiezzo)
 
         vel_motor_selector.newValue.connect(md.motor.set_velocity)
 
@@ -290,14 +294,15 @@ class Controls_tab(QtWidgets.QWidget):
             cmutex = md.piezo.controller_mutex()
             if not cmutex.tryLock():
                 return
-            if md.piezo.isRecordingMacro:
+            try:
+                if md.piezo.isRecordingMacro:
+                    return
+                cube_status.setOn(md.piezo.is_ready())
+                cube_target_status.setOn(md.piezo.is_onTarget())
+                if md.piezo.is_macro_running():
+                    self.updatePos()
+            finally:
                 cmutex.unlock()
-                return
-            cube_status.setOn(md.piezo.is_ready())
-            cube_target_status.setOn(md.piezo.is_onTarget())
-            if md.piezo.is_macro_running():
-                self.updatePos()
-            cmutex.unlock()
 
         self.status_timer = QtCore.QTimer()
         self.status_timer.timeout.connect(updateStatus)
@@ -340,16 +345,17 @@ class Controls_tab(QtWidgets.QWidget):
         cmutex = md.piezo.controller_mutex()
         if not cmutex.tryLock():
             return
-        if md.piezo.isRecordingMacro:
+        try:
+            if md.piezo.isRecordingMacro:
+                return
+            V = md.piezo.velocity
+            Pos = md.piezo.position
+            self.vel_cube_selector.setValue(V)
+            [s.setValue(x) for s, x in zip(self.cube_selectors, Pos)]
+            I = self.application_delegate.laser_delegate.get_intensity()
+            self.laser_selector.setValue(I)
+        finally:
             cmutex.unlock()
-            return
-        V = md.piezo.velocity
-        Pos = md.piezo.position
-        self.vel_cube_selector.setValue(V)
-        [s.setValue(x) for s, x in zip(self.cube_selectors, Pos)]
-        I = self.application_delegate.laser_delegate.get_intensity()
-        self.laser_selector.setValue(I)
-        cmutex.unlock()
 
     def updatePos(self):
         self.update_motor()

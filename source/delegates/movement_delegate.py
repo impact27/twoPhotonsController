@@ -30,7 +30,8 @@ import time
 import json
 
 from delegates.coordinates_solver import XmtoXs, XstoXm
-from delegates.thread import lockmutex
+from delegates.thread import lockmutex, MutexContainer
+from errors import MotionError
 
 # If I am on my mac, the stages are not connected
 _TEST_ = False
@@ -222,26 +223,24 @@ class Stage(QtCore.QObject):
         # Check lock
         if not self._checklock(checkid):
             return
-        self._mutex.lock()
-        # get starting point
-        XsFrom = None
-        if useLastPos:
-            XsFrom = self._lastXs
-        else:
-            XsFrom = self._XSPOS()
-
-        XsTo, XmTo, Vs, travel_time = self.move_parameters(
-            XTo, XsFrom, speed, isRaw)
-
-        # Don't move if final = now
-        if np.linalg.norm(XsTo - XsFrom) < 1e-3:
-            self._mutex.unlock()
-            return
-
-        # Move
-        self.move_signal.emit(list(XmTo), speed)
-        self._MOVVEL(XsTo, Vs)
-        self._mutex.unlock()
+        with MutexContainer(self._mutex):
+            # get starting point
+            XsFrom = None
+            if useLastPos:
+                XsFrom = self._lastXs
+            else:
+                XsFrom = self._XSPOS()
+    
+            XsTo, XmTo, Vs, travel_time = self.move_parameters(
+                XTo, XsFrom, speed, isRaw)
+    
+            # Don't move if final = now
+            if np.linalg.norm(XsTo - XsFrom) < 1e-3:
+                return
+    
+            # Move
+            self.move_signal.emit(list(XmTo), speed)
+            self._MOVVEL(XsTo, Vs)
         # Wait for movment to end
         if wait:
             self.wait_end_motion(travel_time, 10)
@@ -554,9 +553,8 @@ class Piezo(Stage):
         self.XYZ_c.MAC_END()
 
     def macro_start(self, name, wait=True):
-        self._mutex.lock()
-        self.XYZ_c.MAC_START(name)
-        self._mutex.unlock()
+        with MutexContainer(self._mutex):
+            self.XYZ_c.MAC_START(name)
         if wait:
             time.sleep(1)
             while self.is_macro_running():
@@ -580,12 +578,11 @@ class Piezo(Stage):
         return self.XYZ_c.isRecordingMacro
 
     def run_waveform(self, time_step, X, wait=True):
-        self._mutex.lock()
-        # Get stage coordinates
-        X[:, :3] = self.XmtoXs(X[:, :3])
-        self._lastXs = X[-1, :3].copy()
-        wait_time = self.XYZ_c.run_waveform(time_step, X)
-        self._mutex.unlock()
+        with MutexContainer(self._mutex):
+            # Get stage coordinates
+            X[:, :3] = self.XmtoXs(X[:, :3])
+            self._lastXs = X[-1, :3].copy()
+            wait_time = self.XYZ_c.run_waveform(time_step, X)
         if wait:
             self.XYZ_c.wait_end_wave(wait_time)
 

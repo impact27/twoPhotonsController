@@ -59,7 +59,6 @@ class Hardware_Singleton(QtCore.QObject):
         if type(self)._isConnecting and not self._isConnected():
             type(self)._mutex.lock()
             print(f"Waiting because of a call to {type(self)._name}")
-#            traceback.print_stack()
             type(self)._mutex.unlock()
             type(self)._thread.wait(60000)
             time.sleep(1)

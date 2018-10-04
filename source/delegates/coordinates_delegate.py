@@ -24,6 +24,8 @@ from PyQt5 import QtCore, QtWidgets
 from .coordinates_solver import solve_z, solve_xyz
 from errors import MotionError, FocusError
 
+FOCUS_TIMEOUT_MS = 60000
+
 class Coordinates_delegate(QtCore.QObject):
 
     updatelist = QtCore.pyqtSignal(list)
@@ -52,7 +54,9 @@ class Coordinates_delegate(QtCore.QObject):
         self.plane_thread.start()
 
         if wait:
-            self.plane_thread.wait()
+            success = self.plane_thread.wait(FOCUS_TIMEOUT_MS)
+            if not success:
+                raise FocusError("Timeout on focus")
 
     def motor_plane(self, checkid=None, wait=False):
         if len(self._positions) < 3:
@@ -214,8 +218,8 @@ class Plane_thread(QtCore.QThread):
                            wait=True, checkid=self.checkid,
                            change_coordinates=False)
 
-            data, z_best, success = self._fd.get_result()
-            if success:
+            data, z_best, error = self._fd.get_result()
+            if error is not None:
                 positions.append(self._stage.get_position(raw=True))
         if len(positions) < 3:
             raise FocusError('Need at least 3 successful focus.')

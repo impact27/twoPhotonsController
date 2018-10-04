@@ -123,23 +123,25 @@ class Canvas_delegate(QtCore.QObject):
     def draw_current_position(self):
         md = self._parent.movement_delegate
         cmutex = md.piezo.controller_mutex()
+        print(dir(cmutex))
         if not cmutex.tryLock():
             return
-        if md.piezo.isRecordingMacro:
+        try:
+            if md.piezo.isRecordingMacro:
+                return
+            newpos = (md.motor.position + md.piezo.position)
+            laserI = self._parent.laser_delegate.get_intensity()
+            lRange = self._parent.laser_delegate.get_range()
+            f = (laserI - lRange[0]) / (lRange[1] - lRange[0])
+            color = cmap(np.min((f, self.lastFracIntensity)))
+    
+            self.plot([self.lastpos[0], newpos[0]],
+                      [self.lastpos[1], newpos[1]],
+                      axis='equal', c=color)
+            self.lastpos = newpos
+            self.lastFracIntensity = f
+        finally:
             cmutex.unlock()
-            return
-        newpos = (md.motor.position + md.piezo.position)
-        laserI = self._parent.laser_delegate.get_intensity()
-        lRange = self._parent.laser_delegate.get_range()
-        f = (laserI - lRange[0]) / (lRange[1] - lRange[0])
-        color = cmap(np.min((f, self.lastFracIntensity)))
-
-        self.plot([self.lastpos[0], newpos[0]],
-                  [self.lastpos[1], newpos[1]],
-                  axis='equal', c=color)
-        self.lastpos = newpos
-        self.lastFracIntensity = f
-        cmutex.unlock()
 
     @lockmutex
     def save_im(self):
