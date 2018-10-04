@@ -9,7 +9,7 @@ import numpy as np
 import sys
 import time
 from delegates.thread import lockmutex
-
+from errors import FocusError
 V_MIN = 0.01
 V_VERY_SMALL = 1e-4
 INTENSITY_MAX = 255
@@ -24,9 +24,6 @@ class Focus_delegate(QtCore.QObject):
 
     updatelist = QtCore.pyqtSignal(list)
     update_settings = QtCore.pyqtSignal(dict)
-
-    class FocusError(RuntimeError):
-        pass
 
     def __init__(self, app_delegate):
         super().__init__()
@@ -99,7 +96,7 @@ class Focus_delegate(QtCore.QObject):
         """
        
         if self.thread.isRunning():
-            raise self.FocusError('Already Focusing')
+            raise FocusError('Already Focusing')
         
         self._mutex.lock()
         self._last_result = None
@@ -130,7 +127,7 @@ class Focus_delegate(QtCore.QObject):
         if self.thread.isRunning():
             self.thread.wait()
         if self._last_result is None:
-            raise RuntimeError("No result to show, check focus is not running")
+            raise FocusError("No result to show, check focus is not running")
         return self._last_result
 
     @lockmutex
@@ -216,7 +213,7 @@ class ZThread(QtCore.QThread):
 
     def run(self):
         if self._settings is None:
-            raise RuntimeError("Settings not initialised!")
+            raise FocusError("Settings not initialised!")
 
         if self._checkid is None:
             lockid = self._md.lock()

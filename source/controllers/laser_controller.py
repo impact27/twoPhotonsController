@@ -19,6 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 import numpy as np
 from .stage_controller import HW_E727
+from errors import HardwareError
 
 
 class Laser_controller():
@@ -26,7 +27,7 @@ class Laser_controller():
     def no_macro(f):
         def ret(cls, *args, **kargs):
             if cls.isRecordingMacro:
-                raise RuntimeError(
+                raise HardwareError(
                     "Can't use that function while recording a macro")
             else:
                 return f(cls, *args, **kargs)
@@ -54,7 +55,7 @@ class Laser_controller():
         self._HW.SVA(4, 0)
 
     def get_range(self):
-        return np.array([0, 10])
+        return np.array([0, 5])
 
     @property
     @no_macro

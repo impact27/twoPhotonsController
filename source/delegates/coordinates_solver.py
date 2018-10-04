@@ -7,6 +7,7 @@ Created on Wed Jul  5 11:24:12 2017
 import numpy as np
 from scipy import optimize
 import warnings
+from errors import CoordinatesError
 
 
 def get_matrices(ax, ay, az, am):
@@ -100,7 +101,7 @@ def solve_xyz(Xstage, Xmaster, *,
 
     # Check inputs
     if np.shape(Xstage) != np.shape(Xmaster):
-        raise RuntimeError("Shapes not matching.")
+        raise CoordinatesError("Shapes not matching.")
 
     if offset is None:
         offset = np.zeros(3)
@@ -189,7 +190,7 @@ def solve_xyz(Xstage, Xmaster, *,
     # Z axis is swapped
     if np.abs(rotation_angles[3]) > np.pi / 2:
         if np.max(np.diff(Xmaster[..., 2])) > 1e-3:
-            raise RuntimeError("The dimentions are swapped?")
+            raise CoordinatesError("The dimentions are swapped?")
         rotation_angles[0] = -rotation_angles[0]
         rotation_angles[1] = -rotation_angles[1] + np.pi
         rotation_angles[2] = -rotation_angles[2] + np.pi
@@ -208,7 +209,7 @@ def solve_xyz(Xstage, Xmaster, *,
     # Can probably remove, check the transformation hasn't changed anything
     x = [*offset[offset_var], *rotation_angles[angle_var]]
     if np.abs(fun(x, Xstage, Xmaster) - res.fun) > 1e-9:
-        raise RuntimeError('Similarity changed result!')
+        raise CoordinatesError('Similarity changed result!')
 
     return offset, rotation_angles
 

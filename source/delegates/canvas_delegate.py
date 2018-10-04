@@ -86,7 +86,8 @@ class Canvas_delegate(QtCore.QObject):
                 frame, vmin=self._vmin, vmax=self._vmax, extent=extent)
         except self._parent.camera_delegate.error:
             pass
-        except BaseException:
+        except BaseException as e:
+            print(e)
             print("Can't show frame", sys.exc_info())
 
     @lockmutex

@@ -88,7 +88,7 @@ class Movement_delegate(QtCore.QObject):
         elif self.lockid == lockid:
             return True
         else:
-            raise RuntimeError('Mouvment is locked!')
+            raise MotionError('Mouvment is locked!')
 
     @lockmutex
     def lock(self):
@@ -284,7 +284,7 @@ class Stage(QtCore.QObject):
         tstart = time.time()
         while not self.is_onTarget():
             if timeout is not None and time.time() - tstart > timeout:
-                raise RuntimeError('The motion took too long to complete')
+                raise MotionError('The motion took too long to complete')
             time.sleep(.01)
 
     def move_by(self, dX, wait=False, checkid=None):
@@ -423,8 +423,11 @@ class Motor(Stage):
         super().__init__(1000, checklock, error_signal)
         self.XY_c = Linear_controller()
         self.Z_c = z_controller()
-        self._lastXs = self._XSPOS()
+        self.XY_c.on_connect_signal.connect(self.on_connect)
 
+    def on_connect(self):
+        self._lastXs = self._XSPOS()
+        
     @lockmutex
     def _XSPOS(self):
         XY = self.XY_c.get_position()
@@ -485,17 +488,24 @@ class Piezo(Stage):
         self.XYZ_c = Cube_controller()
         self.XYZ_c.stageConnected.connect(self.reset)
         self.recording_macro = False
-        self._lastXs = self._XSPOS()
+        self._lastXs = None
+        #TODO: Add a setting
+        self.set_out_of_range_ok(True)
 
     def reset(self, checkid=None, wait=False):
         #Keep rotation around Z - should correspond to motor stage
+        self._lastXs = None
         az = self._corrections["rotation angles"][2]
         self.reset_corrections()
         self._corrections["rotation angles"][2] = az
         self.coordinatesCorrected.emit(self._corrections)
         # Go to 0
         self.goto_position([0, 0, 0], checkid=checkid, wait=wait)
+        self._lastXs = self._XSPOS()
 
+    def set_out_of_range_ok(self, value):
+        self.XYZ_c.clip_out_of_range = value
+        
     @lockmutex
     def _XSPOS(self):
         return np.asarray(self.XYZ_c.get_position())

@@ -23,6 +23,7 @@ import time
 import numpy as np
 from PyQt5 import QtCore
 import clr
+import warnings
 
 
 from delegates.thread import lockmutex
@@ -38,6 +39,7 @@ import Thorlabs.MotionControl.Controls
 from Thorlabs.MotionControl.DeviceManagerCLI import DeviceManagerCLI, DeviceNotReadyException
 from Thorlabs.MotionControl.KCube.DCServoCLI import KCubeDCServo
 
+from errors import MotionError, HardwareError
 if __name__ == "__main__":
     import HW_conf
     from hardware_singleton import Hardware_Singleton
@@ -47,6 +49,7 @@ else:
     from .hardware_singleton import Hardware_Singleton
 
 VMAX = 10000
+
 # ==============================================================================
 # Stage controller
 # ==============================================================================
@@ -86,11 +89,11 @@ class Stage_controller(QtCore.QObject):
         tstart = time.time()
         while self.is_moving():
             if timeout is not None and time.time() - tstart > timeout:
-                raise RuntimeError('The motion took too long to complete')
+                raise MotionError('The motion took too long to complete')
             time.sleep(.01)
 
     def is_moving(self):
-        raise RuntimeError("is_moving not implemented")
+        raise NotImplementedError("is_moving not implemented")
 
 # ==============================================================================
 # Linear stages controller
@@ -125,7 +128,7 @@ class HW_line(Hardware_Singleton):
         time.sleep(1)
         if stage.qCST()['1'] != HW_conf.GCS_lin_stage_name:
             print(stage.qCST()['1'])
-            raise RuntimeError("Incorrect stage connected")
+            raise HardwareError("Incorrect stage connected")
         print('Connected', stage.qIDN())
         stage.SVO(1, True)
         if not stage.qFRF()['1']:
@@ -161,7 +164,7 @@ class HW_E727(Hardware_Singleton):
         print('Connected', stage.qIDN())
         if stage.qCST()['1'] != HW_conf.GCS_cube_stage_name:
             print(stage.qCST()['1'])
-            raise RuntimeError("Incorrect stage connected")
+            raise HardwareError("Incorrect stage connected")
 
         stage.SVO([1, 2, 3, 4], [True, True, True, False])
         if np.any(np.logical_not(list(stage.qATZ([1, 2, 3]).values()))):
@@ -213,7 +216,8 @@ class HW_zline(Hardware_Singleton):
         # We are now able to enable the device for commands.
         kCubeDCServoMotor.EnableDevice()
 
-        assert(kCubeDCServoMotor.IsActuatorDefined)
+        if not (kCubeDCServoMotor.IsActuatorDefined):
+            raise HardwareError("Actuator not defined")
 
         print("Zstage Connected")
 
@@ -235,9 +239,16 @@ class HW_zline(Hardware_Singleton):
 # =============================================================================
 
 class Linear_controller(Stage_controller):
+    on_connect_signal = QtCore.pyqtSignal()
     def __init__(self):
         super().__init__()
         self.lines = [Xline(), Yline()]
+        for l in self.lines:
+            l.on_connect_signal.connect(self.on_connect)
+        
+    def on_connect(self):
+        if self.isConnected:
+            self.on_connect_signal.emit()
 
     @property
     def isConnected(self):
@@ -256,7 +267,7 @@ class Linear_controller(Stage_controller):
         while not self.is_ready():
             time.sleep(.1)
             if time.time() - startt > timeout:
-                raise RuntimeError("Linear Stage not responding")
+                raise HardwareError("Linear Stage not responding")
 
     def MOVVEL(self, X, V):
         X, V = np.array([X, V]) / 1000
@@ -275,15 +286,15 @@ class Linear_controller(Stage_controller):
         for l in self.lines:
             try:
                 l.HLT()
-            except BaseException:
-                pass
+            except BaseException as e:
+                print(e)
 
     def ESTOP(self):
         for l in self.lines:
             try:
                 l.HLT()
-            except BaseException:
-                pass
+            except BaseException as e:
+                print(e)
 
     def is_onTarget(self):
         return np.all([l.qONT()['1'] for l in self.lines])
@@ -313,7 +324,7 @@ class Cube_controller(Stage_controller):
     def no_macro(f):
         def ret(cls, *args, **kargs):
             if cls.isRecordingMacro:
-                raise RuntimeError(
+                raise HardwareError(
                     "Can't use that function while recording a macro")
             else:
                 return f(cls, *args, **kargs)
@@ -327,6 +338,7 @@ class Cube_controller(Stage_controller):
         self.internal_offset = np.asarray([50, 50, 50])
         self.Servo_Update_Time = 50e-6  # s 0x0E000200
         self.max_points = 2**18  # 0x13000004
+        self.clip_out_of_range = False
 
     @property
     def isRecordingMacro(self):
@@ -350,7 +362,15 @@ class Cube_controller(Stage_controller):
         # Reverse y and z
         X[1:] = 100 - X[1:]
 
-        assert np.all(X > 0) and np.all(X < 100)
+        if not (np.all(X >= 0) and np.all(X <= 100)):
+            if self.clip_out_of_range:
+                clip_neg = X[X<0]
+                clip_pos = X[X>100] - 100
+                X[X<0] = 0
+                X[X>100] = 100
+                warnings.warn(RuntimeWarning(f"Clipping {clip_neg} {clip_pos}"))
+            else:
+                raise MotionError(f"Target Position is out of range! {X}")
 
         V = np.abs(V)
         V[V < 1e-3] = 1e-3
@@ -372,14 +392,13 @@ class Cube_controller(Stage_controller):
     def stop(self):
         try:
             self.__cube.HLT()
-        except BaseException:
-            pass
-
+        except BaseException as e:
+                print(e)
     def ESTOP(self):
         try:
             self.__cube.HLT()
-        except BaseException:
-            pass
+        except BaseException as e:
+                print(e)
 
     @lockmutex
     @no_macro
@@ -443,8 +462,11 @@ class Cube_controller(Stage_controller):
     @lockmutex
     @no_macro
     def run_waveform(self, time_step, X):
-        assert X.size < self.max_points
-        assert np.shape(X)[1] == 3 or np.shape(X)[1] == 4
+        if X.size >= self.max_points:
+            raise MotionError(
+                    "The wavepoints has more points than the controller can handle")
+        if not (np.shape(X)[1] == 3 or np.shape(X)[1] == 4):
+            raise MotionError("Waveform shape is incorrect! {np.shape(X)}")
 
         # Go to first pos
         self.MOVVEL(X[0, :3], np.ones(3) * 1000)
@@ -455,7 +477,9 @@ class Cube_controller(Stage_controller):
         # Reverse y and z
         X[:, 1:3] = 100 - X[:, 1:3]
 
-        assert np.all(X[..., :3] > 0) and np.all(X[..., :3] < 100)
+        if not (np.all(X[..., :3] > 0) and np.all(X[..., :3] < 100)):
+            if not self.clip_out_of_range:
+                raise MotionError("Some points in the waveform are out of bounds.")
 
         # Set rate
         old_rate = self.__cube.qWTR()
@@ -538,8 +562,8 @@ class z_controller(Stage_controller):
     def ESTOP(self):
         try:
             self.stop()
-        except BaseException:
-            pass
+        except BaseException as e:
+                print(e)
 
     def is_onTarget(self):
         return (abs(float(str(self._kCubeDCServoMotor.Position))
@@ -583,7 +607,8 @@ class z_controller(Stage_controller):
             # long it takes to perform the home operation.
             self._kCubeDCServoMotor.Home(0)
 
-        except BaseException:
+        except BaseException as e:
+            print(e)
             print("Unable to return device to home position\n")
             raise
 

@@ -22,7 +22,7 @@ from PyQt5 import QtCore, QtWidgets
 
 #from position_correctors import XYcorrector
 from .coordinates_solver import solve_z, solve_xyz
-
+from errors import MotionError, FocusError
 
 class Coordinates_delegate(QtCore.QObject):
 
@@ -142,7 +142,7 @@ class Coordinates_delegate(QtCore.QObject):
 
     def _newPos(self):
         if not self._md.is_onTarget():
-            raise RuntimeError("Stage is moving!")
+            raise MotionError("Stage is moving!")
         # Save XYZ as new value
         self._current_pos['Xs'] = self._md.motor.get_position(raw=True)
         self._current_pos['im'] = self.camera.get_image()
@@ -218,7 +218,7 @@ class Plane_thread(QtCore.QThread):
             if success:
                 positions.append(self._stage.get_position(raw=True))
         if len(positions) < 3:
-            raise self._fd.FocusError('Need at least 3 successful focus.')
+            raise FocusError('Need at least 3 successful focus.')
         corrections = self._stage.corrections
         offset, rotation_angles = solve_z(
             positions, offset=corrections["offset"],

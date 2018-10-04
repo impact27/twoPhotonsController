@@ -7,13 +7,16 @@ Created on Tue Sep  4 19:34:53 2018
 """
 from PyQt5 import QtCore
 import time
-import sys
+import traceback
+
+from errors import HardwareError
 
 
 class Hardware_Singleton(QtCore.QObject):
     """Singleton to connect stage"""
 
     __mutex = QtCore.QMutex(QtCore.QMutex.Recursive)
+    on_connect_signal = QtCore.pyqtSignal()
 
     def __init__(self, name, connect_callback=None):
         super().__init__()
@@ -56,11 +59,12 @@ class Hardware_Singleton(QtCore.QObject):
         if type(self)._isConnecting and not self._isConnected():
             type(self)._mutex.lock()
             print(f"Waiting because of a call to {type(self)._name}")
+#            traceback.print_stack()
             type(self)._mutex.unlock()
             type(self)._thread.wait(60000)
             time.sleep(1)
         if not self._isConnected():
-            raise RuntimeError(f"{type(self)._name} not connected")
+            raise HardwareError(f"{type(self)._name} not connected")
 
     def _isConnected(self):
         return type(self)._hardware is not None
@@ -75,6 +79,7 @@ class Hardware_Singleton(QtCore.QObject):
         type(self)._isConnecting = False
         if self._isConnected() and self._connect_callback is not None:
             self._connect_callback()
+            self.on_connect_signal.emit()
 
     def _connect(self):
         mlock = QtCore.QMutexLocker(type(self)._mutex)

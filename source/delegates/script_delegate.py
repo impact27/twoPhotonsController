@@ -14,6 +14,7 @@ from matplotlib import collections as mc
 import sys
 import time
 
+from errors import FocusError, ParseError, MotionError
 
 class Script_delegate(QtCore.QObject):
     pause_status = QtCore.pyqtSignal(bool)
@@ -114,7 +115,7 @@ class Parser(QtCore.QObject):
         try:
             fun(*args)
         except BaseException:
-            print("/nError while parsing line:")
+            print("\nError while parsing line:")
             print(self.line_nbr, ':', fun.__name__, *args)
             print(sys.exc_info(), '/n')
             raise
@@ -139,7 +140,7 @@ class Parser(QtCore.QObject):
         elif command.lower() in ['piezo', 'motor']:
             args = self.read_move_args(args)
         else:
-            raise RuntimeError(f"Unknown command {command}")
+            raise ParseError(f"Unknown command {command}")
 
         fun = getattr(self, command)
         self._prev_line = fun, args
@@ -220,7 +221,8 @@ class Parser(QtCore.QObject):
         return ret
 
     def BEGIN(self, *args):
-        assert args[0].lower() == 'waveform'
+        if args[0].lower() != 'waveform':
+            raise ParseError("Can't understand args for BEGIN {args}")
 
         args_dic = self.single_letter_arg(*args[1:])
 
@@ -233,14 +235,15 @@ class Parser(QtCore.QObject):
             data[line[0]] = np.asarray(line[1:], float)
             line = self.file.readline()
         if line != 'END\n' and line != 'END':
-            raise RuntimeError("Can't find end + {line}")
+            raise ParseError("Can't find end + {line}")
         if 'E' in data:
             indices = ['X', 'Y', 'Z', 'E']
         else:
             indices = ['X', 'Y', 'Z']
         X = np.asarray([data[idx] for idx in indices])
 
-        assert np.shape(X)[1] == Npos
+        if np.shape(X)[1] != Npos:
+            raise ParseError(f"Mismatch in waveform! {np.shape(X)[1]} != {Npos}")
         self.run_waveform(time_step, X)
 
     def run_waveform(self, time_step, X):
@@ -259,6 +262,7 @@ class Execute_Parser(Parser):
         self.laser_delegate = app_delegate.laser_delegate
         self.focus_delegate = app_delegate.focus_delegate
         self.coordinates_delegate = app_delegate.coordinates_delegate
+        self.error_window = app_delegate.error
         self.lockid = None
         self._paused = False
 
@@ -298,7 +302,7 @@ class Execute_Parser(Parser):
         self.pause_status.emit(self._paused)
         self.lockid = self.md.lock()
         if self.lockid is None:
-            raise RuntimeError("Can't lock motion")
+            raise MotionError("Can't lock motion")
         try:
             super().parse(filename)
             self.end_macro()
@@ -366,7 +370,7 @@ class Execute_Parser(Parser):
         else:
             self.md.unlock()
             self.lockid = None
-            raise RuntimeError(f"Don't know {stage}")
+            raise ParseError(f"Don't know {stage}")
 
         for kwargs in kwargs_list:
             self.focus_delegate.focus(**kwargs)
@@ -380,7 +384,7 @@ class Execute_Parser(Parser):
         try:
             self.coordinates_delegate.piezo_plane(
                 checkid=self.lockid, wait=True)
-        except self.focus_delegate.FocusError as e:
+        except FocusError as e:
             self.handle_focus_error()
 
     @macro(False)
@@ -413,11 +417,6 @@ class Execute_Parser(Parser):
         self.camera_delegate.extShutter(False)
         self.piezo_delegate.run_waveform(time_step, X.T)
 
-    def handle_error(self):
-        # Repeat previous line
-        self._next_line = self._prev_line
-        self.pause_resume(msg="Focus issue - Paused", pause=True)
-
     def pause_resume(self, msg='Pause', pause=None):
         if not self.isRunning():
             return False
@@ -429,7 +428,7 @@ class Execute_Parser(Parser):
             # Resume
             self.lockid = self.md.lock()
             if self.lockid is None:
-                raise RuntimeError("Can't lock motion")
+                raise MotionError("Can't lock motion")
             self._paused = False
         elif pause and not self._paused:
             # Pause
@@ -440,6 +439,8 @@ class Execute_Parser(Parser):
         return self._paused
 
     def stop(self):
+        if self._prev_line is None or self._prev_line[0] is None:
+            return
         self._next_line = None, None
         self._paused = False
         self.pause_status.emit(self._paused)
@@ -455,11 +456,18 @@ class Execute_Parser(Parser):
     def parse_line(self, fun, args):
         try:
             fun(*args)
-        except BaseException:
-            self.handle_error()
-            print("/nError while parsing line:")
-            print(self.line_nbr, ':', fun.__name__, *args)
-            print(sys.exc_info(), '/n')
+        except BaseException as e:
+            self.handle_error(e)
+            
+    def handle_error(self, error):
+        # Repeat previous line
+        self._next_line = self._prev_line
+        self.md.unlock()
+        self.pause_resume(msg="Focus issue - Paused", pause=True)
+        self.error_window.emit(
+               f"Error while parsing line {self.line_nbr}:\r\n"
+               f"{self._prev_line[0].__name__} {self._prev_line[1]}\r\n"
+               f"{sys.exc_info()}")
 
 class Draw_Parser(Parser):
     def __init__(self, canvas):

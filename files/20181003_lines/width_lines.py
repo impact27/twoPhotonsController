@@ -31,7 +31,7 @@ Z_pos = 0  # , 'um')
 y_lines_spacing = 5  # , 'um') #um
 safety_z = 20  # , 'um')
 off_speed = 1000  # , 'um/s')
-x_margin = 2.5
+safety_margin = 2.5
 
 fix_speed = 37.76
 width_dictionnary ={ # width: power
@@ -102,6 +102,7 @@ def apply_delay(wave_line, piezo_delay, dt):
 
 def add_wave_line(wave, wave_line, *, off_speed, dt):
     assert wave.shape[1] < max_points / 4
+    assert np.all(np.abs(wave_line[:3]) <= 50 - safety_margin)
 
     wave_line = apply_delay(wave_line, piezo_delay, dt)
 
@@ -125,8 +126,8 @@ def add_wave_line(wave, wave_line, *, off_speed, dt):
 
 y_positions = np.arange(-cube_width / 2, cube_width / 2,
                         y_lines_spacing) + y_lines_spacing / 2
-x_range = [-cube_width / 2 + x_margin,
-           cube_width / 2 - x_margin]
+x_range = [-cube_width / 2 + safety_margin,
+           cube_width / 2 - safety_margin]
 
 
 N_lines = len(y_positions)
@@ -157,4 +158,7 @@ for motor_Y_idx in range(Y_N_motor):
 
 
 script.save(script_fn)
-print(script.min_time)
+print('Minimum time [Min] :',script.min_time/60)
+
+
+print("Maximum angle:",np.arctan(1-np.sqrt(2 * (cube_width/2 - safety_margin) **2 / (cube_width/2) **2 - 1)))

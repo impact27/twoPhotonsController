@@ -20,7 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import time
 import numpy as np
 from PyQt5 import QtCore
-
+from errors import MotionError
 # ==============================================================================
 # Stage controller
 # ==============================================================================
@@ -61,11 +61,11 @@ class Stage_controller(QtCore.QObject):
         tstart = time.time()
         while self.is_moving():
             if timeout is not None and time.time() - tstart > timeout:
-                raise RuntimeError('The motion took too long to complete')
+                raise MotionError('The motion took too long to complete')
             time.sleep(.01)
 
     def is_moving(self):
-        raise RuntimeError("is_moving not implemented")
+        raise NotImplementedError("is_moving not implemented")
 
 
 class fake_controller(Stage_controller):
