@@ -21,6 +21,7 @@ import time
 import numpy as np
 from PyQt5 import QtCore
 from errors import MotionError
+import asyncio
 # ==============================================================================
 # Stage controller
 # ==============================================================================
@@ -130,12 +131,16 @@ class fake_controller(Stage_controller):
 
 
 class Linear_controller(fake_controller):
-    def __init__(self):
+    def __init__(self, callback):
         super().__init__()
         self.position = np.array([25, 25]) * 1000
         self.V = np.array([0, 0])
         self.target = np.array([25, 25]) * 1000
         self.startTime = 0
+        timer = QtCore.QTimer()
+        timer.timeout.connect(callback)
+        timer.singleShot = True
+        timer.start(0)
 
     def get_pos_range(self, axis):
         return np.array([0, 50]) * 1000

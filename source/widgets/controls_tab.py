@@ -9,6 +9,7 @@ from functools import partial
 import numpy as np
 
 from .myWidgets import LightWidget, doubleSelector
+from .switch import Switch
 
 
 class Controls_tab(QtWidgets.QWidget):
@@ -21,9 +22,6 @@ class Controls_tab(QtWidgets.QWidget):
         # ======================================================================
         #       Create Widgets
         # ======================================================================
-
-        monitor_switch = QtWidgets.QPushButton('Set')
-        monitor_switch.setCheckable(True)
 
         laser_label = QtWidgets.QLabel("Laser")
         laser_label.setStyleSheet("font: bold large")
@@ -68,8 +66,8 @@ class Controls_tab(QtWidgets.QWidget):
         goto_motor_button = QtWidgets.QPushButton("GO")
         getcurr_motor_button = QtWidgets.QPushButton("Get Current")
 
-        motor_z_piezo_button = QtWidgets.QPushButton("Z Piezo")
-        motor_z_piezo_button.setCheckable(True)
+        motor_z_piezo_button = Switch()
+        motor_z_piezo_label = QtWidgets.QLabel("Z Piezo")
 
         cube_label = QtWidgets.QLabel('Piezo Stage')
         cube_label.setStyleSheet("font: bold large")
@@ -93,10 +91,16 @@ class Controls_tab(QtWidgets.QWidget):
         cam_init = cd.get_exposure_time()
         cam_exposure_label = QtWidgets.QLabel('Exp. [s]:')
         cam_exposure_selector = doubleSelector(cam_range, cam_init, isLog=True)
-        cam_autoexposure_time = QtWidgets.QPushButton('Auto')
-        cam_extshutter = QtWidgets.QPushButton('Shutter')
-        cam_autoexposure_time.setCheckable(True)
-        cam_extshutter.setCheckable(True)
+        
+        cam_autoexposure_time = Switch()
+        cam_autoexposure_time_label = QtWidgets.QLabel('Auto')
+        cam_extshutter = Switch()
+        cam_extshutter_label = QtWidgets.QLabel('Shutter')
+        
+        piezo_outok_button = Switch()
+        piezo_outok_button.setChecked(False)
+        piezo_outok_label = QtWidgets.QLabel('Clip range')
+
         # ======================================================================
         #     Layout
         # ======================================================================
@@ -151,6 +155,10 @@ class Controls_tab(QtWidgets.QWidget):
         cube_GO_layout.addWidget(getcurr_cube_button)
         cube_GO_layout.addWidget(reset_cube_button)
         cube_GO_layout.addWidget(goto_cube_button)
+        
+        cube_toogle_layout = QtWidgets.QHBoxLayout()
+        cube_toogle_layout.addWidget(piezo_outok_label)
+        cube_toogle_layout.addWidget(piezo_outok_button)
 
         cam_H_layout = QtWidgets.QHBoxLayout()
         cam_H_layout.addWidget(cam_label)
@@ -161,14 +169,20 @@ class Controls_tab(QtWidgets.QWidget):
         cam_layout.addWidget(cam_exposure_selector)
 
         cam_Button_layout = QtWidgets.QHBoxLayout()
+        cam_Button_layout.addWidget(cam_autoexposure_time_label)
         cam_Button_layout.addWidget(cam_autoexposure_time)
+        cam_Button_layout.addWidget(cam_extshutter_label)
         cam_Button_layout.addWidget(cam_extshutter)
 
+        motor_z_piezo_layout = QtWidgets.QHBoxLayout()
+        motor_z_piezo_layout.addWidget(motor_z_piezo_label)
+        motor_z_piezo_layout.addWidget(motor_z_piezo_button)
+        
         main_layout = QtWidgets.QVBoxLayout()
         main_layout.addLayout(motor_H_layout)
         main_layout.addLayout(motor_layout)
         main_layout.addLayout(motor_GO_layout)
-        main_layout.addWidget(motor_z_piezo_button)
+        main_layout.addLayout(motor_z_piezo_layout)
 
         line = QtWidgets.QFrame()
         line.setFrameShape(QtWidgets.QFrame.HLine)
@@ -178,6 +192,7 @@ class Controls_tab(QtWidgets.QWidget):
         main_layout.addLayout(cube_H_layout)
         main_layout.addLayout(cube_layout)
         main_layout.addLayout(cube_GO_layout)
+        main_layout.addLayout(cube_toogle_layout)
 
         line = QtWidgets.QFrame()
         line.setFrameShape(QtWidgets.QFrame.HLine)
@@ -253,6 +268,8 @@ class Controls_tab(QtWidgets.QWidget):
             self.set_target_motor)
         md.piezo.move_signal.connect(
             self.set_target_piezo)
+        
+        piezo_outok_button.toggled.connect(md.piezo.set_out_of_range_ok)
 
         # ======================================================================
         #         Save variables
@@ -299,11 +316,7 @@ class Controls_tab(QtWidgets.QWidget):
                 sel.setValue(pos)
 
     def setCamShutter(self, on):
-        if on:
-            txt = "Auto: On"
-        else:
-            txt = "Auto: Off"
-        self.cam_autoexposure_time.setText(txt)
+        self.cam_autoexposure_time.setChecked(on)
 
     def goto_motor(self):
         self.application_delegate.movement_delegate.motor.goto_position(

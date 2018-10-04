@@ -6,6 +6,7 @@ Created on Wed Oct 25 16:58:40 2017
 """
 from PyQt5 import QtWidgets
 import numpy as np
+from widgets.switch import Switch
 
 
 class Bottom_widget(QtWidgets.QWidget):
@@ -22,11 +23,11 @@ class Bottom_widget(QtWidgets.QWidget):
         ESTOP_button.setSizePolicy(QtWidgets.QSizePolicy.Expanding,
                                    QtWidgets.QSizePolicy.Expanding)
 
-        live_button = QtWidgets.QPushButton("Start Live")
-        live_button.setCheckable(True)
+        live_button = Switch()
+        live_label = QtWidgets.QLabel('Live ')
 
-        draw_button = QtWidgets.QPushButton("Start Draw")
-        draw_button.setCheckable(True)
+        draw_button = Switch()
+        draw_label = QtWidgets.QLabel('Draw ')
 
         bg_button = QtWidgets.QPushButton("Set Background")
         bg_button.setCheckable(True)
@@ -35,10 +36,18 @@ class Bottom_widget(QtWidgets.QWidget):
         save_im_button = QtWidgets.QPushButton('Save Image')
         reset_roi_button = QtWidgets.QPushButton('Reset ROI')
 
+        live_layout = QtWidgets.QHBoxLayout()
+        live_layout.addWidget(live_label)
+        live_layout.addWidget(live_button)
+        
+        draw_layout = QtWidgets.QHBoxLayout()
+        draw_layout.addWidget(draw_label)
+        draw_layout.addWidget(draw_button)
+        
         buttons_layout = QtWidgets.QGridLayout(self)
-        buttons_layout.addWidget(live_button, 0, 0)
-        buttons_layout.addWidget(draw_button, 0, 1)
-        buttons_layout.addWidget(clear_button, 1, 0)
+        buttons_layout.addLayout(live_layout, 0, 0)
+        buttons_layout.addLayout(draw_layout, 1, 0)
+        buttons_layout.addWidget(clear_button, 0, 1)
         buttons_layout.addWidget(bg_button, 1, 1)
         buttons_layout.addWidget(save_im_button, 0, 2)
         buttons_layout.addWidget(reset_roi_button, 1, 2)

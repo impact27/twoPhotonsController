@@ -277,8 +277,8 @@ class Stage(QtCore.QObject):
 
     position = property(get_position, goto_position)
 
-    def wait_end_motion(self, travel_time, timeout=None):
-        """Wait hte ned of motion"""
+    def wait_end_motion(self, travel_time=0, timeout=None):
+        """Wait end of motion"""
 
         time.sleep(travel_time)
         tstart = time.time()
@@ -421,9 +421,9 @@ class Motor(Stage):
 
     def __init__(self, checklock, error_signal):
         super().__init__(1000, checklock, error_signal)
-        self.XY_c = Linear_controller()
+        self.XY_c = Linear_controller(self.on_connect)
         self.Z_c = z_controller()
-        self.XY_c.on_connect_signal.connect(self.on_connect)
+        self._lastXs = None
 
     def on_connect(self):
         self._lastXs = self._XSPOS()
@@ -489,8 +489,6 @@ class Piezo(Stage):
         self.XYZ_c.stageConnected.connect(self.reset)
         self.recording_macro = False
         self._lastXs = None
-        #TODO: Add a setting
-        self.set_out_of_range_ok(True)
 
     def reset(self, checkid=None, wait=False):
         #Keep rotation around Z - should correspond to motor stage

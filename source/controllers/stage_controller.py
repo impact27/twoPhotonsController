@@ -239,16 +239,16 @@ class HW_zline(Hardware_Singleton):
 # =============================================================================
 
 class Linear_controller(Stage_controller):
-    on_connect_signal = QtCore.pyqtSignal()
-    def __init__(self):
+    def __init__(self, callback):
         super().__init__()
         self.lines = [Xline(), Yline()]
+        self._connect_callback = callback
         for l in self.lines:
             l.on_connect_signal.connect(self.on_connect)
         
     def on_connect(self):
         if self.isConnected:
-            self.on_connect_signal.emit()
+            self._connect_callback()
 
     @property
     def isConnected(self):

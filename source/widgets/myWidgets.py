@@ -7,7 +7,6 @@ Created on Wed May 17 10:34:47 2017
 from PyQt5 import QtCore, QtWidgets, QtGui
 import numpy as np
 
-
 class LightWidget(QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
