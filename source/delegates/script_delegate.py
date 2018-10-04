@@ -87,6 +87,7 @@ class Parser(QtCore.QObject):
         self._next_line = None
         self._prev_line = None
         self._running = False
+        self._wavedata = None
 
     def isRunning(self):
         return self._running
@@ -228,14 +229,19 @@ class Parser(QtCore.QObject):
 
         time_step = args_dic['R']
         Npos = args_dic['N']
-        line = self.file.readline()
-        data = {}
-        while line != 'END\n' and line != 'END' and line != '':
-            line = line.split(' ')
-            data[line[0]] = np.asarray(line[1:], float)
+        
+        if self._wavedata is not None:
+            data = self._wavedata
+        else:
             line = self.file.readline()
-        if line != 'END\n' and line != 'END':
-            raise ParseError("Can't find end + {line}")
+            data = {}
+            while line != 'END\n' and line != 'END' and line != '':
+                line = line.split(' ')
+                data[line[0]] = np.asarray(line[1:], float)
+                line = self.file.readline()
+            if line != 'END\n' and line != 'END':
+                raise ParseError("Can't find end + {line}")
+            self._wavedata = data
         if 'E' in data:
             indices = ['X', 'Y', 'Z', 'E']
         else:
@@ -245,6 +251,7 @@ class Parser(QtCore.QObject):
         if np.shape(X)[1] != Npos:
             raise ParseError(f"Mismatch in waveform! {np.shape(X)[1]} != {Npos}")
         self.run_waveform(time_step, X)
+        self._wavedata = None
 
     def run_waveform(self, time_step, X):
         pass
