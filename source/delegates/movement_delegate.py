@@ -164,7 +164,6 @@ class Movement_delegate(QtCore.QObject):
         self.motor.corrections = corrections['motor']
         self.piezo.corrections = corrections['piezo']
 
-
 # =============================================================================
 # Stages
 # =============================================================================
@@ -426,7 +425,11 @@ class Motor(Stage):
 
     def on_connect(self):
         self._lastXs = self._XSPOS()
-        
+    
+    @property
+    def originMoved(self):
+        return not np.all(self.corrections["offset"][:2] == 0)
+    
     @lockmutex
     def _XSPOS(self):
         XY = self.XY_c.get_position()

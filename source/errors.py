@@ -16,4 +16,7 @@ class FocusError(RuntimeError):
 class ParseError(RuntimeError):
     pass
 
+class ScriptError(RuntimeError):
+    pass
+
 CameraError = PxLerror

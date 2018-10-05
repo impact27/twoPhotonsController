@@ -14,7 +14,7 @@ from matplotlib import collections as mc
 import sys
 import time
 
-from errors import FocusError, ParseError, MotionError
+from errors import FocusError, ParseError, MotionError, ScriptError
 
 class Script_delegate(QtCore.QObject):
     pause_status = QtCore.pyqtSignal(bool)
@@ -72,6 +72,8 @@ class Parse_thread(QtCore.QThread):
         except FileNotFoundError:
             print("Can't open", self._filename)
             self.error.emit(f"Can't find {self._filename}")
+        except (ScriptError, ParseError) as e:
+            self.error.emit(f"Error: {e}")
         except BaseException as e:
             print("Parse failed")
             print(e)
@@ -305,6 +307,8 @@ class Execute_Parser(Parser):
         self.piezo_delegate.macro_start('nextsteps', wait=True)
 
     def parse(self, filename):
+        if not self.md.motor.originMoved:
+            raise ScriptError("The origin needs to be defined to run a script")
         self._paused = False
         self.pause_status.emit(self._paused)
         self.lockid = self.md.lock()
