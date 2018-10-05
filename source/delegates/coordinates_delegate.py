@@ -24,7 +24,7 @@ from PyQt5 import QtCore, QtWidgets
 from .coordinates_solver import solve_z, solve_xyz
 from errors import MotionError, FocusError
 
-FOCUS_TIMEOUT_MS = 60000
+FOCUS_TIMEOUT_MS = 10*60*1000
 
 class Coordinates_delegate(QtCore.QObject):
 
@@ -221,7 +221,9 @@ class Plane_thread(QtCore.QThread):
                                step=step,
                                stage=self._stage,
                                wait=True, checkid=self.checkid,
-                               change_coordinates=False)
+                               change_coordinates=False,
+                               quick=False,
+                               speed=1000)
     
                 data, z_best, error = self._fd.get_result()
                 if error is None:

@@ -36,7 +36,11 @@ clr.AddReference("Thorlabs.MotionControl.Controls")
 clr.AddReference("Thorlabs.MotionControl.DeviceManagerCLI")
 clr.AddReference("Thorlabs.MotionControl.KCube.DCServoCLI")
 import Thorlabs.MotionControl.Controls
-from Thorlabs.MotionControl.DeviceManagerCLI import DeviceManagerCLI, DeviceNotReadyException
+from Thorlabs.MotionControl.DeviceManagerCLI import (
+        DeviceManagerCLI, 
+        DeviceNotReadyException,
+        MoveToInvalidPositionException,
+        MoveTimeoutException)
 from Thorlabs.MotionControl.KCube.DCServoCLI import KCubeDCServo
 
 from errors import MotionError, HardwareError
@@ -587,7 +591,12 @@ class z_controller(Stage_controller):
         # Reverse z
         Z = - X[0]
         self.set_velocity(V[0])
-        self._move_to(Z)
+        try:
+            self._move_to(Z)
+        except MoveToInvalidPositionException:
+            raise MotionError(f"{Z} is out of range!")
+        except MoveTimeoutException:
+            raise MotionError(f"The motion was too slow with speed {V}")
 
     def is_ready(self):
         return not self._kCubeDCServoMotor.IsDeviceBusy

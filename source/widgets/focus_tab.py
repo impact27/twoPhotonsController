@@ -6,6 +6,7 @@ Created on Wed Oct 25 16:51:32 2017
 """
 from PyQt5 import QtCore, QtWidgets
 from errors import FocusError
+from widgets.switch import Switch
 
 class Layout_wrapper(QtWidgets.QWidget):
     def __init__(self, layout, *args, **kwargs):
@@ -40,6 +41,12 @@ class Focus_tab(QtWidgets.QWidget):
 
         intensity_label = QtWidgets.QLabel("Intensity:")
         intensity_input = QtWidgets.QLineEdit('0')
+        
+        speed_label = QtWidgets.QLabel("Speed:")
+        speed_input = QtWidgets.QLineEdit('0')
+        
+        quick_label = QtWidgets.QLabel("Quick:")
+        quick_input = Switch()
 
         focus_piezo_button = QtWidgets.QPushButton("Piezo")
         focus_motor_button = QtWidgets.QPushButton("Motor")
@@ -70,6 +77,12 @@ class Focus_tab(QtWidgets.QWidget):
         focus_grid.addWidget(Nloops_input, 3, 1)
         focus_grid.addWidget(intensity_label, 4, 0)
         focus_grid.addWidget(intensity_input, 4, 1)
+        focus_grid.addWidget(speed_label, 5, 0)
+        focus_grid.addWidget(speed_input, 5, 1)
+        focus_grid.addWidget(quick_label, 6, 0)
+        focus_grid.addWidget(quick_input, 6, 1)
+        
+        
 
         bottom_layout = QtWidgets.QHBoxLayout()
         bottom_layout.addWidget(save_button)
@@ -109,7 +122,9 @@ class Focus_tab(QtWidgets.QWidget):
                     step=float(step_input.text()),
                     stage=stage,
                     intensity=float(intensity_input.text()),
-                    Nloops=int(float(Nloops_input.text())))
+                    Nloops=int(float(Nloops_input.text())),
+                    speed=float(speed_input.text()),
+                    quick=quick_input.isChecked())
             except FocusError as e:
                 print(e)
                 application_delegate.error.emit("Focus Error")
@@ -118,8 +133,10 @@ class Focus_tab(QtWidgets.QWidget):
             back_input.setText(str(settings["From"]))
             forth_input.setText(str(settings["To"]))
             step_input.setText(str(settings["Step"]))
-            Nloops_input.setText(str(settings["NLoops"]))
-            intensity_input.setText(str(settings["Intensity"]))
+            Nloops_input.setText(str(settings["Nloops"]))
+            intensity_input.setText(str(settings["intensity"]))
+            speed_input.setText(str(settings["speed"]))
+            quick_input.setChecked(settings["quick"])
 
         focus_piezo_button.clicked.connect(lambda: focus(True))
         focus_motor_button.clicked.connect(lambda: focus(False))

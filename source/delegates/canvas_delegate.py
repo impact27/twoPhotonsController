@@ -8,9 +8,9 @@ from PyQt5 import QtCore, QtWidgets
 import numpy as np
 import cv2
 import tifffile
-import matplotlib
+from matplotlib.cm import get_cmap
 import sys
-cmap = matplotlib.cm.get_cmap('plasma')
+cmap = get_cmap('plasma')
 
 from widgets.canvas import MyMplCanvas
 from delegates.thread import lockmutex

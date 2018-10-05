@@ -22,6 +22,7 @@ from .pixelink import PixeLINK, PxLerror
 import serial
 from .HW_conf import camera_shutter_COM, pixeLINK_SN, pixeLINK_MaxROI
 import numpy as np
+import time
 
 from .hardware_singleton import Hardware_Singleton
 
@@ -105,7 +106,9 @@ class Camera_controller():
         return self.cam.shutter
 
     def restart_streaming(self):
+        exp_time = self.get_exposure_time()
         self.cam.streaming = False
+        time.sleep(exp_time + 0.01)
         self.cam.streaming = True
 
     def ext_shutter(self, Open):

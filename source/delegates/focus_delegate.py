@@ -9,7 +9,7 @@ import numpy as np
 import sys
 import time
 from delegates.thread import lockmutex, MutexContainer
-from errors import FocusError, MotionError
+from errors import FocusError, MotionError, CameraError
 V_MIN = 0.01
 V_MAX = 1
 V_VERY_SMALL = 1e-4
@@ -20,7 +20,19 @@ STOP_FRACTION = 1/3
 MIN_DIFF = 0.8
 MIN_RADIUS_REFINE = 3
 MIN_PEAK_INTENSITY = 150
-FOCUS_TIMEOUT = 600000
+FOCUS_TIMEOUT = 10*60*1000
+
+def profile(f):
+    if not hasattr(f, '_tottime'):
+        f._tottime = 0
+    def ret(*args, **kwargs):
+        t_start = time.time()
+        ret_val = f(*args, **kwargs)
+        t_elapsed = time.time() - t_start
+        f._tottime += t_elapsed
+        print(f.__name__, t_elapsed, f._tottime)
+        return ret_val
+    return ret
 
 class Focus_delegate(QtCore.QObject):
 
@@ -40,8 +52,10 @@ class Focus_delegate(QtCore.QObject):
             "From": 15,
             "To": -15,
             "Step": -0.5,
-            "NLoops": 1,
-            "Intensity": 0.1
+            "Nloops": 1,
+            "intensity": 0.1,
+            "speed": 1000,
+            "quick": False
         }
         self._last_result = None
         self.md.motor.coordinatesCorrected.connect(lambda x: self._update())
@@ -83,7 +97,8 @@ class Focus_delegate(QtCore.QObject):
 
     def focus(self, stage, *, start_offset=None, stop_offset=None, step=None,
               intensity=None, Nloops=None,
-              wait=False, checkid=None, change_coordinates=True):
+              wait=False, checkid=None, change_coordinates=True,
+              speed=None, quick=None):
         """
         start_offset:
             How far back from current position
@@ -104,7 +119,7 @@ class Focus_delegate(QtCore.QObject):
             self._last_result = None
     
             if intensity is not None:
-                self._settings["Intensity"] = intensity
+                self._settings["intensity"] = intensity
             if start_offset is not None:
                 self._settings["From"] = start_offset
             if stop_offset is not None:
@@ -112,7 +127,11 @@ class Focus_delegate(QtCore.QObject):
             if step is not None:
                 self._settings["Step"] = step
             if Nloops is not None:
-                self._settings["NLoops"] = Nloops
+                self._settings["Nloops"] = Nloops
+            if speed is not None:
+                self._settings["speed"] = speed
+            if quick is not None:
+                self._settings["quick"] = quick
     
             self.update_settings.emit(self._settings)
             self.thread.set_args(
@@ -143,8 +162,8 @@ class Focus_delegate(QtCore.QObject):
             self.app_delegate.error.emit(f"Focus Failed! {error}")
         else:
             intensity = self.app_delegate.laser_delegate.get_intensity()
-            if np.abs(intensity - self._settings["Intensity"]) > 1e-3:
-                self._settings["Intensity"] = intensity
+            if np.abs(intensity - self._settings["intensity"]) > 1e-3:
+                self._settings["intensity"] = intensity
                 self.update_settings.emit(self._settings)
 
         if data is not None:
@@ -199,7 +218,7 @@ class Focus_delegate(QtCore.QObject):
         self.init_thread()
 
     def set_intensity(self, intensity):
-        self._settings["Intensity"] = intensity
+        self._settings["intensity"] = intensity
 
 
 class ZThread(QtCore.QThread):
@@ -237,9 +256,7 @@ class ZThread(QtCore.QThread):
                 change_coordinates=self._change_coordinates)
             self._md.unlock()
             self.callback(data, z_best, error)
-        except FocusError as e:
-            self.callback(None, np.nan, e)
-        except MotionError as e:
+        except (FocusError, MotionError, CameraError) as e:
             self.callback(None, np.nan, e)
         finally:
             self._md.unlock()
@@ -274,42 +291,21 @@ class Zcorrector():
         """Stop laser"""
         pass
 
-    def get_intensity(self):
+    def get_intensity(self, restart=True):
         """get intensity from camera"""
-        self.camera.restart_streaming()
+        if restart:
+            self.camera.restart_streaming()
         im = self.camera.get_image()
         mymax = np.amax(im)
         return mymax
 
-    def get_intensity_range(self, start, stop, step):
-        """get the images corresponding to the positions in zPos
-        """
-        zPos = np.arange(start, stop, step)
-        data = np.zeros((len(zPos), 2))
-
-        for i, z in enumerate(zPos):
-            self.stage.goto_position([np.nan, np.nan, z],
-                                     wait=True, checkid=self.lockid, isRaw=True)
-
-            intensity = self.get_intensity()
-            data[i, 0] = self.stage.get_position(raw=True)[2]
-            data[i, 1] = intensity
-
-            if intensity == INTENSITY_MAX:
-                if i > 1:
-                    start = zPos[i - 2]
-                self.change_power(DECREASE_FACTOR)
-                return self.get_intensity_range(start, stop, step)
-
-            if intensity < np.max(data[:, 1]) * STOP_FRACTION:
-
-                return data[:i + 1]
-
-        return data
-
     def focus_range(self, z_start, z_stop, current_step):
-        data = self.get_intensity_range(
-            z_start, z_stop, current_step)
+        if self.quick:
+            data = self.get_intensity_range_quick(
+                z_start, z_stop, current_step)
+        else:
+            data = self.get_intensity_range(
+                z_start, z_stop, current_step)
 
         # Failed focus
         if np.min(data[:, 1]) > MIN_DIFF * np.max(data[:, 1]):
@@ -325,7 +321,7 @@ class Zcorrector():
         # Check intensity is high enough
         if np.max(data[..., 1]) < MIN_PEAK_INTENSITY:
 
-            self.stage.goto_position([np.nan, np.nan, zBest],
+            self.stage.goto_position([np.nan, np.nan, zBest], speed=self.speed,
                                      wait=True, checkid=self.lockid, isRaw=True)
 
             intensity = self.get_intensity()
@@ -352,15 +348,17 @@ class Zcorrector():
             zBest - distance,
             zBest + distance,
             current_step)
-        
+
     def focus(self, settings, checkid=None, change_coordinates=True):
         """ Go to the best focal point for the laser
         """
         start_offset = settings["From"]
         stop_offset = settings["To"]
         step = settings["Step"]
-        N_loops = settings["NLoops"]
-        intensity = settings["Intensity"]
+        N_loops = settings["Nloops"]
+        intensity = settings["intensity"]
+        self.speed = settings["speed"]
+        self.quick = settings["quick"]
 
         self.lockid = checkid
         self.startlaser(intensity)
@@ -394,6 +392,7 @@ class Zcorrector():
         Y = intensities
 
         close = intensities > .8 * intensities.max()
+        step = np.mean(np.diff(zPos))
         if np.sum(close) < 4:
             close = np.abs(zPos - zPos[argbest]) < 1.5 * np.abs(step)
         fit = np.polyfit(zPos[close], Y[close], 2)
@@ -401,7 +400,7 @@ class Zcorrector():
         if np.abs(zBest - zPos[argbest]) > 2 * np.abs(step):
             zBest = zPos[argbest]
 
-        self.stage.goto_position([np.nan, np.nan, zBest],
+        self.stage.goto_position([np.nan, np.nan, zBest], speed=self.speed,
                                  wait=True, checkid=self.lockid, isRaw=True)
 
         if change_coordinates:
@@ -410,41 +409,68 @@ class Zcorrector():
         # save result and position
         return np.asarray([list_zpos, list_int]), zBest, None
 
-#    def get_image_range_quick(self, start, stop, step):
-#
-#
-#        #Move to start
-#        self.motor.goto_position([np.nan, np.nan, start],
-#                                     wait=True, checkid=self.lockid)
-#
-#        z_array = [self.motor.position[2]]
-#        intensities = []
-#        sizes = []
-#
-#        #Compute speed assuming 5fps
-#        speed = step*5
-#
-#        #Move to finish with small speed
-#        self.motor.goto_position([np.nan, np.nan, stop], speed=speed,
-#                                     wait=False, checkid=self.lockid)
-#        #while not finished, record position and intensity
-#        stop = False
-#        while not stop:
-#            im = self.camera.get_image()
-#            mymax = np.amax(im)
-#            size = np.sum(im>mymax/10)
-#            intensities.append(mymax)
-#            sizes.append(size)
-#            z_array.append(self.motor.position[2])
-#            #Stop if condition met
-#            if mymax < np.max(intensities)/2:
-#                self.motor.stop(True, checkid=self.lockid)
-#                stop = True
-#            if self.motor.is_onTarget():
-#                stop =True
-#
-#        z_array = np.asarray(z_array)
-#        z_array = z_array[:-1] + np.diff(z_array)/2
-#
-#        return z_array, np.asarray(intensities), np.asarray(sizes)
-#
+    @profile
+    def get_intensity_range(self, start, stop, step):
+        """get the images corresponding to the positions in zPos
+        """
+        zPos = np.arange(start, stop, step)
+        data = np.zeros((len(zPos), 2))
+
+        for i, z in enumerate(zPos):
+            self.stage.goto_position([np.nan, np.nan, z], speed=self.speed,
+                                     wait=True, checkid=self.lockid, isRaw=True)
+
+            intensity = self.get_intensity()
+            data[i, 0] = self.stage.get_position(raw=True)[2]
+            data[i, 1] = intensity
+
+            if intensity == INTENSITY_MAX:
+                if i > 1:
+                    start = zPos[i - 2]
+                self.change_power(DECREASE_FACTOR)
+                return self.get_intensity_range(start, stop, step)
+
+            if intensity < np.max(data[:, 1]) * STOP_FRACTION:
+
+                return data[:i + 1]
+
+        return data
+    
+    @profile
+    def get_intensity_range_quick(self, start, stop, step):
+        #Move to start
+        self.stage.goto_position([np.nan, np.nan, start], speed=self.speed,
+                                     wait=True, checkid=self.lockid, isRaw=True)
+
+        positions = [self.stage.get_position(raw=True)[2]]
+        intensities = [self.get_intensity()]
+
+        #Compute speed assuming 5fps
+        speed = step*5
+
+        #Move to finish with small speed
+        self.stage.goto_position([np.nan, np.nan, stop], speed=speed,
+                                     wait=False, checkid=self.lockid, isRaw=True)
+        
+        #while not finished, record position and intensity
+        while not self.stage.is_onTarget():
+            
+            intensity = self.get_intensity(restart=False)
+            if (intensity == INTENSITY_MAX or 
+                intensity < np.max(intensities) * STOP_FRACTION):
+                self.stage.stop()
+            
+            z_pos = self.stage.get_position(raw=True)[2]
+            
+            positions.append(z_pos)
+            intensities.append(intensity)
+
+            if intensity == INTENSITY_MAX:
+                start = z_pos - 2*step
+                self.change_power(DECREASE_FACTOR)
+                return self.get_intensity_range_quick(start, stop, step)
+
+            if intensity < np.max(intensities) * STOP_FRACTION:
+                break
+                
+        return np.asarray([positions, intensities]).T

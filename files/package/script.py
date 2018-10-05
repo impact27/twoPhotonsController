@@ -75,7 +75,7 @@ class Script():
         self.goto('motor', X, self.off_speed)
 
     def prepare_piezo_write(self):
-        self._lines.append("focus motor 0 -{safety_z} -0.5".format(
+        self._lines.append("focus motor 0 -{safety_z} -1".format(
             safety_z=2 * self.safety_z))
         self._lines.append("piezoslope")
         self._write_ready = True
