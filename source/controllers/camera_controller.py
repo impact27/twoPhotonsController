@@ -23,6 +23,7 @@ import serial
 from .HW_conf import camera_shutter_COM, pixeLINK_SN, pixeLINK_MaxROI
 import numpy as np
 import time
+import warnings
 
 from .hardware_singleton import Hardware_Singleton
 
@@ -105,11 +106,16 @@ class Camera_controller():
     def get_exposure_time(self):
         return self.cam.shutter
 
-    def restart_streaming(self):
-        exp_time = self.get_exposure_time()
-        self.cam.streaming = False
-        time.sleep(exp_time + 0.01)
-        self.cam.streaming = True
+    def restart_streaming(self, Ntries=10):
+        try:
+            self.cam.streaming = False
+            self.cam.streaming = True
+        except PxLerror:
+            if Ntries <= 0:
+                raise
+            warnings.warn(RuntimeWarning("Can't restart Camera"))
+            time.wait(.1)
+            self.restart_streaming(Ntries - 1)
 
     def ext_shutter(self, Open):
         if Open:

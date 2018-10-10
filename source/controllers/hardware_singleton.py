@@ -7,7 +7,6 @@ Created on Tue Sep  4 19:34:53 2018
 """
 from PyQt5 import QtCore
 import time
-import traceback
 
 from errors import HardwareError
 
