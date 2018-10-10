@@ -629,8 +629,8 @@ class z_controller(Stage_controller):
             self._kCubeDCServoMotor.MoveTo(Decimal(float(pos)), timeout)
         except Thorlabs.MotionControl.DeviceManagerCLI.DeviceMovingException:
             print("Ignored, Already moving")
-        except BaseException:
-            print("Unable to move to position\n", sys.exc_info()[0])
+        except BaseException as e:
+            print("Unable to move to position\n", e)
             raise
 
     def stop(self):
@@ -641,8 +641,8 @@ class z_controller(Stage_controller):
 
 #        except Thorlabs.MotionControl.GenericMotorCLI.MoveTimeoutException:
 #            pass  # that is what stop does
-        except BaseException:
-            print("Unable to stop\n", sys.exc_info()[0])
+        except BaseException as e:
+            print("Unable to stop\n", e)
             raise
 
     def is_homing(self):

@@ -117,10 +117,10 @@ class Parser(QtCore.QObject):
     def parse_line(self, fun, args):
         try:
             fun(*args)
-        except BaseException:
+        except BaseException as e:
             print("\nError while parsing line:")
             print(self.line_nbr, ':', fun.__name__, *args)
-            print(sys.exc_info(), '/n')
+            print(e, '/n')
             raise
             
     def readline(self):
@@ -474,7 +474,7 @@ class Execute_Parser(Parser):
         self.error_window.emit(
                f"Error while parsing line {self.line_nbr}:\r\n"
                f"{self._prev_line[0].__name__} {self._prev_line[1]}\r\n"
-               f"{sys.exc_info()}")
+               f"{error}")
 
 class Draw_Parser(Parser):
     def __init__(self, canvas):

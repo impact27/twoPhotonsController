@@ -61,10 +61,16 @@ class doubleSelector(QtWidgets.QWidget):
         self.lineInput = lineInput
 
         def getValue():
-            return float(lineInput.text())
+            try:
+                return float(lineInput.text())
+            except ValueError:
+                return np.nan
 
         def myfixup(string):
             val = getValue()
+            if np.isnan(val):
+                lineInput.setText('')
+                return
             if val < valuesrange[0]:
                 val = valuesrange[0]
             elif val > valuesrange[1]:

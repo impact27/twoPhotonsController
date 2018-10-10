@@ -22,17 +22,17 @@ MIN_RADIUS_REFINE = 3
 MIN_PEAK_INTENSITY = 150
 FOCUS_TIMEOUT = 10*60*1000
 
-def profile(f):
-    if not hasattr(f, '_tottime'):
-        f._tottime = 0
-    def ret(*args, **kwargs):
-        t_start = time.time()
-        ret_val = f(*args, **kwargs)
-        t_elapsed = time.time() - t_start
-        f._tottime += t_elapsed
-        print(f.__name__, t_elapsed, f._tottime)
-        return ret_val
-    return ret
+#def profile(f):
+#    if not hasattr(f, '_tottime'):
+#        f._tottime = 0
+#    def ret(*args, **kwargs):
+#        t_start = time.time()
+#        ret_val = f(*args, **kwargs)
+#        t_elapsed = time.time() - t_start
+#        f._tottime += t_elapsed
+#        print(f.__name__, t_elapsed, f._tottime)
+#        return ret_val
+#    return ret
 
 class Focus_delegate(QtCore.QObject):
 
@@ -91,8 +91,8 @@ class Focus_delegate(QtCore.QObject):
                 self.canvas.plot(Z, I, 'x', c=c)
             self.canvas.plot(zBest * np.ones(2), self.canvas.get_ylim(), 'k-')
             self.canvas.draw()
-        except BaseException:
-            print("Can't Plot!!!", sys.exc_info()[0])
+        except BaseException as e:
+            print("Can't Plot!!!",e)
             raise
 
     def focus(self, stage, *, start_offset=None, stop_offset=None, step=None,
@@ -409,7 +409,7 @@ class Zcorrector():
         # save result and position
         return np.asarray([list_zpos, list_int]), zBest, None
 
-    @profile
+#    @profile
     def get_intensity_range(self, start, stop, step):
         """get the images corresponding to the positions in zPos
         """
@@ -436,7 +436,7 @@ class Zcorrector():
 
         return data
     
-    @profile
+#    @profile
     def get_intensity_range_quick(self, start, stop, step):
         #Move to start
         self.stage.goto_position([np.nan, np.nan, start], speed=self.speed,

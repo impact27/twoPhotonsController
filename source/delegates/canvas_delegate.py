@@ -87,8 +87,7 @@ class Canvas_delegate(QtCore.QObject):
         except self._parent.camera_delegate.error:
             pass
         except BaseException as e:
-            print(e)
-            print("Can't show frame", sys.exc_info())
+            print("Can't show frame", e)
 
     @lockmutex
     def update_image(self, im, *args, **kwargs):

@@ -148,7 +148,8 @@ class Coordinates_delegate(QtCore.QObject):
 
     def _newPos(self):
         if not self._md.is_onTarget():
-            raise MotionError("Stage is moving!")
+            self.parent.error.emit("The stage is moving! Can't set the point!")
+            return
         # Save XYZ as new value
         self._current_pos['Xs'] = self._md.motor.get_position(raw=True)
         self._current_pos['im'] = self.camera.get_image()

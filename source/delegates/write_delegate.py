@@ -177,9 +177,9 @@ class write_thread(QtCore.QThread):
 
         except SerialTimeoutException:
             self.parent.error('Timeout')
-        except BaseException:
+        except BaseException as e:
             print("Unknown exception during write")
-            print(sys.exc_info()[0])
+            print(e)
             raise
         finally:
             self.md.unlock()
