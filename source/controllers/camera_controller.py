@@ -18,6 +18,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 from .pixelink import PixeLINK, PxLerror
+from errors import HardwareError
 
 import serial
 from .HW_conf import camera_shutter_COM, pixeLINK_SN, pixeLINK_MaxROI
@@ -112,9 +113,10 @@ class Camera_controller():
             self.cam.streaming = True
         except PxLerror:
             if Ntries <= 0:
-                raise
+                raise HardwareError("Failed to restart streaming")
+            print("Restart fail, retrying")
             warnings.warn(RuntimeWarning("Can't restart Camera"))
-            time.wait(.1)
+            time.sleep(1)
             self.restart_streaming(Ntries - 1)
 
     def ext_shutter(self, Open):
