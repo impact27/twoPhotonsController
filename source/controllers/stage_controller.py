@@ -430,12 +430,14 @@ class Cube_controller(Stage_controller):
     @lockmutex
     def MAC_BEG(self, name):
         self.__cube.IsRecordingMacro = True
+        self.__cube.errcheck = False
         self.__cube.MAC_BEG(name)
         self.__cube.send('ERR?')
 
     @lockmutex
     def MAC_END(self):
         self.__cube.IsRecordingMacro = False
+        self.__cube.errcheck = True
         self.__cube.MAC_END()
 
     @lockmutex
