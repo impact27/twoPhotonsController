@@ -109,14 +109,19 @@ class Camera_controller():
 
     def restart_streaming(self, Ntries=10):
         try:
+            next_state = False
             self.cam.streaming = False
+            next_state = True
             self.cam.streaming = True
         except PxLerror:
             if Ntries <= 0:
-                raise HardwareError("Failed to restart streaming")
-            print("Restart fail, retrying")
-            warnings.warn(RuntimeWarning("Can't restart Camera"))
-            time.sleep(1)
+                raise HardwareError(
+                        f"Failed to restart streaming ({next_state})")
+            print(f"Restart fail, retrying ({next_state})")
+            warnings.warn(RuntimeWarning(
+                    f"Can't restart Camera ({next_state})"))
+            self.disconnect()
+            time.sleep(10)
             self.restart_streaming(Ntries - 1)
 
     def ext_shutter(self, Open):
