@@ -27,6 +27,7 @@ class Canvas_delegate(QtCore.QObject):
         self._mutex = QtCore.QMutex(QtCore.QMutex.Recursive)
         self._parent = parent
         self._canvas = MyMplCanvas()
+        self._thread = Canvas_Thread(self._canvas)
 
         # Create timers
         self.live_timer = QtCore.QTimer()
@@ -116,7 +117,7 @@ class Canvas_delegate(QtCore.QObject):
         self._twinx = None
         self._canvas.figure.clear()
         self._axes = self._canvas.figure.add_subplot(111)
-        self._canvas.draw()
+        self.draw()
 
     @lockmutex
     def draw_current_position(self):
@@ -214,7 +215,7 @@ class Canvas_delegate(QtCore.QObject):
             self._crosshandle = self._axes.plot(
                 self._click_pos[:, 1], self._click_pos[:, 0], 'r-x')
 
-        self._canvas.draw()
+        self.draw()
 
     @lockmutex
     def plot(self, X, Y, fmt='-', axis='normal',
@@ -232,11 +233,11 @@ class Canvas_delegate(QtCore.QObject):
         ax.plot(X, Y, fmt, **kwargs)
         self._axes.axis(axis)
         if draw:
-            self._canvas.draw()
+            self.draw()
 
     @lockmutex
     def draw(self):
-        self._canvas.draw()
+        self._thread.start()
 
     @lockmutex
     def get_ylim(self):
@@ -335,3 +336,11 @@ class Canvas_delegate(QtCore.QObject):
     @lockmutex
     def is_showing_image(self):
         return self._imhandle is not None
+
+class Canvas_Thread(QtCore.QThread):
+    def __init__(self, canvas):
+        super().__init__()
+        self._canvas = canvas
+
+    def run(self):
+        self._canvas.draw()

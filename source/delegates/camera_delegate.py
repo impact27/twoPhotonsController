@@ -28,10 +28,9 @@ class Camera_delegate(QtCore.QObject):
         self.controller = Camera_controller(self._onConnect)
         self.isAuto = False
         self.reset_bg()
-        self.roi0 = (0, 0, 100, 100)
 
     def _onConnect(self):
-        self.roi0 = self.controller.roi
+        self.roi_reset()
         self.error = self.controller.error
 
     @property
@@ -49,7 +48,7 @@ class Camera_delegate(QtCore.QObject):
 
     @lockmutex
     def roi_reset(self):
-        self.controller.roi = self.roi0
+        self.controller.roi_reset()
         self.new_roi.emit()
 
     @lockmutex

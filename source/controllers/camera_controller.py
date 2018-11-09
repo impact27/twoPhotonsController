@@ -21,11 +21,11 @@ from .pixelink import PixeLINK, PxLerror
 from errors import HardwareError
 
 import serial
-from .HW_conf import camera_shutter_COM, pixeLINK_SN, pixeLINK_MaxROI
 import numpy as np
 import time
 import warnings
 
+from .HW_conf import camera_shutter_COM, pixeLINK_SN, pixeLINK_MaxROI
 from .hardware_singleton import Hardware_Singleton
 
 
@@ -57,6 +57,7 @@ class Camera_controller():
     def __init__(self, callback=None):
         self.shape = np.asarray(pixeLINK_MaxROI)
         self._ext_shutter = HW_shutter()
+        self.shutter_state = False
 
         self.callback = callback
 
@@ -74,15 +75,22 @@ class Camera_controller():
         return self.cam._isConnected()
 
     def onCamConnect(self):
-        self.roi_reset()
         if self.callback is not None:
             self.callback()
 
     def exposure_time_range(self):
         return [2.1e-5, .1]
 
-    def get_image(self):
-        im = self.cam.grab()
+    def get_image(self, Ntries=3):
+        try:
+            im = self.cam.grab()
+        except PxLerror:
+            if Ntries <= 0:
+                raise HardwareError(
+                        f"Failed to grab")
+            print(f"Grab fail, retrying")
+            self.restart_streaming()
+            return self.get_image(Ntries-1)
         if self.flip_image:
             im = im[::-1, ::-1]
         return im
@@ -123,9 +131,11 @@ class Camera_controller():
             self.disconnect()
             time.sleep(10)
             self.restart_streaming(Ntries - 1)
+            
 
-    def ext_shutter(self, Open):
-        if Open:
+    def ext_shutter(self, state_open):
+        self.shutter_state = state_open
+        if state_open:
             self._ext_shutter.write('ON\n'.encode())
         else:
             self._ext_shutter.write('OFF\n'.encode())
