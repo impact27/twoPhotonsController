@@ -287,25 +287,25 @@ class Controls_tab(QtWidgets.QWidget):
         self.steps = steps
         self.laser_selector = laser_setV
 
-        # Update status
-        def updateStatus():
-            motor_status.setOn(md.motor.is_ready())
-            motor_target_status.setOn(md.motor.is_onTarget())
-            cmutex = md.piezo.controller_mutex()
-            if not cmutex.tryLock():
-                return
-            try:
-                if md.piezo.isRecordingMacro:
+        class StatusThread(QtCore.QThread):
+            def run(self):
+                motor_status.setOn(md.motor.is_ready())
+                motor_target_status.setOn(md.motor.is_onTarget())
+                cmutex = md.piezo.controller_mutex()
+                if not cmutex.tryLock():
                     return
-                cube_status.setOn(md.piezo.is_ready())
-                cube_target_status.setOn(md.piezo.is_onTarget())
-                if md.piezo.is_macro_running():
-                    self.updatePos()
-            finally:
-                cmutex.unlock()
-
+                try:
+                    if md.piezo.isRecordingMacro:
+                        return
+                    cube_status.setOn(md.piezo.is_ready())
+                    cube_target_status.setOn(md.piezo.is_onTarget())
+                    if md.piezo.is_macro_running():
+                        self.updatePos()
+                finally:
+                    cmutex.unlock()
+        statusThread = StatusThread()
         self.status_timer = QtCore.QTimer()
-        self.status_timer.timeout.connect(updateStatus)
+        self.status_timer.timeout.connect(statusThread.start)
         self.status_timer.start(1000)
 
     def set_target_motor(self, target_pos, speed):

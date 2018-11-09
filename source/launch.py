@@ -26,6 +26,7 @@ from controllers.camera_controller import Camera_controller
 
 #%%
 cc = Camera_controller()
+#%%
 def fun():
     qApp = QtWidgets.QApplication(sys.argv)
     ad = Application_delegate()
@@ -39,8 +40,8 @@ thread.start()
 print( "\n*** STACKTRACE - START ***\n")
 code = []
 for threadId, stack in sys._current_frames().items():
-    if threadId != thread.ident:
-        continue
+#    if threadId != thread.ident:
+#        continue
     code.append("\n# ThreadID: %s" % threadId)
     for filename, lineno, name, line in traceback.extract_stack(stack):
         code.append('File: "%s", line %d, in %s' % (filename,
@@ -63,10 +64,12 @@ for idx in range(100):
             sys._current_frames()[thread.ident]):
         if 'twoPhotonsController' in filename:
             current[idx] = [filename, lineno, name, line]
-#%%
+#%
 files = []
 lines = {}
 for stack in current:
+    if len(stack) == 0:
+        continue
     fn = os.path.basename(stack[0])
     files.append(fn)
     if not fn in lines:

@@ -13,8 +13,8 @@ import sys
 cmap = get_cmap('plasma')
 
 from widgets.canvas import MyMplCanvas
-from delegates.thread import lockmutex
-
+from delegates.thread import lockmutex, MutexContainer
+from errors import logError
 
 class Canvas_delegate(QtCore.QObject):
     newrange = QtCore.pyqtSignal(float, float)
@@ -27,18 +27,17 @@ class Canvas_delegate(QtCore.QObject):
         self._mutex = QtCore.QMutex(QtCore.QMutex.Recursive)
         self._parent = parent
         self._canvas = MyMplCanvas()
-        self._thread = Canvas_Thread(self._canvas)
+        self._thread = CallbackThread(self._canvas.draw, self._mutex)
+        
+        self.draw_pos_thread = Position_draw_Thread(parent, self)
 
         # Create timers
+        self.liveThread = CallbackThread(self.show_frame, self._mutex, True)
         self.live_timer = QtCore.QTimer()
-        self.live_timer.timeout.connect(self.show_frame)
+        self.live_timer.timeout.connect(self.liveThread.start)
 
         self.draw_timer = QtCore.QTimer()
-        self.draw_timer.timeout.connect(self.draw_current_position)
-
-        # draw memory
-        self.lastpos = [np.nan, np.nan]
-        self.lastFracIntensity = np.nan
+        self.draw_timer.timeout.connect(self.draw_pos_thread.start)
 
         self._pixelSize = 1
         self._vmin = 0
@@ -86,6 +85,7 @@ class Canvas_delegate(QtCore.QObject):
             self.update_image(
                 frame, vmin=self._vmin, vmax=self._vmax, extent=extent)
         except self._parent.camera_delegate.error:
+            logError()
             pass
         except BaseException as e:
             print("Can't show frame", e)
@@ -120,29 +120,6 @@ class Canvas_delegate(QtCore.QObject):
         self.draw()
 
     @lockmutex
-    def draw_current_position(self):
-        md = self._parent.movement_delegate
-        cmutex = md.piezo.controller_mutex()
-        if not cmutex.tryLock():
-            return
-        try:
-            if md.piezo.isRecordingMacro:
-                return
-            newpos = (md.motor.position + md.piezo.position)
-            laserI = self._parent.laser_delegate.get_intensity()
-            lRange = self._parent.laser_delegate.get_range()
-            f = (laserI - lRange[0]) / (lRange[1] - lRange[0])
-            color = cmap(np.min((f, self.lastFracIntensity)))
-    
-            self.plot([self.lastpos[0], newpos[0]],
-                      [self.lastpos[1], newpos[1]],
-                      axis='equal', c=color)
-            self.lastpos = newpos
-            self.lastFracIntensity = f
-        finally:
-            cmutex.unlock()
-
-    @lockmutex
     def save_im(self):
         fn = QtWidgets.QFileDialog.getSaveFileName(
             self._canvas, 'TIFF file', QtCore.QDir.homePath(),
@@ -167,8 +144,7 @@ class Canvas_delegate(QtCore.QObject):
             self.draw_timer.start(100)
         else:
             self.draw_timer.stop()
-            self.lastpos = [np.nan, np.nan]
-            self.lastFracIntensity = np.nan
+            self.draw_pos_thread.reset()
         self.drawSwitched.emit(on)
 
     @lockmutex
@@ -337,10 +313,56 @@ class Canvas_delegate(QtCore.QObject):
     def is_showing_image(self):
         return self._imhandle is not None
 
-class Canvas_Thread(QtCore.QThread):
-    def __init__(self, canvas):
+        
+class Position_draw_Thread(QtCore.QThread):
+    def __init__(self, parent, canvas):
         super().__init__()
-        self._canvas = canvas
+        self.parent = parent
+        self.canvas = canvas
+        # draw memory
+        self.lastpos = [np.nan, np.nan]
+        self.lastFracIntensity = np.nan
 
     def run(self):
-        self._canvas.draw()
+        md = self.parent.movement_delegate
+        ld = self.parent.laser_delegate
+        cmutex = md.piezo.controller_mutex()
+        if not cmutex.tryLock():
+            return
+        try:
+            if md.piezo.isRecordingMacro:
+                return
+            newpos = (md.motor.position + md.piezo.position)
+            laserI = ld.get_intensity()
+            lRange = ld.get_range()
+            f = (laserI - lRange[0]) / (lRange[1] - lRange[0])
+            color = cmap(np.min((f, self.lastFracIntensity)))
+    
+            self.canvas.plot([self.lastpos[0], newpos[0]],
+                             [self.lastpos[1], newpos[1]],
+                      axis='equal', c=color)
+            self.lastpos = newpos
+            self.lastFracIntensity = f
+        finally:
+            cmutex.unlock()
+    
+    def reset(self):
+        self.lastpos = [np.nan, np.nan]
+        self.lastFracIntensity = np.nan
+        
+class CallbackThread(QtCore.QThread):
+    def __init__(self, callback, mutex, optional=False):
+        super().__init__()
+        self.callback = callback
+        self.mutex = mutex
+        self.optional = optional
+    def run(self):
+        if self.optional:
+            if not self.mutex.tryLock():
+                return
+        else:
+            self.mutex.lock()
+        try:
+            self.callback()
+        finally:
+            self.mutex.unlock()

@@ -18,7 +18,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 from .pixelink import PixeLINK, PxLerror
-from errors import HardwareError
+from errors import HardwareError, logError
 
 import serial
 import numpy as np
@@ -85,6 +85,7 @@ class Camera_controller():
         try:
             im = self.cam.grab()
         except PxLerror:
+            logError()
             if Ntries <= 0:
                 raise HardwareError(
                         f"Failed to grab")
@@ -122,14 +123,14 @@ class Camera_controller():
             next_state = True
             self.cam.streaming = True
         except PxLerror:
+            logError()
             if Ntries <= 0:
                 raise HardwareError(
                         f"Failed to restart streaming ({next_state})")
             print(f"Restart fail, retrying ({next_state})")
             warnings.warn(RuntimeWarning(
                     f"Can't restart Camera ({next_state})"))
-            self.disconnect()
-            time.sleep(10)
+            self.nuclear_option()
             self.restart_streaming(Ntries - 1)
             
 
@@ -166,7 +167,14 @@ class Camera_controller():
 
     def roi_reset(self):
         self.roi = (0, 0, *self.shape)
-
+        
+    def nuclear_option(self):
+        """This is hacky. Uninitialize and destroy the handle
+        without ineracting with cam"""
+        self.cam._api.Uninitialize(self.cam._hCamera)
+        type(self.cam)._hardware = None
+        time.sleep(10)
+        self.cam._connect()
 # %%
 #from matplotlib.pyplot import figure, imshow
 #cc = camera_controller()

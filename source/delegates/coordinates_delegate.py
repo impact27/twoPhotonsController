@@ -22,7 +22,7 @@ from PyQt5 import QtCore, QtWidgets
 
 #from position_correctors import XYcorrector
 from .coordinates_solver import solve_z, solve_xyz
-from errors import MotionError, FocusError
+from errors import MotionError, FocusError, logError
 
 FOCUS_TIMEOUT_MS = 10*60*1000
 
@@ -239,5 +239,6 @@ class Plane_thread(QtCore.QThread):
             corrections["rotation angles"] = rotation_angles
             self._stage.corrections = corrections
         except (FocusError, MotionError) as e:
+            logError()
             self.error = e
             self.error_signal.emit(f"Plane Error {e}")

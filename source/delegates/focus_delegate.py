@@ -9,7 +9,7 @@ import numpy as np
 import sys
 import time
 from delegates.thread import lockmutex, MutexContainer
-from errors import FocusError, MotionError, CameraError
+from errors import FocusError, MotionError, CameraError, logError
 V_MIN = 0.01
 V_MAX = 1
 V_VERY_SMALL = 1e-4
@@ -257,6 +257,7 @@ class ZThread(QtCore.QThread):
             self._md.unlock()
             self.callback(data, z_best, error)
         except (FocusError, MotionError, CameraError) as e:
+            logError()
             self.callback(None, np.nan, e)
         finally:
             self._md.unlock()
