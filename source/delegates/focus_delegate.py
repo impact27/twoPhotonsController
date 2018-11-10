@@ -142,19 +142,20 @@ class Focus_delegate(QtCore.QObject):
             self.thread.start()
 
         if wait:
-            success = self.thread.wait(FOCUS_TIMEOUT)
-            if not success:
-                raise FocusError("Timeout")
+            self.wait_thread()
 
     def get_result(self):
-        if self.thread.isRunning():
-            success = self.thread.wait(FOCUS_TIMEOUT)
-            if not success:
-                raise FocusError("Timeout")
+        self.wait_thread()
         if self._last_result is None:
             raise FocusError("No result to show, check focus is not running")
         return self._last_result
-
+    
+    def wait_thread(self):
+        success = self.thread.wait(FOCUS_TIMEOUT)
+            if not success:
+                self.thread.terminate()
+                raise FocusError("Timeout")
+        
     @lockmutex
     def addGraph(self, data, z_best, error):
         self._last_result = data, z_best, error

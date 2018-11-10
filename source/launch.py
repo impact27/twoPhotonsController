@@ -27,13 +27,13 @@ from controllers.camera_controller import Camera_controller
 #%%
 cc = Camera_controller()
 #%%
-def fun():
-    qApp = QtWidgets.QApplication(sys.argv)
-    ad = Application_delegate()
-    print("READY!")
-    sys.exit(qApp.exec_())
-thread = Thread(target=fun)
-thread.start()
+#def fun():
+qApp = QtWidgets.QApplication(sys.argv)
+ad = Application_delegate()
+print("READY!")
+sys.exit(qApp.exec_())
+#thread = Thread(target=fun)
+#thread.start()
 #fun()
 
 #%%
