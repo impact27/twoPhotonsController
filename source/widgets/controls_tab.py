@@ -287,25 +287,25 @@ class Controls_tab(QtWidgets.QWidget):
         self.steps = steps
         self.laser_selector = laser_setV
 
-        class StatusThread(QtCore.QThread):
-            def run(self):
-                motor_status.setOn(md.motor.is_ready())
-                motor_target_status.setOn(md.motor.is_onTarget())
-                cmutex = md.piezo.controller_mutex()
-                if not cmutex.tryLock():
+        def thread_callback():
+            motor_status.setOn(md.motor.is_ready())
+            motor_target_status.setOn(md.motor.is_onTarget())
+            cmutex = md.piezo.controller_mutex()
+            if not cmutex.tryLock():
+                return
+            try:
+                if md.piezo.isRecordingMacro:
                     return
-                try:
-                    if md.piezo.isRecordingMacro:
-                        return
-                    cube_status.setOn(md.piezo.is_ready())
-                    cube_target_status.setOn(md.piezo.is_onTarget())
-                    if md.piezo.is_macro_running():
-                        self.updatePos()
-                finally:
-                    cmutex.unlock()
-        statusThread = StatusThread()
+                cube_status.setOn(md.piezo.is_ready())
+                cube_target_status.setOn(md.piezo.is_onTarget())
+                if md.piezo.is_macro_running():
+                    self.updatePos()
+            finally:
+                cmutex.unlock()
+        
+        self.statusThread = CallbackThread(thread_callback)
         self.status_timer = QtCore.QTimer()
-        self.status_timer.timeout.connect(statusThread.start)
+        self.status_timer.timeout.connect(self.statusThread.start)
         self.status_timer.start(1000)
 
     def set_target_motor(self, target_pos, speed):
@@ -360,3 +360,10 @@ class Controls_tab(QtWidgets.QWidget):
     def updatePos(self):
         self.update_motor()
         self.update_cube()
+        
+class CallbackThread(QtCore.QThread):
+    def __init__(self, callback):
+        super().__init__()
+        self.callback = callback
+    def run(self):
+        self.callback()

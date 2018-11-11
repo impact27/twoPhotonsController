@@ -501,7 +501,7 @@ class Draw_Parser(Parser):
         self.canvas._axes.add_collection(lc)
         self.canvas._axes.axis('equal')
 
-        self.canvas.draw()
+        self.canvas.draw.emit()
         self.colors = []
         self.lines = []
 

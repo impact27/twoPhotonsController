@@ -56,6 +56,7 @@ class HW_shutter(Hardware_Singleton):
 class Camera_controller():
     def __init__(self, callback=None):
         self.shape = np.asarray(pixeLINK_MaxROI)
+        self.default_roi = (0, 0, *self.shape)
         self._ext_shutter = HW_shutter()
         self.shutter_state = False
 
@@ -166,11 +167,12 @@ class Camera_controller():
         self.cam.streaming = streaming
 
     def roi_reset(self):
-        self.roi = (0, 0, *self.shape)
+        self.roi = self.default_roi
         
     def nuclear_option(self):
         """This is hacky. Uninitialize and destroy the handle
         without ineracting with cam"""
+        time.sleep(10)
         self.cam._api.Uninitialize(self.cam._hCamera)
         type(self.cam)._hardware = None
         time.sleep(10)

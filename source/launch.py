@@ -23,43 +23,46 @@ from PyQt5 import QtWidgets
 from threading import Thread
 import traceback
 from controllers.camera_controller import Camera_controller
-
-#%%
-cc = Camera_controller()
-#%%
-#def fun():
-qApp = QtWidgets.QApplication(sys.argv)
-ad = Application_delegate()
-print("READY!")
-sys.exit(qApp.exec_())
-#thread = Thread(target=fun)
-#thread.start()
-#fun()
-
-#%%
-print( "\n*** STACKTRACE - START ***\n")
-code = []
-for threadId, stack in sys._current_frames().items():
-#    if threadId != thread.ident:
-#        continue
-    code.append("\n# ThreadID: %s" % threadId)
-    for filename, lineno, name, line in traceback.extract_stack(stack):
-        code.append('File: "%s", line %d, in %s' % (filename,
-                                                    lineno, name))
-        if line:
-            code.append("  %s" % (line.strip()))
-
-for line in code:
-    print(line)
-print("\n*** STACKTRACE - END ***\n")
-#%%
 import time
 from collections import Counter
 import os.path
+#%%
+#cc = Camera_controller()
+#%%
+def fun():
+    qApp = QtWidgets.QApplication(sys.argv)
+    ad = Application_delegate()
+    print("READY!")
+    sys.exit(qApp.exec_())
+thread = Thread(target=fun)
+thread.start()
+#fun()
+#
+##%%
+#while(True):
+##print( "\n*** STACKTRACE - START ***\n")
+#    time.sleep(.1)
+#    code = []
+#    for threadId, stack in sys._current_frames().items():
+#    #    if threadId != thread.ident:
+#    #        continue
+#        code.append("\n# ThreadID: %s" % threadId)
+#        for filename, lineno, name, line in traceback.extract_stack(stack):
+#            code.append('File: "%s", line %d, in %s' % (filename,
+#                                                        lineno, name))
+#            if line:
+#                code.append("  %s" % (line.strip()))
+#    
+#    with open('stack_log.txt', 'w') as f:
+#        for line in code:
+#            f.write(line + '\r\n')
+##print("\n*** STACKTRACE - END ***\n")
+#%%
+
 current = []
 for idx in range(100):
     current.append([])
-    time.sleep(0.1)
+    time.sleep(0.01)
     for filename, lineno, name, line in traceback.extract_stack(
             sys._current_frames()[thread.ident]):
         if 'twoPhotonsController' in filename:

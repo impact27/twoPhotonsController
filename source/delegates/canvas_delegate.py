@@ -21,13 +21,14 @@ class Canvas_delegate(QtCore.QObject):
     liveSwitched = QtCore.pyqtSignal(bool)
     drawSwitched = QtCore.pyqtSignal(bool)
     newclick = QtCore.pyqtSignal(np.ndarray)
+    draw = QtCore.pyqtSignal()
+    blit = QtCore.pyqtSignal()
 
     def __init__(self, parent):
         super().__init__()
         self._mutex = QtCore.QMutex(QtCore.QMutex.Recursive)
         self._parent = parent
         self._canvas = MyMplCanvas()
-        self._thread = CallbackThread(self._canvas.draw, self._mutex)
         
         self.draw_pos_thread = Position_draw_Thread(parent, self)
 
@@ -38,6 +39,9 @@ class Canvas_delegate(QtCore.QObject):
 
         self.draw_timer = QtCore.QTimer()
         self.draw_timer.timeout.connect(self.draw_pos_thread.start)
+        
+        self.draw.connect(self.__draw)
+        self.blit.connect(self.__blit)
 
         self._pixelSize = 1
         self._vmin = 0
@@ -65,6 +69,13 @@ class Canvas_delegate(QtCore.QObject):
             self.show_frame()
         self.cd.new_roi.connect(new_roi)
 
+    @lockmutex
+    def __draw(self):
+        self._canvas.draw()
+        
+    def __blit(self):
+        self._canvas.blit(self._axes.bbox)
+        
     def get_frame(self):
         frame = self._parent.camera_delegate.get_image()
         frame = cv2.resize(frame,
@@ -104,7 +115,7 @@ class Canvas_delegate(QtCore.QObject):
             if self._recthandle is not None:
                 self._axes.draw_artist(self._recthandle[0])
 
-            self._canvas.blit(self._axes.bbox)
+            self.blit.emit()
         else:
             self.clear()
             self.imshow(im, *args, **kwargs)
@@ -117,7 +128,7 @@ class Canvas_delegate(QtCore.QObject):
         self._twinx = None
         self._canvas.figure.clear()
         self._axes = self._canvas.figure.add_subplot(111)
-        self.draw()
+        self.draw.emit()
 
     @lockmutex
     def save_im(self):
@@ -191,7 +202,7 @@ class Canvas_delegate(QtCore.QObject):
             self._crosshandle = self._axes.plot(
                 self._click_pos[:, 1], self._click_pos[:, 0], 'r-x')
 
-        self.draw()
+        self.draw.emit()
 
     @lockmutex
     def plot(self, X, Y, fmt='-', axis='normal',
@@ -209,11 +220,7 @@ class Canvas_delegate(QtCore.QObject):
         ax.plot(X, Y, fmt, **kwargs)
         self._axes.axis(axis)
         if draw:
-            self.draw()
-
-    @lockmutex
-    def draw(self):
-        self._thread.start()
+            self.draw.emit()
 
     @lockmutex
     def get_ylim(self):

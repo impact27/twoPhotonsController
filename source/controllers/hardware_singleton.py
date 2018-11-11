@@ -8,7 +8,7 @@ Created on Tue Sep  4 19:34:53 2018
 from PyQt5 import QtCore
 import time
 
-from errors import HardwareError
+from errors import HardwareError, logError
 from delegates.thread import MutexContainer
 
 
@@ -70,12 +70,11 @@ class Hardware_Singleton(QtCore.QObject):
 
     def _set_hardware(self, hardware):
         with MutexContainer(type(self)._mutex):
+            type(self)._isConnecting = False
             if hardware is None or hardware == type(self)._hardware:
                 return
-    
             type(self)._hardware = hardware
             print(f'{self._name} set')
-            type(self)._isConnecting = False
             if self._isConnected() and self._connect_callback is not None:
                 self._connect_callback()
                 self.on_connect_signal.emit()
@@ -107,5 +106,11 @@ class Hardware_Thread(QtCore.QThread):
         self._newConnection = newConnection
 
     def run(self):
-        HW = self._newConnection()
-        self._callback(HW)
+        HW = None
+        try:
+            HW = self._newConnection()
+        except:
+            logError()
+            raise
+        finally:
+            self._callback(HW)

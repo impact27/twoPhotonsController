@@ -90,7 +90,7 @@ class Focus_delegate(QtCore.QObject):
             for Z, I in zip(list_Z, list_I):
                 self.canvas.plot(Z, I, 'x', c=c)
             self.canvas.plot(zBest * np.ones(2), self.canvas.get_ylim(), 'k-')
-            self.canvas.draw()
+            self.canvas.draw.emit()
         except BaseException as e:
             print("Can't Plot!!!",e)
             raise
@@ -111,7 +111,9 @@ class Focus_delegate(QtCore.QObject):
         wait default False:
             Should the thread wait for completion
         """
-       
+        if not self.app_delegate.camera_delegate.isZoomed():
+            raise FocusError('Must select ROI to focus!')
+            
         if self.thread.isRunning():
             raise FocusError('Already Focusing')
         
@@ -152,9 +154,9 @@ class Focus_delegate(QtCore.QObject):
     
     def wait_thread(self):
         success = self.thread.wait(FOCUS_TIMEOUT)
-            if not success:
-                self.thread.terminate()
-                raise FocusError("Timeout")
+        if not success:
+            self.thread.terminate()
+            raise FocusError("Timeout")
         
     @lockmutex
     def addGraph(self, data, z_best, error):
