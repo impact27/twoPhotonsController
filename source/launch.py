@@ -26,6 +26,8 @@ from controllers.camera_controller import Camera_controller
 import time
 from collections import Counter
 import os.path
+import json
+import numpy as np
 #%%
 #cc = Camera_controller()
 #%%
@@ -38,47 +40,65 @@ thread = Thread(target=fun)
 thread.start()
 #fun()
 #
-##%%
-#while(True):
-##print( "\n*** STACKTRACE - START ***\n")
-#    time.sleep(.1)
-#    code = []
-#    for threadId, stack in sys._current_frames().items():
-#    #    if threadId != thread.ident:
-#    #        continue
-#        code.append("\n# ThreadID: %s" % threadId)
-#        for filename, lineno, name, line in traceback.extract_stack(stack):
-#            code.append('File: "%s", line %d, in %s' % (filename,
-#                                                        lineno, name))
-#            if line:
-#                code.append("  %s" % (line.strip()))
-#    
-#    with open('stack_log.txt', 'w') as f:
-#        for line in code:
-#            f.write(line + '\r\n')
-##print("\n*** STACKTRACE - END ***\n")
+#%%
+profile = {}
+tlast = time.time()
+Ntot = 0
+while(thread.isAlive()):
+    Ntot += 1
+    time.sleep(.1)
+    for threadId, stack in sys._current_frames().items():
+        seen_filename = []
+        for filename, lineno, name, line in traceback.extract_stack(stack):
+            if 'twoPhotonsController' not in filename:
+                continue
+            if filename not in profile:
+                profile[filename] = {'total': 0}
+            if lineno not in profile[filename]:
+                profile[filename][lineno] = 0
+            if filename not in seen_filename:
+                profile[filename]['total'] += 1
+                seen_filename.append(filename)
+            profile[filename][lineno] += 1
+    if time.time() - tlast > 10:
+        tlast = time.time()
+#        save the most used lines
+        profile_save = {}
+        files = list(profile.keys())
+        files_hits = [profile[file]['total'] for file in files]
+        argsort = np.argsort(files_hits)[::-1]
+        for arg in argsort:
+            file = files[arg]
+            profile_save[file] = dict(zip(list(
+                    profile[file].keys())[1:],
+                    np.asarray(list(profile[file].values())[1:])
+                    * 100 / profile[file]['total']))
+            profile_save[file]['total'] = profile[file]['total'] / Ntot
+#        for 
+        with open('profile.txt', 'w') as f:
+            json.dump(profile_save, f, indent=4)
 #%%
 
-current = []
-for idx in range(100):
-    current.append([])
-    time.sleep(0.01)
-    for filename, lineno, name, line in traceback.extract_stack(
-            sys._current_frames()[thread.ident]):
-        if 'twoPhotonsController' in filename:
-            current[idx] = [filename, lineno, name, line]
-#%
-files = []
-lines = {}
-for stack in current:
-    if len(stack) == 0:
-        continue
-    fn = os.path.basename(stack[0])
-    files.append(fn)
-    if not fn in lines:
-        lines[fn] = []
-    lines[fn].append(stack[1])
-print(Counter(files))
-for key in lines:
-    print(key)
-    print(Counter(lines[key]))
+#current = []
+#for idx in range(100):
+#    current.append([])
+#    time.sleep(0.01)
+#    for filename, lineno, name, line in traceback.extract_stack(
+#            sys._current_frames()[thread.ident]):
+#        if 'twoPhotonsController' in filename:
+#            current[idx] = [filename, lineno, name, line]
+##%
+#files = []
+#lines = {}
+#for stack in current:
+#    if len(stack) == 0:
+#        continue
+#    fn = os.path.basename(stack[0])
+#    files.append(fn)
+#    if not fn in lines:
+#        lines[fn] = []
+#    lines[fn].append(stack[1])
+#print(Counter(files))
+#for key in lines:
+#    print(key)
+#    print(Counter(lines[key]))

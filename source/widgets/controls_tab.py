@@ -308,6 +308,9 @@ class Controls_tab(QtWidgets.QWidget):
         self.status_timer.timeout.connect(self.statusThread.start)
         self.status_timer.start(1000)
 
+    def close(self):
+        self.status_timer.stop()
+        return super().close()
     def set_target_motor(self, target_pos, speed):
         for sel, pos in zip([*(self.motor_selectors), self.vel_motor_selector],
                             [*target_pos, speed]):

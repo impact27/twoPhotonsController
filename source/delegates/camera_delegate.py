@@ -34,7 +34,7 @@ class Camera_delegate(QtCore.QObject):
         self.error = self.controller.error
 
     def isZoomed(self):
-        return not self.controller.roi == self.controller.default_roi
+        return not np.all(self.controller.roi == self.controller.default_roi)
         
     @property
     def roi(self):
