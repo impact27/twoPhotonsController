@@ -24,7 +24,7 @@ X_motor_step = 6203.05  # , 'um')
 Y_N_motor = 3
 X_N_motor = 6
 
-piezo_delay = 0.01 #s
+piezo_delay = 0.01 # s
 dt = 5e-3  # s
 
 Z_pos = 0  # , 'um')
@@ -84,20 +84,19 @@ def get_wave_line(Xfrom, Xto, *, speed, dt):
 
 def apply_delay(wave_line, piezo_delay, dt):
     assert(np.shape(wave_line)[0] == 4)
-    N_delay = int(piezo_delay/ dt)
+    N_delay = int(piezo_delay / dt)
     wave_delay = np.ones((4, N_delay)) * wave_line[:, -1][:, np.newaxis]
     wave_line = np.concatenate((wave_line, wave_delay), axis=1)
-    
+
     wave_line[3, N_delay:] = wave_line[3, :-N_delay]
     wave_line[3, :N_delay] = 0
-    
-    
+
     # Add 0 laser power at beginning and end
     wave_line = np.insert(wave_line, 0,
                           [*wave_line[:3, 0], 0], axis=1)
     wave_line = np.insert(wave_line, np.shape(wave_line)[1],
                           [*wave_line[:3, -1], 0], axis=1)
-    
+
     return wave_line
 
 def add_wave_line(wave, wave_line, *, off_speed, dt):

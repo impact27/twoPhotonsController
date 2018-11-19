@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from controllers.pixelink import PxLerror
+# from controllers.pixelink import PxLerror
 
 class HardwareError(RuntimeError):
     pass
@@ -19,4 +19,5 @@ class ParseError(RuntimeError):
 class ScriptError(RuntimeError):
     pass
 
-CameraError = PxLerror
+class CameraError(RuntimeError):
+    pass

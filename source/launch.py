@@ -22,18 +22,18 @@ from delegates.application_delegate import Application_delegate
 from PyQt5 import QtWidgets
 from threading import Thread
 import traceback
-from controllers.camera_controller import Camera_controller
+# from controllers.camera_controller import Camera_controller
 
 #%%
-cc = Camera_controller()
+# cc = Camera_controller()
 def fun():
     qApp = QtWidgets.QApplication(sys.argv)
     ad = Application_delegate()
     print("READY!")
     sys.exit(qApp.exec_())
 thread = Thread(target=fun)
-thread.start()
-#fun()
+# thread.start()
+fun()
 
 #%%
 print( "\n*** STACKTRACE - START ***\n")
