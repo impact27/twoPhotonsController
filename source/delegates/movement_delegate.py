@@ -242,7 +242,12 @@ class Stage(QtCore.QObject):
             self._MOVVEL(XsTo, Vs)
         # Wait for movment to end
         if wait:
-            self.wait_end_motion(travel_time, 10)
+            tstart = time.time()
+            self.wait_end_motion(travel_time, 300)
+            twait = time.time() - tstart
+            if twait - travel_time > 1:
+                with open('waitlog.txt', 'a') as f:
+                    f.write(f'expected: {travel_time} actual:{twait} from:{XsFrom} to:{XsTo}\r\n')
 
     def move_parameters(self, XTo, XsFrom, speed, isRaw):
         """Get parameters needed to move the stages"""
@@ -279,8 +284,9 @@ class Stage(QtCore.QObject):
         """Wait end of motion"""
 
         time.sleep(travel_time)
-        tstart = time.time()
+        
         while not self.is_onTarget():
+            tstart = time.time()
             if timeout is not None and time.time() - tstart > timeout:
                 raise MotionError('The motion took too long to complete')
             time.sleep(.01)

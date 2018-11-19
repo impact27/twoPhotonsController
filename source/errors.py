@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-# from controllers.pixelink import PxLerror
 
 class HardwareError(RuntimeError):
     pass
@@ -21,3 +20,10 @@ class ScriptError(RuntimeError):
 
 class CameraError(RuntimeError):
     pass
+
+def logError():
+    with open('error_log.txt', 'a') as f:
+        f.write(str(datetime.datetime.now()))
+        f.write('\r\n')
+        f.write(traceback.format_exc())
+        f.write('\r\n\r\n')

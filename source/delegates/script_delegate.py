@@ -14,7 +14,7 @@ from matplotlib import collections as mc
 import sys
 import time
 
-from errors import FocusError, ParseError, MotionError, ScriptError
+from errors import FocusError, ParseError, MotionError, ScriptError, logError
 
 class Script_delegate(QtCore.QObject):
     pause_status = QtCore.pyqtSignal(bool)
@@ -73,6 +73,7 @@ class Parse_thread(QtCore.QThread):
             print("Can't open", self._filename)
             self.error.emit(f"Can't find {self._filename}")
         except (ScriptError, ParseError) as e:
+            logError()
             self.error.emit(f"Error: {e}")
         except BaseException as e:
             print("Parse failed")
@@ -464,6 +465,7 @@ class Execute_Parser(Parser):
         try:
             fun(*args)
         except BaseException as e:
+            logError()
             self.handle_error(e)
             
     def handle_error(self, error):
@@ -499,7 +501,7 @@ class Draw_Parser(Parser):
         self.canvas._axes.add_collection(lc)
         self.canvas._axes.axis('equal')
 
-        self.canvas.draw()
+        self.canvas.draw.emit()
         self.colors = []
         self.lines = []
 

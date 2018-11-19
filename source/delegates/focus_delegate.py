@@ -9,7 +9,7 @@ import numpy as np
 import sys
 import time
 from delegates.thread import lockmutex, MutexContainer
-from errors import FocusError, MotionError, CameraError
+from errors import FocusError, MotionError, CameraError, logError
 V_MIN = 0.01
 V_MAX = 1
 V_VERY_SMALL = 1e-4
@@ -90,7 +90,7 @@ class Focus_delegate(QtCore.QObject):
             for Z, I in zip(list_Z, list_I):
                 self.canvas.plot(Z, I, 'x', c=c)
             self.canvas.plot(zBest * np.ones(2), self.canvas.get_ylim(), 'k-')
-            self.canvas.draw()
+            self.canvas.draw.emit()
         except BaseException as e:
             print("Can't Plot!!!",e)
             raise
@@ -111,7 +111,9 @@ class Focus_delegate(QtCore.QObject):
         wait default False:
             Should the thread wait for completion
         """
-       
+        if not self.app_delegate.camera_delegate.isZoomed():
+            raise FocusError('Must select ROI to focus!')
+            
         if self.thread.isRunning():
             raise FocusError('Already Focusing')
         
@@ -142,19 +144,20 @@ class Focus_delegate(QtCore.QObject):
             self.thread.start()
 
         if wait:
-            success = self.thread.wait(FOCUS_TIMEOUT)
-            if not success:
-                raise FocusError("Timeout")
+            self.wait_thread()
 
     def get_result(self):
-        if self.thread.isRunning():
-            success = self.thread.wait(FOCUS_TIMEOUT)
-            if not success:
-                raise FocusError("Timeout")
+        self.wait_thread()
         if self._last_result is None:
             raise FocusError("No result to show, check focus is not running")
         return self._last_result
-
+    
+    def wait_thread(self):
+        success = self.thread.wait(FOCUS_TIMEOUT)
+        if not success:
+            self.thread.terminate()
+            raise FocusError("Timeout")
+        
     @lockmutex
     def addGraph(self, data, z_best, error):
         self._last_result = data, z_best, error
@@ -257,6 +260,7 @@ class ZThread(QtCore.QThread):
             self._md.unlock()
             self.callback(data, z_best, error)
         except (FocusError, MotionError, CameraError) as e:
+            logError()
             self.callback(None, np.nan, e)
         finally:
             self._md.unlock()

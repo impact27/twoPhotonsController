@@ -25,7 +25,7 @@ from PyQt5 import QtCore
 import clr
 import warnings
 
-
+from errors import logError
 from delegates.thread import lockmutex
 import sys
 from System import Decimal
@@ -87,7 +87,7 @@ class Stage_controller(QtCore.QObject):
     def is_ready(self):
         pass
 
-    def wait_end_motion(self, timeout=10):
+    def wait_end_motion(self, timeout=60):
         """Wait end of motion"""
         time.sleep(0.1)
         tstart = time.time()
@@ -112,6 +112,7 @@ def try_connect(fconnect, Error, max_tests=20):
             fconnect()
             connected = True
         except Error:
+            logError()
             time.sleep(1)
             Ntests += 1
             if Ntests == max_tests:
@@ -587,8 +588,8 @@ class z_controller(Stage_controller):
     def MOVVEL(self, X, V):
         if V[0] < 1e-3:
             return
-        elif V[0] < 2:
-            V[0] = 2
+        elif V[0] < 5:
+            V[0] = 5
             print("Speed too small")
         # Reverse z
         Z = - X[0]
@@ -596,8 +597,10 @@ class z_controller(Stage_controller):
         try:
             self._move_to(Z)
         except MoveToInvalidPositionException:
+            logError()
             raise MotionError(f"{Z} is out of range!")
         except MoveTimeoutException:
+            logError()
             raise MotionError(f"The motion was too slow with speed {V}")
 
     def is_ready(self):
@@ -610,6 +613,7 @@ class z_controller(Stage_controller):
             velocity_parameters.MaxVelocity = Decimal(float(V))
             self._kCubeDCServoMotor.SetVelocityParams(velocity_parameters)
         except Thorlabs.MotionControl.DeviceManagerCLI.DeviceException as exc:
+            logError()
             print("Can't set velocity {}".format(V))
 
     def home(self):

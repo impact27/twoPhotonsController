@@ -5,7 +5,7 @@ Created on Wed Oct 25 16:51:32 2017
 @author: quentinpeter
 """
 from PyQt5 import QtCore, QtWidgets
-from errors import FocusError
+from errors import FocusError, logError
 from widgets.switch import Switch
 
 class Layout_wrapper(QtWidgets.QWidget):
@@ -126,8 +126,9 @@ class Focus_tab(QtWidgets.QWidget):
                     speed=float(speed_input.text()),
                     quick=quick_input.isChecked())
             except FocusError as e:
+                logError()
                 print(e)
-                application_delegate.error.emit("Focus Error")
+                application_delegate.error.emit(f"Focus Error: {e}")
 
         def update_settings(settings):
             back_input.setText(str(settings["From"]))

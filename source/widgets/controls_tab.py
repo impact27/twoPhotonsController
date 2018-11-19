@@ -287,8 +287,7 @@ class Controls_tab(QtWidgets.QWidget):
         self.steps = steps
         self.laser_selector = laser_setV
 
-        # Update status
-        def updateStatus():
+        def thread_callback():
             motor_status.setOn(md.motor.is_ready())
             motor_target_status.setOn(md.motor.is_onTarget())
             cmutex = md.piezo.controller_mutex()
@@ -303,11 +302,15 @@ class Controls_tab(QtWidgets.QWidget):
                     self.updatePos()
             finally:
                 cmutex.unlock()
-
+        
+        self.statusThread = CallbackThread(thread_callback)
         self.status_timer = QtCore.QTimer()
-        self.status_timer.timeout.connect(updateStatus)
+        self.status_timer.timeout.connect(self.statusThread.start)
         self.status_timer.start(1000)
 
+    def close(self):
+        self.status_timer.stop()
+        return super().close()
     def set_target_motor(self, target_pos, speed):
         for sel, pos in zip([*(self.motor_selectors), self.vel_motor_selector],
                             [*target_pos, speed]):
@@ -360,3 +363,10 @@ class Controls_tab(QtWidgets.QWidget):
     def updatePos(self):
         self.update_motor()
         self.update_cube()
+        
+class CallbackThread(QtCore.QThread):
+    def __init__(self, callback):
+        super().__init__()
+        self.callback = callback
+    def run(self):
+        self.callback()

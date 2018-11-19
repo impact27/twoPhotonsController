@@ -33,6 +33,9 @@ class Camera_delegate(QtCore.QObject):
         self.roi_reset()
         self.error = self.controller.error
 
+    def isZoomed(self):
+        return not np.all(self.controller.roi == self.controller.default_roi)
+        
     @property
     def roi(self):
         """Return """
@@ -52,7 +55,7 @@ class Camera_delegate(QtCore.QObject):
         self.new_roi.emit()
 
     @lockmutex
-    def get_image(self, rmbg=True):
+    def get_image(self, rmbg=False):
         im = self.controller.get_image()
         if self.isAuto:
             self.correct_exposure_time(im)
