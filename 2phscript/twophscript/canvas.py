@@ -105,6 +105,7 @@ class Piezo_Canvas(Canvas):
         self.max_points = PIEZO_MAX_POINTS
         self.piezo_delay = PIEZO_DELAY
         self.max_range = PIEZO_RANGE  # um
+        self.filecount = {}
 
     def prepare_write(self, file, pos):
         self.longmoveMotor(file, pos)
@@ -117,16 +118,13 @@ class Piezo_Canvas(Canvas):
         elif command['cmd'] == 'save_wave':
             # As we can call this function on the same file several time,
             # add a suffix
-            if 'count' not in dir(self.write_command):
-                self.write_command.count = {}
-            if file not in self.write_command.count.keys():
-                self.write_command.count[file] = 0
+            if file not in self.filecount.keys():
+                self.filecount[file] = 0
             file.save_measure(
                     command['filename'] + '_'
-                        '{self.write_command.count[file]}.gcs',
-                    command['numvalues'],
-                    command['tables'])
-            self.write_command.count[file] += 1
+                        f'{self.filecount[file]}.npy',
+                    command['numvalues'])
+            self.filecount[file] += 1
         else:
             super().write_command(file, command)
 
@@ -192,7 +190,7 @@ class Piezo_Canvas(Canvas):
             [*self._cur_wave[:3, -1], 0],
             [*wave[:3, 0], 0])
         # wait for movment to truly be stopped
-        move_wave = self._apply_delay(move_wave, 5*self.piezo_delay)
+        move_wave = self._apply_delay(move_wave, 10*self.piezo_delay)
 
         # if can combine with existing wave, do it
         if (self._cur_wave.shape[1] + move_wave.shape[1] + wave.shape[1]
@@ -245,7 +243,7 @@ class Piezo_Canvas(Canvas):
 
         return wave_line
 
-    def save_wave(self, filename, tables, numvalues=None):
+    def save_wave(self, filename, numvalues=None):
         if self._cur_wave is None:
             raise RuntimeError("No wave to save!")
         if numvalues is None:
@@ -253,8 +251,7 @@ class Piezo_Canvas(Canvas):
         self.commands.append({
                     'cmd': 'save_wave',
                     'filename': filename,
-                    'numvalues': int(numvalues),
-                    'tables': tables
+                    'numvalues': int(numvalues)
                     })
 
 

@@ -72,3 +72,7 @@ class Camera_controller():
 
     def roi_reset(self):
         self._roi = (0, 0, 100, 100)
+    
+    @property
+    def default_roi(self):
+        return (0, 0, 100, 100)

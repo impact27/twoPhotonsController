@@ -469,14 +469,14 @@ class Execute_Parser(Parser):
         while self._paused:
             time.sleep(1)
         return super().readline()
-    
+
     def parse_line(self, fun, args):
         try:
             fun(*args)
         except BaseException as e:
             logError()
             self.handle_error(e)
-            
+
     def handle_error(self, error):
         # Repeat previous line
         self._next_line = self._prev_line
@@ -486,17 +486,16 @@ class Execute_Parser(Parser):
                f"Error while parsing line {self.line_nbr}:\r\n"
                f"{self._prev_line[0].__name__} {self._prev_line[1]}\r\n"
                f"{error}")
-    
+
     @macro(False)
     def savemeasure(self, filename, numvalues):
-        measure = self.piezo_delegate.get_measure(0, numvalues)
+        measure = self.piezo_delegate.get_measure(0, int(numvalues))
         os.makedirs(os.path.dirname(filename), exist_ok=True)
         with open(filename, 'bw') as f:
             np.save(f, np.concatenate(
                     (measure['Target'],
                      measure['Current'],
-                     measure['Power'])))
-        
+                     measure['Power'][:, np.newaxis]), axis=1))
 
 
 class Draw_Parser(Parser):

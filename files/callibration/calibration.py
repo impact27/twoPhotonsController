@@ -105,7 +105,8 @@ for idx in range(N_lines):
     wave_line[3] = np.sqrt(Psquare)
 
     canvas_P2vsSm1.add_wave(wave_line)
-    canvas_P2vsSm1.save_wave('calibration/P2vsSm1', tables=[1, 2, 7])
+    if idx % 4 == 0:
+        canvas_P2vsSm1.save_wave('calibration/P2vsSm1')
 
 canvas_P2vsSm1.write_at(file, [motor_X, motor_Y])
 motor_X += motor_step
@@ -124,7 +125,8 @@ for idx in range(N_lines):
     wave_line[3] = P_lines[idx]
 
     canvas_Sm1vsP2.add_wave(wave_line)
-    canvas_Sm1vsP2.save_wave('calibration/Sm1vsP2', tables=[1, 2, 7])
+    if idx % 4 == 0:
+        canvas_Sm1vsP2.save_wave('calibration/Sm1vsP2')
 
 canvas_Sm1vsP2.write_at(file, [motor_X, motor_Y])
 motor_X += motor_step
@@ -135,230 +137,139 @@ motor_X += motor_step
 canvas_P2vsZ = Canvas()
 time, X, Psquare = get_lin_Psquare(Zspeed, P_max, P_min, *x_range)
 for idx in range(N_lines):
-    
+
     wave_line = np.zeros((4, len(time)))
     wave_line[0] = X
     wave_line[1] = y_positions[idx]
     wave_line[2] = Z_lines[idx]
     wave_line[3] = np.sqrt(Psquare)
+
     canvas_P2vsZ.add_wave(wave_line)
-    canvas_P2vsZ.save_wave('calibration/P2vsZ', tables=[1, 2, 6, 7])
+    if idx % 4 == 0:
+        canvas_P2vsZ.save_wave('calibration/P2vsZ')
 
 canvas_Sm1vsP2.write_at(file, [motor_X, motor_Y])
-motor_X += motor_step
-    # wave = add_wave_line(wave, wave_line, off_speed=off_speed, dt=dt)
-# script.waveform(wave, dt)
 
 
-
-
-
-
-
-
-energy_density_range = [0, 3]  # mJ/um
-
-
-
-
-# dots
-times_range_dots = np.asarray([1, 100]) * 1e-3  # ms
-y_lines_spacing_dots = 10  # um
-
-list_spacings_dots = np.arange(1, 6)
-
-dots_spacings = np.linspace(1, 10, 17)
-
-
-# funnels
-
-
-
-
-
-
-line_length = x_range[1] - x_range[0]
-
-
-
-
-
-
-
-
-# %%
-
-
-
-
-
-
-
-
-
-
-
-
-
-# 4th - 1/S vs z, p = P_max
-# move_motor(motor_line, 3, motor_step)
-# write_margin(y_lines_spacing, x_margin)
-
-wave = np.zeros((4, 0))
-for idx in range(N_lines):
-    time, X = get_lin_inv_speed(S_min, S_max, *x_range)
-    wave_line = np.zeros((4, len(time)))
-    wave_line[0] = X
-    wave_line[1] = y_positions[idx]
-    wave_line[2] = Z_lines[idx]
-    wave_line[3] = P_max
-
-    # wave = add_wave_line(wave, wave_line, off_speed=off_speed, dt=dt)
-# script.waveform(wave, dt)
-
-# motor_line += 1
 # =============================================================================
 # 2nd type: dots
 # =============================================================================
 
-y_positions = np.arange(-cube_width / 2, cube_width / 2,
-                        y_lines_spacing_dots) + y_lines_spacing_dots / 2
+motor_Y += motor_step
+motor_X = 0
 
+y_lines_spacing_dots = 10  # um
+y_positions = uniform_spacing(y_lines_spacing_dots)
 N_lines = len(y_positions)
 
-# for times, reuse speeds with typical length = 2.5um
-dots_exp_times = 2.5 / S_lines[1::2]
+# for times, reuse speeds with typical length = 2um
+dots_exp_times = 2 / S_lines[1::2]
 dots_intensity = P_lines[1::2]
-
 assert len(dots_intensity) == N_lines
-
 fix_dots_exp_times = np.max(dots_exp_times)
 fix_dots_intensity = np.max(dots_intensity)
 
+dots_spacings = np.linspace(1, 10, 17)
 dots_pos = x_range[1] - np.insert(np.cumsum(dots_spacings), 0, 0)
-# 1st line: Vary times for max power
 
-for idx_z, z_offset in enumerate(dots_z_cubes):
-    # move_motor(motor_line, idx_z, motor_step)
-    # write_margin(y_lines_spacing, x_margin)
-    wave = np.zeros((4, 0))
-    for idx in range(N_lines):
-        for x in dots_pos:
-            N_tstep = int(np.round(dots_exp_times[idx] / dt))
-            wave_line = np.zeros((4, N_tstep))
-            wave_line[0] = x
-            wave_line[1] = y_positions[idx]
-            wave_line[2] = z_offset
-            wave_line[3] = fix_dots_intensity
-            # wave = add_wave_line(wave, wave_line,
-                                 # off_speed=off_speed, dt=dt)
-    # script.waveform(wave, dt)
+# 1st: Vary times for max power
+canvas_timedots = Canvas()
+for line_idx in range(N_lines):
+    for x in dots_pos:
+        N_tstep = int(np.round(dots_exp_times[line_idx] / dt))
+        wave_line = np.zeros((4, N_tstep))
+        wave_line[0] = x
+        wave_line[1] = y_positions[line_idx]
+        wave_line[2] = 0
+        wave_line[3] = fix_dots_intensity
+        canvas_timedots.add_wave(wave_line)
+    if idx % 2 == 0:
+        canvas_timedots.save_wave('calibration/timedots')
 
-# motor_line += 1
+canvas_timedots.write_at(file, [motor_X, motor_Y])
+motor_X += motor_step
 
 # 2nd line: vary power
+canvas_powerdots = Canvas()
+for line_idx in range(N_lines):
+    for x in dots_pos:
+        N_tstep = int(np.round(fix_dots_exp_times / dt))
+        wave_line = np.zeros((4, N_tstep))
+        wave_line[0] = x
+        wave_line[1] = y_positions[line_idx]
+        wave_line[2] = 0
+        wave_line[3] = dots_intensity[line_idx]
+        canvas_powerdots.add_wave(wave_line)
+    if idx % 2 == 0:
+        canvas_powerdots.save_wave('calibration/timedots')
 
-for idx_z, z_offset in enumerate(dots_z_cubes):
-    # move_motor(motor_line, idx_z, motor_step)
-    # write_margin(y_lines_spacing, x_margin)
-    wave = np.zeros((4, 0))
-    for idx in range(N_lines):
-        for x in dots_pos:
-            N_tstep = int(np.round(fix_dots_exp_times / dt))
-            wave_line = np.zeros((4, N_tstep))
-            wave_line[0] = x
-            wave_line[1] = y_positions[idx]
-            wave_line[2] = z_offset
-            wave_line[3] = dots_intensity[idx]
-            # wave = add_wave_line(wave, wave_line,
-            #                      off_speed=off_speed, dt=dt)
-    # script.waveform(wave, dt)
+canvas_powerdots.write_at(file, [motor_X, motor_Y])
+motor_X += motor_step
 
-# motor_line += 1
 
 # =============================================================================
-# 3rd type: Christmas trees!
+# 3rd type: Funnels!
 # =============================================================================
 
+motor_Y += motor_step
+motor_X = 0
 
-y_positions = np.arange(-cube_width / 2, cube_width / 2,
-                        y_lines_spacing) + y_lines_spacing / 2
+y_lines_spacing = 5  # um
+y_positions = uniform_spacing(y_lines_spacing)
 N_lines = len(y_positions)
-cone_lengths = np.linspace(3, 15, N_lines)
 
-fix_speed = 37.76
+
+cone_lengths = np.linspace(2.5, 12, N_lines)
+fix_speed = 40
 power_range = [65, 40]
-
-fix_power = 113.3
-inv_speed_range = [0.001, 0.0001]
-
-# 1st block - vary P
-
-# move_motor(motor_line, 0, motor_step)
-# write_margin(y_lines_spacing, x_margin)
+space_range = [-1, 2]
 
 
-wave = np.zeros((4, 0))
-for idx in range(N_lines):
-    clength = cone_lengths[idx]
+def getfunnelpos(clength):
     positions = [0]
     new_pos = [0]
     i = 1
     while new_pos[-1] < x_range[1]:
         positions = new_pos
         i += 1
-        new_pos = np.cumsum(cone_lengths[0] + np.linspace(1.5, 7.5, i))
+        new_pos = np.cumsum(cone_lengths[line_idx]
+                            + np.linspace(*space_range, i))
         new_pos = np.insert(new_pos, 0, 0) + x_range[0]
-    for x in positions:
-        xend = x + clength
-        if xend > x_range[1]:
-            xend = x_range[1]
-        time, X, Psquare = get_lin_Psquare(
-            fix_speed,
-            power_range[0], power_range[1],
-            x, xend)
+    return positions
+
+
+def gel_lin_Psquare(speed, P_start, P_end, X, xstart, length):
+    Psquare = (P_end**2 - P_start**2) * (X - xstart) / length + P_start**2
+    return Psquare
+
+
+line_length = np.diff(x_range)[0]
+t_max = line_length / fix_speed
+time = np.arange(0, t_max, dt)
+X = time * speed + x_range[0]
+power_rangers = [[65, 40], [65, 20], [100, 35]]
+for power_range in power_rangers:
+    # vary P
+    canvas_funnel = Canvas()
+    for line_idx in range(N_lines):
         wave_line = np.zeros((4, len(time)))
         wave_line[0] = X
-        wave_line[1] = y_positions[idx]
+        wave_line[1] = y_positions[line_idx]
         wave_line[2] = 0
-        wave_line[3] = np.sqrt(Psquare)
-#         wave = add_wave_line(wave, wave_line,
-#                              off_speed=off_speed, dt=dt)
-# script.waveform(wave, dt)
+        clength = cone_lengths[line_idx]
+        positions = getfunnelpos(clength)
 
-# 2nd block - vary v
+        for x in positions:
+            wave_line[3, X > x] = np.sqrt(gel_lin_Psquare(
+                    fix_speed, power_range[0], power_range[1],
+                    X[X > x], x, clength))
+        canvas_funnel.add_wave(wave_line.copy())
+        if idx % 2 == 0:
+            canvas_funnel.save_wave('calibration/funnel')
+    canvas_funnel.write_at(file, [motor_X, motor_Y])
+    motor_X += motor_step
 
-# move_motor(motor_line, 1, motor_step)
-# write_margin(y_lines_spacing, x_margin)
 
+file.save(script_fn)
 
-wave = np.zeros((4, 0))
-for idx in range(N_lines):
-    clength = cone_lengths[idx]
-    positions = [0]
-    new_pos = [0]
-    i = 1
-    while new_pos[-1] < x_range[1]:
-        positions = new_pos
-        i += 1
-        new_pos = np.cumsum(cone_lengths[0] + np.linspace(1.5, 7.5, i))
-        new_pos = np.insert(new_pos, 0, 0) + x_range[0]
-    for x in positions:
-        xend = x + clength
-        if xend > x_range[1]:
-            xend = x_range[1]
-        time, X = get_lin_inv_speed(
-            1 / inv_speed_range[0], 1 / inv_speed_range[1], x, xend)
-        wave_line = np.zeros((4, len(time)))
-        wave_line[0] = X
-        wave_line[1] = y_positions[idx]
-        wave_line[2] = 0
-        wave_line[3] = fix_power
-        # wave = add_wave_line(wave, wave_line,
-                             # off_speed=off_speed, dt=dt)
-# script.waveform(wave, dt)
-
-# get_gtext(script._lines, 'piezo', [-50, -250], 100, pc.PtoV(pc.range_P[1]), 50)
-
-# script.save(script_fn)
-# print(script.min_time)
+print(file.min_time)

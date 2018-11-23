@@ -73,7 +73,7 @@ class ScriptFile():
 
     def piezo_waveform(self, X, time_step, measure_time_step=None):
         "Perform a waveform"
-        assert np.all(np.abs(X) < 50)
+        assert np.all(np.abs(X[:3]) < 50)
         assert X.shape[0] == 3 or X.shape[0] == 4
         self._lines.append(
             f"BEGIN waveform R{time_step} N{X.shape[1]}"
@@ -93,6 +93,5 @@ class ScriptFile():
         self.position['piezo'] = X[:3, -1]
         self.min_time += X.shape[1] * time_step
 
-    def save_measure(self, filename, numvalues, tables):
-        self._lines.append("savemeasure {filename} {numvalues} " + ' '.join(
-                [str(i) for i in tables]))
+    def save_measure(self, filename, numvalues):
+        self._lines.append(f"savemeasure {filename} {numvalues}")

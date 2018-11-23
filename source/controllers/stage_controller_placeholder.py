@@ -203,12 +203,23 @@ class Cube_controller(fake_controller):
     def macro_exists(self, name):
         return False
 
-    def run_waveform(self, time_step, X):
+    def run_waveform(self, time_step, X, measure_time_step=None):
+        self.last_wave = X.copy()
         self.position = X[-1, :3]
         self.target = X[-1, :3]
+        if measure_time_step is not None:
+            self.measure_time_step = measure_time_step
 
     def wait_end_wave(self, wait_time):
         pass
+
+    def get_measure(self, offset, numvalues):
+        measure = {
+                'dt': self.measure_time_step,
+                'Target': self.last_wave[:numvalues, :3],
+                'Current': self.last_wave[:numvalues, :3],
+                'Power': self.last_wave[:numvalues, 3]}
+        return measure
 # ==============================================================================
 # Z Controller
 # ==============================================================================
