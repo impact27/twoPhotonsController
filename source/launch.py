@@ -44,8 +44,8 @@ def fun():
     print("READY!")
     sys.exit(qApp.exec_())
 thread = Thread(target=fun)
-# thread.start()
-fun()
+thread.start()
+#fun()
 
 #%%
 profile = {}

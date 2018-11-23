@@ -586,14 +586,24 @@ class Cube_controller(Stage_controller):
 
     @lockmutex
     @no_macro
-    def get_measure(self, offset, numvalues):
+    def get_measure(self, offset, numvalues, Ntries=3):
         if numvalues > 2**15:
             raise RuntimeError(f"Too many values to read! {numvalues}")
-        header = self.__cube.qDRR(offset=offset+1, numvalues=numvalues,
-                                  tables=list(np.arange(7)+1))
-        while self.__cube.bufstate is not True:
-            time.sleep(0.1)
-        data = self.__cube.bufdata
+        try:
+            header = self.__cube.qDRR(offset=offset+1, numvalues=numvalues,
+                                      tables=list(np.arange(7)+1))
+            while self.__cube.bufstate is not True:
+                time.sleep(0.1)
+            data = self.__cube.bufdata
+            
+        except GCSError:
+            if Ntries > 0:
+                print("Timeout occured")
+                time.sleep(1)
+                return self.get_measure(offset, numvalues, Ntries-1)
+            raise
+
+       
         
         # Check header is OK
         expected = {

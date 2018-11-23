@@ -8,7 +8,11 @@ from twophscript.scriptfile import ScriptFile
 cube_width = 100
 
 calibration_fn = 'PV_curve.csv'
-script_fn = "calibration_20180914.txt"
+script_fn = "calibration_20181123.txt"
+savefile = False
+
+#script_fn = "calibration_20181123_npy.txt"
+#savefile = True
 
 safety_z = 20
 off_speed = 1000
@@ -105,7 +109,7 @@ for idx in range(N_lines):
     wave_line[3] = np.sqrt(Psquare)
 
     canvas_P2vsSm1.add_wave(wave_line)
-    if idx % 4 == 0:
+    if idx % 4 == 0 and savefile:
         canvas_P2vsSm1.save_wave('calibration/P2vsSm1')
 
 canvas_P2vsSm1.write_at(file, [motor_X, motor_Y])
@@ -125,7 +129,7 @@ for idx in range(N_lines):
     wave_line[3] = P_lines[idx]
 
     canvas_Sm1vsP2.add_wave(wave_line)
-    if idx % 4 == 0:
+    if idx % 4 == 0 and savefile:
         canvas_Sm1vsP2.save_wave('calibration/Sm1vsP2')
 
 canvas_Sm1vsP2.write_at(file, [motor_X, motor_Y])
@@ -145,10 +149,10 @@ for idx in range(N_lines):
     wave_line[3] = np.sqrt(Psquare)
 
     canvas_P2vsZ.add_wave(wave_line)
-    if idx % 4 == 0:
+    if idx % 4 == 0 and savefile:
         canvas_P2vsZ.save_wave('calibration/P2vsZ')
 
-canvas_Sm1vsP2.write_at(file, [motor_X, motor_Y])
+canvas_P2vsZ.write_at(file, [motor_X, motor_Y])
 
 
 # =============================================================================
@@ -183,7 +187,7 @@ for line_idx in range(N_lines):
         wave_line[2] = 0
         wave_line[3] = fix_dots_intensity
         canvas_timedots.add_wave(wave_line)
-    if idx % 2 == 0:
+    if line_idx % 2 == 0 and savefile:
         canvas_timedots.save_wave('calibration/timedots')
 
 canvas_timedots.write_at(file, [motor_X, motor_Y])
@@ -200,8 +204,8 @@ for line_idx in range(N_lines):
         wave_line[2] = 0
         wave_line[3] = dots_intensity[line_idx]
         canvas_powerdots.add_wave(wave_line)
-    if idx % 2 == 0:
-        canvas_powerdots.save_wave('calibration/timedots')
+    if line_idx % 2 == 0 and savefile:
+        canvas_powerdots.save_wave('calibration/powerdots')
 
 canvas_powerdots.write_at(file, [motor_X, motor_Y])
 motor_X += motor_step
@@ -264,7 +268,7 @@ for power_range in power_rangers:
                     fix_speed, power_range[0], power_range[1],
                     X[X > x], x, clength))
         canvas_funnel.add_wave(wave_line.copy())
-        if idx % 2 == 0:
+        if line_idx % 2 == 0 and savefile:
             canvas_funnel.save_wave('calibration/funnel')
     canvas_funnel.write_at(file, [motor_X, motor_Y])
     motor_X += motor_step
