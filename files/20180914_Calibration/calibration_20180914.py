@@ -10,7 +10,7 @@ def sawtooth(*args, **kargs):
     return 0.5 * (scipy.signal.sawtooth(*args, **kargs) + 1)
 
 
-sys.path.append('../package')
+sys.path.append('../older/package')
 
 from script import Script
 from GText import get_gtext

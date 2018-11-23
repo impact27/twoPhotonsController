@@ -13,6 +13,7 @@ from PyQt5 import QtCore
 from matplotlib import collections as mc
 import sys
 import time
+import os
 
 from errors import FocusError, ParseError, MotionError, ScriptError, logError
 
@@ -123,7 +124,7 @@ class Parser(QtCore.QObject):
             print(self.line_nbr, ':', fun.__name__, *args)
             print(e, '/n')
             raise
-            
+
     def readline(self):
         if self._next_line is not None:
             ret = self._next_line
@@ -136,7 +137,7 @@ class Parser(QtCore.QObject):
         line = line.split(' ')
         command = line[0]
         args = line[1:]
-        if command.lower() in ['laser', 'focus',
+        if command.lower() in ['laser', 'focus', 'savemeasure',
                                'camera', 'focusint', 'begin']:
             pass
         elif command.lower() in ['piezoslope', 'piezoreset']:
@@ -218,7 +219,7 @@ class Parser(QtCore.QObject):
 
     def single_letter_arg(self, *args):
         ret = {}
-        pos_re = '([A-Z])([-\.\d]+)'
+        pos_re = r'([A-Z])([-\.\d]+)'
         for arg in args:
             for found in re.findall(pos_re, arg):
                 ret[found[0]] = float(found[1])
@@ -232,7 +233,10 @@ class Parser(QtCore.QObject):
 
         time_step = args_dic['R']
         Npos = args_dic['N']
-        
+        measure_time_step = None
+        if 'M' in args_dic.keys():
+            measure_time_step = args_dic['M']
+
         if self._wavedata is not None:
             data = self._wavedata
         else:
@@ -252,11 +256,15 @@ class Parser(QtCore.QObject):
         X = np.asarray([data[idx] for idx in indices])
 
         if np.shape(X)[1] != Npos:
-            raise ParseError(f"Mismatch in waveform! {np.shape(X)[1]} != {Npos}")
-        self.run_waveform(time_step, X)
+            raise ParseError(
+                    f"Mismatch in waveform! {np.shape(X)[1]} != {Npos}")
+        self.run_waveform(time_step, X, measure_time_step=measure_time_step)
         self._wavedata = None
 
-    def run_waveform(self, time_step, X):
+    def run_waveform(self, time_step, X, measure_time_step):
+        pass
+
+    def savemeasure(self, filename, numvalues, *tables):
         pass
 
 
@@ -421,9 +429,10 @@ class Execute_Parser(Parser):
         self.laser_delegate.set_intensity(power)
 
     @macro(False)
-    def run_waveform(self, time_step, X):
+    def run_waveform(self, time_step, X, measure_time_step):
         self.camera_delegate.extShutter(False)
-        self.piezo_delegate.run_waveform(time_step, X.T)
+        self.piezo_delegate.run_waveform(time_step, X.T,
+                                         measure_time_step=measure_time_step)
 
     def pause_resume(self, msg='Pause', pause=None):
         if not self.isRunning():
@@ -477,6 +486,15 @@ class Execute_Parser(Parser):
                f"Error while parsing line {self.line_nbr}:\r\n"
                f"{self._prev_line[0].__name__} {self._prev_line[1]}\r\n"
                f"{error}")
+    
+    @macro(False)
+    def savemeasure(self, filename, numvalues, *tables):
+        measure = self.piezo_delegate.save_measure(filename, numvalues, tables)
+        os.makedirs(os.path.dirname(filename), exist_ok=True)
+        with open(filename, 'w') as f:
+            f.write(measure)
+        
+
 
 class Draw_Parser(Parser):
     def __init__(self, canvas):
@@ -543,7 +561,7 @@ class Draw_Parser(Parser):
     def piezoreset(self):
         self.piezo_position = np.zeros(3)
 
-    def run_waveform(self, time_step, X):
+    def run_waveform(self, time_step, X, measure_time_step):
         step = int(0.1 / time_step)
         for idx in [*np.arange(X.shape[1] // step) * step, X.shape[1] - 1]:
             pos = X[:, idx]

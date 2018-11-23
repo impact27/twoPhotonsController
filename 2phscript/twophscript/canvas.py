@@ -48,14 +48,12 @@ class Canvas():
         if XY.ndim == 1:
             XY.shape = (1, *XY.shape)
 
-        XYfrom = XY[0]
         for pos in XY:
-            self.prepare_write(file, XYfrom, pos)
+            self.prepare_write(file, pos)
             self.write_commands(file)
             self.end_write(file, pos)
-            XYfrom = pos
 
-    def prepare_write(self, file, XYfrom, XYto):
+    def prepare_write(self, file, pos):
         raise NotImplementedError()
 
     def write_commands(self, file):
@@ -76,11 +74,18 @@ class Canvas():
 
     def end_write(self, file, pos):
         raise NotImplementedError()
-    
-    def longmoveMotor(self, file, XYfrom, XYto):
-        safety_z = self.Zmargin(np.linalg.norm(XYto - XYfrom))
+
+    def longmoveMotor(self, file, pos):
+        XYfrom = file.position['motor']
+        if XYfrom is None:
+            XYfrom = pos
+        elif np.all([*pos, 0] == XYfrom):
+            return
+        else:
+            XYfrom = XYfrom[:2]
+        safety_z = self.Zmargin(np.linalg.norm(pos - XYfrom))
         file.piezo_reset()
-        file.goto('motor', [*XYto, safety_z], self.off_speed)
+        file.goto('motor', [*pos, safety_z], self.off_speed)
         file.goto('piezo', PIEZO_MOTOR_FOCUS, self.off_speed)
         file.focus('motor', 0, -2 * safety_z, -1)
 
@@ -91,30 +96,43 @@ class Piezo_Canvas(Canvas):
     """
 
     def __init__(self, calibration_fn, off_speed, dt,
-                 XYmargin, minZmargin, safety_slope):
+                 XYmargin, minZmargin, safety_slope, measure_dt=None):
         super().__init__(calibration_fn, off_speed, minZmargin, safety_slope)
         self.dt = dt
+        self.measure_dt = measure_dt
         self.XYmargin = XYmargin
 
         self.max_points = PIEZO_MAX_POINTS
         self.piezo_delay = PIEZO_DELAY
         self.max_range = PIEZO_RANGE  # um
 
-    def prepare_write(self, file, XYfrom, XYto):
-        if not np.all(XYfrom == XYto):
-            self.longmoveMotor(file, XYfrom, XYto)
-        else:
-            file.goto('motor', [*XYto, 0], self.off_speed)
+    def prepare_write(self, file, pos):
+        self.longmoveMotor(file, pos)
         file.piezo_slope()
 
     def write_command(self, file, command):
         if command['cmd'] == 'wave':
-            file.piezo_waveform(command['wave'], self.dt)
+            file.piezo_waveform(command['wave'], self.dt,
+                                measure_time_step=self.measure_dt)
+        elif command['cmd'] == 'save_wave':
+            # As we can call this function on the same file several time,
+            # add a suffix
+            if 'count' not in dir(self.write_command):
+                self.write_command.count = {}
+            if file not in self.write_command.count.keys():
+                self.write_command.count[file] = 0
+            file.save_measure(
+                    command['filename'] + '_'
+                        '{self.write_command.count[file]}.gcs',
+                    command['numvalues'],
+                    command['tables'])
+            self.write_command.count[file] += 1
         else:
             super().write_command(file, command)
 
     def end_write(self, file, pos):
-        file.piezo_reset()
+        pass
+        # file.piezo_reset()
 
     @property
     def _cur_wave(self):
@@ -122,7 +140,7 @@ class Piezo_Canvas(Canvas):
         Get the current wave or an empty wave if we are None
         """
         if len(self.commands) == 0 or self.commands[-1]['cmd'] != 'wave':
-            return np.zeros((4, 0))
+            return None
         else:
             return self.commands[-1]['wave']
 
@@ -158,14 +176,14 @@ class Piezo_Canvas(Canvas):
         wave[3] = self.pc.PtoV(wave[3])
 
         # Apply delay
-        wave = self._apply_delay(wave)
+        wave = self._apply_delay(wave, self.piezo_delay)
 
         # check we don't have too many points
         if wave.size > self.max_points:
             raise RuntimeError('Too many points for controller. Decrease dt.')
 
         # if no wave yet, save and stop
-        if np.shape(self._cur_wave)[1] == 0:
+        if self._cur_wave is None:
             self._cur_wave = wave
             return
 
@@ -173,6 +191,8 @@ class Piezo_Canvas(Canvas):
         move_wave = self.move_wave(
             [*self._cur_wave[:3, -1], 0],
             [*wave[:3, 0], 0])
+        # wait for movment to truly be stopped
+        move_wave = self._apply_delay(move_wave, 5*self.piezo_delay)
 
         # if can combine with existing wave, do it
         if (self._cur_wave.shape[1] + move_wave.shape[1] + wave.shape[1]
@@ -199,7 +219,7 @@ class Piezo_Canvas(Canvas):
             dXnorm[:, np.newaxis] * self.off_speed * times[np.newaxis]
         return wave
 
-    def _apply_delay(self, wave_line):
+    def _apply_delay(self, wave_line, piezo_delay):
         """
         Apply the delay to synchronise the movment and the laser
         """
@@ -207,7 +227,7 @@ class Piezo_Canvas(Canvas):
         if not np.shape(wave_line)[0] == 4:
             raise NotImplementedError("Can only apply delay with 4xN waves")
 
-        N_delay = int(np.round(self.piezo_delay / self.dt))
+        N_delay = int(np.round(piezo_delay / self.dt))
 
         # Adds N_delay points at the end
         wave_delay = np.ones((4, N_delay)) * wave_line[:, -1][:, np.newaxis]
@@ -225,17 +245,29 @@ class Piezo_Canvas(Canvas):
 
         return wave_line
 
+    def save_wave(self, filename, tables, numvalues=None):
+        if self._cur_wave is None:
+            raise RuntimeError("No wave to save!")
+        if numvalues is None:
+            numvalues = self._cur_wave.shape[1] * self.dt / self.measure_dt
+        self.commands.append({
+                    'cmd': 'save_wave',
+                    'filename': filename,
+                    'numvalues': int(numvalues),
+                    'tables': tables
+                    })
+
 
 class Motor_Canvas(Canvas):
     def __init__(self, calibration_fn, off_speed, minZmargin, safety_slope):
         super().__init__(calibration_fn, off_speed, minZmargin, safety_slope)
         self.offset = np.zeros(3)
 
-    def prepare_write(self, file, XYfrom, XYto):
-        self.longmoveMotor(file, XYfrom, XYto)
+    def prepare_write(self, file, pos):
+        self.longmoveMotor(file, pos)
         # file.motor_slope()
         # file.move_origin([*XYto, 0])
-        self.offset[:2] = XYto
+        self.offset[:2] = pos
         self.XYpos_int = np.zeros(2)
 
     def end_write(self, file, pos):
@@ -260,9 +292,8 @@ class Motor_Canvas(Canvas):
             self.XYpos_int = command['Xto']
         elif command['cmd'] == 'canvas':
             XYto_ext = command['position'] + self.offset[:2]
-            XYfrom_ext = self.XYpos_int + self.offset[:2]
-            self.longmoveMotor(file, XYfrom_ext, XYto_ext)
+            self.longmoveMotor(file, XYto_ext)
             command['canvas'].write_at(file, XYto_ext)
             self.XYpos_int = command['position']
         else:
-            raise NotImplementedError(f"What is {command['cmd']}?")
+            super().write_command(file, command)

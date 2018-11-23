@@ -33,7 +33,7 @@ fn = 'linear.dat'
 fn = 'speed_38.dat'
 # fn = 'speed_38_inv.dat'
 
-fns = ['positions.dat', 'linear.dat', 'speed_38.dat']
+fns = ['positions.dat']#, 'linear.dat', 'speed_38.dat']
 names = ['Acceleration', 'fast', 'slow']
 for fn, name in zip(fns, names):
 
@@ -46,12 +46,12 @@ for fn, name in zip(fns, names):
 
     data = np.loadtxt(fn, skiprows=76)
     theoritical = get_lin_inv_speed(S_min, S_max, xstart, xend)[1]
-    data = data[:len(data) // 3]
+    # data = data[:len(data) // 3]
     T = np.arange(len(data)) * dt
 
     # %%
     figure()
-    plot(T, data[:, 0], '.', label='Measured')
+    plot(T - 0.01, data[:, 0], '.', label='Measured')
     plot(T, data[:, 1], '-', label='Target')
 
     # plot(T, get_lin_inv_speed(S_min, S_max, xstart, xend)[1])

@@ -344,7 +344,11 @@ class Cube_controller(Stage_controller):
         self.Servo_Update_Time = 50e-6  # s 0x0E000200
         self.max_points = 2**18  # 0x13000004
         self.clip_out_of_range = False
+        self.stageConnected.connect(self.setup_measure)
 
+    def setup(self):
+        self.setup_measure()
+        
     @property
     def isRecordingMacro(self):
         return self.__cube.IsRecordingMacro
@@ -468,13 +472,16 @@ class Cube_controller(Stage_controller):
 
     @lockmutex
     @no_macro
-    def run_waveform(self, time_step, X):
+    def run_waveform(self, time_step, X, measure_time_step=None):
+        
         if X.size >= self.max_points:
             raise MotionError(
                     "The wavepoints has more points than the controller can handle")
         if not (np.shape(X)[1] == 3 or np.shape(X)[1] == 4):
             raise MotionError("Waveform shape is incorrect! {np.shape(X)}")
-
+        
+        if measure_time_step is not None:
+            self.setup_measure_rate(measure_time_step)
         # Go to first pos
         self.MOVVEL(X[0, :3], np.ones(3) * 1000)
 
@@ -518,7 +525,7 @@ class Cube_controller(Stage_controller):
 
         # Offset to 0
         self.__cube.send('WOS ' + " ".join(str(e) + ' 0' for e in idx))
-        
+
         # Maximum speed to a lot
         self.__cube.VEL([1, 2, 3], [VMAX, VMAX, VMAX])
         
@@ -527,6 +534,36 @@ class Cube_controller(Stage_controller):
 
         return self.Servo_Update_Time * rate * X.shape[0]
 
+    @lockmutex
+    @no_macro
+    def setup_measure_rate(self, time_step):
+        # Set rate
+        rate = int(np.round(time_step / self.Servo_Update_Time))
+        self.__cube.RTR(rate)
+    
+    @property
+    def measure_table(self):
+        target = 1
+        position = 2
+        voltage = 16
+        return {
+                1: {'axis': 1, 'option': target},
+                2: {'axis': 2, 'option': target},
+                3: {'axis': 3, 'option': target},
+                4: {'axis': 1, 'option': position},
+                5: {'axis': 2, 'option': position},
+                6: {'axis': 3, 'option': position},
+                7: {'axis': 4, 'option': voltage}
+                }
+    @lockmutex
+    @no_macro
+    def setup_measure(self):
+
+        RTable = self.measure_table()
+
+        for Rkey in RTable.keys():
+            self.__cube.DRC(Rkey, RTable[Rkey]['axis'], RTable[Rkey]['option'])
+
     @no_macro
     def wait_end_wave(self, wait_time):
         # wait
@@ -534,9 +571,18 @@ class Cube_controller(Stage_controller):
         while(self.__cube.IsGeneratorRunning()[1]):
             time.sleep(0.1)
 
-        # Clear tables
-#        self.__cube.send("WCL " + " ".join(str(e) for e in idx))
-
+    @lockmutex
+    @no_macro
+    def get_measure(self, numvalues, tables):
+        if numvalues > 2**15:
+            raise RuntimeError(f"Too many values to read! {numvalues}")
+        answer = self.__cube.qDRR(offset=1, numvalues=numvalues, tables=tables)
+        
+        
+        return gcsparse(answer)
+    
+def gcsparse(answer):
+    print(answer)
 
 # =============================================================================
 # Z Controller

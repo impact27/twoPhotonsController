@@ -586,18 +586,23 @@ class Piezo(Stage):
     def isRecordingMacro(self):
         return self.XYZ_c.isRecordingMacro
 
-    def run_waveform(self, time_step, X, wait=True):
+    def run_waveform(self, time_step, X, wait=True, measure_time_step=None):
         with MutexContainer(self._mutex):
             # Get stage coordinates
             X[:, :3] = self.XmtoXs(X[:, :3])
             self._lastXs = X[-1, :3].copy()
-            wait_time = self.XYZ_c.run_waveform(time_step, X)
+            wait_time = self.XYZ_c.run_waveform(
+                    time_step, X, measure_time_step=measure_time_step)
         if wait:
             self.XYZ_c.wait_end_wave(wait_time)
 
     def controller_mutex(self):
         return self._mutex
 
+    def get_measure(self, numvalues, tables):
+        measure = self.XYZ_c.get_measure(numvalues, tables)
+        measure = self.XstoXm()???
+        return measure
 
 class Motor_z_switcher():
     """Thus class is tasked with changing the z controller of the motor stage.

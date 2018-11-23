@@ -14,7 +14,7 @@ class ScriptFile():
         self._lines.append("laser power 0")
         self._lines.append("laser ON")
 
-        # Keep track of the time
+        # Keep track of the time and position
         self.min_time = 0
         self.position = {'motor': None,
                          'piezo': None}
@@ -52,6 +52,7 @@ class ScriptFile():
         self._lines.append(f"focus {stage} {zfrom} {zto} {zstep}")
         # Time estimation
         self.min_time += 0.2 * (zto - zfrom) / zstep
+        self.position[stage][2] = 0
 
     def save(self, fn):
         "Save to file"
@@ -70,15 +71,16 @@ class ScriptFile():
         # Time estimation
         self.min_time += 10
 
-    def piezo_waveform(self, X, time_step):
+    def piezo_waveform(self, X, time_step, measure_time_step=None):
         "Perform a waveform"
         assert np.all(np.abs(X) < 50)
         assert X.shape[0] == 3 or X.shape[0] == 4
         self._lines.append(
-            "BEGIN waveform R{time_step} N{number_points}".format(
-                time_step=time_step,
-                number_points=X.shape[1]
-            ))
+            f"BEGIN waveform R{time_step} N{X.shape[1]}"
+            )
+        if measure_time_step is not None:
+            self._lines[-1] += f" M{measure_time_step}"
+
         axes = ['X', 'Y', 'Z', 'E']
         for ax_idx, axis in enumerate(axes):
             self._lines.append(
@@ -90,3 +92,7 @@ class ScriptFile():
         # Update time
         self.position['piezo'] = X[:3, -1]
         self.min_time += X.shape[1] * time_step
+
+    def save_measure(self, filename, numvalues, tables):
+        self._lines.append("savemeasure {filename} {numvalues} " + ' '.join(
+                [str(i) for i in tables]))

@@ -225,7 +225,7 @@ class Plane_thread(QtCore.QThread):
                                change_coordinates=False,
                                quick=False,
                                speed=1000)
-    
+
                 data, z_best, error = self._fd.get_result()
                 if error is None:
                     positions.append(self._stage.get_position(raw=True))

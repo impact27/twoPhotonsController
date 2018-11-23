@@ -280,7 +280,7 @@ def solve_z(Xstage, *, offset=None, rotation_angles=None):
             tmpRs = np.array(Rs)
             tmpRs[i] = dRs[i]
             ret[i + 1] = (2 * np.mean(Xm[..., 2] *
-                                      (tmpRs[0]@tmpRs[1]@tmpRs[2]@tmpRs[3]@Xs.T).T[..., 2]))
+              (tmpRs[0]@tmpRs[1]@tmpRs[2]@tmpRs[3]@Xs.T).T[..., 2]))
 
         ret = 1 / residual * ret
         return np.asarray(ret)
@@ -325,8 +325,8 @@ if __name__ == "__main__":
     offset_2, rotation_angles_2 = solve_xyz(Xstage, Xmaster)
     corr2 = [*offset_2, *rotation_angles_2]
     print("XYZ corr",
-          np.sqrt(
-              np.mean(np.square(XstoXm(Xstage, offset_2, rotation_angles_2) - Xmaster))),
+          np.sqrt(np.mean(np.square(
+                  XstoXm(Xstage, offset_2, rotation_angles_2) - Xmaster))),
           np.sqrt(np.mean(np.square(np.array([*corr]) - [*corr2]))))
     corr3 = solve_z(Xstage)
 
@@ -458,7 +458,7 @@ if __name__ == "__main__":
 #                     - np.cos(theta + phi) * YmYs2]]
 #
 #        sol = optimize.root(fun, [0, 0], jac=jac, method='hybr',
-#                            args=(YsXs2, YsXm2, YsYm2, XmXs2, YmXs2, XmYs2, YmYs2))
+#                       args=(YsXs2, YsXm2, YsYm2, XmXs2, YmXs2, XmYs2, YmYs2))
 #        theta, phi = sol.x
 #
 #        Mphi = np.asarray([[1, np.sin(phi)],
@@ -467,7 +467,7 @@ if __name__ == "__main__":
 #                             [np.sin(theta), np.cos(theta)]])
 #
 #        Origin = 1 / len(XYs) * np.sum(np.asarray([Mphi@XY for XY in XYs])
-#                                       - np.asarray([Rtheta@XY for XY in XYm]), 0)
+#                                   - np.asarray([Rtheta@XY for XY in XYm]), 0)
 #
 #        return np.asarray([phi, theta, *Origin])
 #
