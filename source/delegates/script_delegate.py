@@ -488,11 +488,14 @@ class Execute_Parser(Parser):
                f"{error}")
     
     @macro(False)
-    def savemeasure(self, filename, numvalues, *tables):
-        measure = self.piezo_delegate.save_measure(filename, numvalues, tables)
+    def savemeasure(self, filename, numvalues):
+        measure = self.piezo_delegate.get_measure(0, numvalues)
         os.makedirs(os.path.dirname(filename), exist_ok=True)
-        with open(filename, 'w') as f:
-            f.write(measure)
+        with open(filename, 'bw') as f:
+            np.save(f, np.concatenate(
+                    (measure['Target'],
+                     measure['Current'],
+                     measure['Power'])))
         
 
 

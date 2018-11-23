@@ -599,9 +599,10 @@ class Piezo(Stage):
     def controller_mutex(self):
         return self._mutex
 
-    def get_measure(self, numvalues, tables):
-        measure = self.XYZ_c.get_measure(numvalues, tables)
-        measure = self.XstoXm()???
+    def get_measure(self, offset, numvalues):
+        measure = self.XYZ_c.get_measure(offset, numvalues)
+        measure['Target'] = self.XstoXm(measure['Target'])
+        measure['Current'] = self.XstoXm(measure['Current'])
         return measure
 
 class Motor_z_switcher():

@@ -338,15 +338,15 @@ class Cube_controller(Stage_controller):
     def __init__(self):
         super().__init__()
         self._mutex = QtCore.QMutex(QtCore.QMutex.Recursive)
-        self.__cube = HW_E727(self.stageConnected.emit)
+        self.__cube = HW_E727(self.setup)
         self.error = pipython.gcserror.GCSError
         self.internal_offset = np.asarray([50, 50, 50])
         self.Servo_Update_Time = 50e-6  # s 0x0E000200
         self.max_points = 2**18  # 0x13000004
         self.clip_out_of_range = False
-        self.stageConnected.connect(self.setup_measure)
 
     def setup(self):
+        self.stageConnected.emit()
         self.setup_measure()
         
     @property
@@ -469,6 +469,21 @@ class Cube_controller(Stage_controller):
         self.__cube.send("WAC ONT? 1 = 1")
         self.__cube.send("WAC ONT? 2 = 1")
         self.__cube.send("WAC ONT? 3 = 1")
+        
+    def waveToController(self, X):
+        X[..., :3] = X[..., :3] + self.internal_offset
+        # Reverse y and z
+        X[:, 1:3] = 100 - X[:, 1:3]
+        return X
+    
+    def waveFromController(self, X):
+        X = np.asarray(X)
+        # Reverse y and z
+        X[:, 1:3] = 100 - X[:, 1:3]
+        
+        X[..., :3] = X[..., :3] - self.internal_offset
+        
+        return X
 
     @lockmutex
     @no_macro
@@ -487,9 +502,7 @@ class Cube_controller(Stage_controller):
 
         rate = int(np.round(time_step / self.Servo_Update_Time))
 
-        X[..., :3] = X[..., :3] + self.internal_offset
-        # Reverse y and z
-        X[:, 1:3] = 100 - X[:, 1:3]
+        X = self.waveToController(X)
 
         if not (np.all(X[..., :3] > 0) and np.all(X[..., :3] < 100)):
             if not self.clip_out_of_range:
@@ -559,7 +572,7 @@ class Cube_controller(Stage_controller):
     @no_macro
     def setup_measure(self):
 
-        RTable = self.measure_table()
+        RTable = self.measure_table
 
         for Rkey in RTable.keys():
             self.__cube.DRC(Rkey, RTable[Rkey]['axis'], RTable[Rkey]['option'])
@@ -573,16 +586,37 @@ class Cube_controller(Stage_controller):
 
     @lockmutex
     @no_macro
-    def get_measure(self, numvalues, tables):
+    def get_measure(self, offset, numvalues):
         if numvalues > 2**15:
             raise RuntimeError(f"Too many values to read! {numvalues}")
-        answer = self.__cube.qDRR(offset=1, numvalues=numvalues, tables=tables)
+        header = self.__cube.qDRR(offset=offset+1, numvalues=numvalues,
+                                  tables=list(np.arange(7)+1))
+        while self.__cube.bufstate is not True:
+            time.sleep(0.1)
+        data = self.__cube.bufdata
         
-        
-        return gcsparse(answer)
-    
-def gcsparse(answer):
-    print(answer)
+        # Check header is OK
+        expected = {
+            'NDATA': numvalues,
+            'NAME0': 'Target Position of axis1',
+            'NAME1': 'Target Position of axis2',
+            'NAME2': 'Target Position of axis3',
+            'NAME3': 'Current Position of axis1',
+            'NAME4': 'Current Position of axis2',
+            'NAME5': 'Current Position of axis3',
+            'NAME6': 'Voltage of output chan4'
+            }
+        for key in expected.keys():
+            if expected[key] != header[key]:
+                raise RuntimeError(f"Header incorrect! {key}: "
+                                   f"{expected[key]} != {header[key]}")
+        measure = {
+                'dt': header['SAMPLE_TIME'],
+                'Target': self.waveFromController(np.transpose(data[:3])),
+                'Current': self.waveFromController(np.transpose(data[3:6])),
+                'Power': np.asarray(data[6])}
+        return measure
+
 
 # =============================================================================
 # Z Controller
